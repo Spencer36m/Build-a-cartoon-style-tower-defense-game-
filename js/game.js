@@ -2392,6 +2392,7 @@ updateHUD(true);
 showMenu();
 // Start mapping the globe in the background so the world screen opens instantly.
 setTimeout(() => Globe.prepare(), 300);
+setTimeout(() => WART.prewarm(), 1200);
 new ResizeObserver(() => resize()).observe(stage);
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 250));

@@ -172,6 +172,7 @@ const Globe = (() => {
     { id: 'moonwell', name: 'The Moonwell', lore: 'A glowing pool said to heal anything still alive.', lat: -10, lon: -128, want: 'land', kind: 'well' },
     { id: 'zero', name: 'Ground Zero', lore: 'The lab where the infection began. Green fog still pours out.', lat: 44, lon: -100, want: 'land', kind: 'zero' },
   ];
+  const SUN = (() => { const v = [-0.55, 0.45, 0.7], l = Math.hypot(...v); return v.map((x) => x / l); })();
   const isWater = (i) => tex[i + 2] > tex[i] + 20 && tex[i + 2] > tex[i + 1];
   const texIndex = (lat, lon) => {
     const x = Math.floor((((lon + 180) % 360 + 360) % 360) / 360 * TW), y = clamp(Math.floor((0.5 - lat / 180) * TH), 0, TH - 1);
@@ -212,220 +213,6 @@ const Globe = (() => {
     g.addColorStop(0, 'rgba(255,240,170,0.95)'); g.addColorStop(0.35, 'rgba(255,150,40,0.95)'); g.addColorStop(1, 'rgba(200,40,20,0)');
     c.fillStyle = g; c.fill();
   }
-  function smoke(c, x, y, u, t, n, col = '70,64,60', rise = 14) {
-    for (let i = 0; i < n; i++) {
-      const k = (t * 0.25 + i / n) % 1;
-      c.fillStyle = `rgba(${col},${0.45 * (1 - k)})`;
-      c.beginPath(); c.arc(x + Math.sin(i * 2 + t * 0.5) * u * 2 + k * u * 3, y - k * u * rise, u * (1.2 + k * 2.5), 0, TAU); c.fill();
-    }
-  }
-  function dino(c, u, kind, step) {
-    const leg = Math.sin(step) * u * 0.8;
-    c.fillStyle = kind === 'rex' ? '#5a4a2e' : kind === 'raptor' ? '#7a5a34' : '#5e6a3a';
-    if (kind === 'brachio') {
-      c.beginPath(); c.ellipse(0, -3 * u, 4 * u, 2.2 * u, 0, 0, TAU); c.fill();
-      c.lineWidth = 1.4 * u; c.strokeStyle = c.fillStyle; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(3 * u, -4 * u); c.quadraticCurveTo(5 * u, -9 * u, 6.5 * u, -10 * u); c.stroke();
-      c.beginPath(); c.arc(6.8 * u, -10.2 * u, 0.9 * u, 0, TAU); c.fill();
-      c.beginPath(); c.moveTo(-3.5 * u, -3 * u); c.quadraticCurveTo(-7 * u, -2.5 * u, -8 * u, -1 * u); c.lineWidth = 0.9 * u; c.stroke();
-      c.lineWidth = 0.9 * u;
-      for (const [lx, ph] of [[-2.5, 1], [2.5, -1], [-1.5, -1], [1.5, 1]]) { c.beginPath(); c.moveTo(lx * u, -2 * u); c.lineTo(lx * u + leg * ph * 0.4, 0); c.stroke(); }
-    } else {
-      const k = kind === 'raptor' ? 0.6 : 1;
-      c.save(); c.scale(k, k);
-      c.beginPath(); c.ellipse(0, -4 * u, 3 * u, 1.8 * u, -0.25, 0, TAU); c.fill();
-      c.beginPath(); c.moveTo(-2.5 * u, -4.5 * u); c.lineTo(-7.5 * u, -3.2 * u); c.lineTo(-2.5 * u, -3.2 * u); c.fill();
-      c.beginPath(); c.ellipse(3.2 * u, -6.2 * u, 1.7 * u, 1.1 * u, 0.2, 0, TAU); c.fill();
-      c.lineWidth = 0.9 * u; c.strokeStyle = c.fillStyle; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(-0.5 * u, -3 * u); c.lineTo(-0.8 * u + leg, 0); c.moveTo(0.8 * u, -3 * u); c.lineTo(0.6 * u - leg, 0); c.stroke();
-      c.fillStyle = '#f2d27a'; c.beginPath(); c.arc(3.8 * u, -6.5 * u, 0.3 * u, 0, TAU); c.fill();
-      c.restore();
-    }
-  }
-  function ptero(c, u, flap) {
-    c.strokeStyle = '#3a2c22'; c.lineWidth = 0.8 * u; c.lineCap = 'round'; c.lineJoin = 'round';
-    const wy = Math.sin(flap) * 1.6 * u;
-    c.beginPath(); c.moveTo(-4 * u, wy); c.lineTo(-1.5 * u, -0.5 * u); c.lineTo(0, 0); c.lineTo(1.5 * u, -0.5 * u); c.lineTo(4 * u, wy); c.stroke();
-    c.fillStyle = '#3a2c22'; c.beginPath(); c.moveTo(0, 0); c.lineTo(1.6 * u, 0.6 * u); c.lineTo(0, 0.9 * u); c.fill();
-  }
-  function crystal(c, x, y, h, col) {
-    c.beginPath(); c.moveTo(x, y - h); c.lineTo(x + h * 0.3, y - h * 0.55); c.lineTo(x, y); c.lineTo(x - h * 0.3, y - h * 0.55); c.closePath();
-    const g = c.createLinearGradient(x - h * 0.3, y - h, x + h * 0.3, y);
-    g.addColorStop(0, `rgba(${col},0.95)`); g.addColorStop(1, `rgba(${col},0.45)`);
-    c.fillStyle = g; c.fill();
-    c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x, y - h); c.lineTo(x, y); c.stroke();
-  }
-
-  function drawWonder(c, w, x, y, u, t) {
-    switch (w.kind) {
-      case 'volcano': {
-        glow(c, x, y - 6 * u, 16 * u, '255,110,40', 0.35);
-        c.beginPath(); c.moveTo(x - 9 * u, y); c.lineTo(x - 2.4 * u, y - 8 * u); c.lineTo(x + 2.4 * u, y - 8 * u); c.lineTo(x + 9 * u, y); c.closePath();
-        const g = c.createLinearGradient(x - 9 * u, y - 8 * u, x + 9 * u, y); g.addColorStop(0, '#5a4a40'); g.addColorStop(1, '#1e1814');
-        c.fillStyle = g; c.fill();
-        c.strokeStyle = 'rgba(255,120,40,0.9)'; c.lineWidth = 0.9 * u; c.lineCap = 'round';
-        for (const [sx, ex] of [[-1.5, -4.5], [1, 3.5], [0, 0.5]]) { c.beginPath(); c.moveTo(x + sx * u, y - 7.8 * u); c.quadraticCurveTo(x + (sx + ex) * 0.5 * u, y - 4 * u, x + ex * u, y - 1 * u); c.stroke(); }
-        c.fillStyle = rg(c, x, y - 8 * u, 3 * u, 'rgba(255,230,140,1)', 'rgba(255,90,20,0)'); c.beginPath(); c.ellipse(x, y - 8 * u, 3 * u, 1.2 * u, 0, 0, TAU); c.fill();
-        smoke(c, x, y - 9 * u, u, t, 6);
-        for (let i = 0; i < 5; i++) {
-          const k = (t * 0.8 + i / 5) % 1, dir = (i % 2 ? 1 : -1) * (1 + i * 0.4);
-          c.fillStyle = `rgba(255,${150 + i * 15},60,${1 - k})`;
-          c.beginPath(); c.arc(x + dir * k * 4 * u, y - 8 * u - Math.sin(k * Math.PI) * 7 * u, 0.6 * u, 0, TAU); c.fill();
-        }
-        break;
-      }
-      case 'fire': {
-        glow(c, x, y - 3 * u, 14 * u, '255,120,40', 0.35);
-        const spots = [[-5, 0, 5], [-1, -1.5, 7], [3, 0.5, 6], [6, -1, 4], [-3, 1.5, 4], [1, 2, 3.5]];
-        smoke(c, x, y - 7 * u, u, t, 4, '50,46,44');
-        spots.forEach(([dx, dy, h], i) => flame(c, x + dx * u, y + dy * u, h * u, t, i * 1.7));
-        break;
-      }
-      case 'dinos': case 'raptors': {
-        c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(x, y, 10 * u, 2 * u, 0, 0, TAU); c.fill();
-        const herd = w.kind === 'dinos' ? [['brachio', -4, 0, 0.9], ['rex', 5, 1, 0.8]] : [['raptor', -4, 0, 1], ['raptor', 1, 1, 1], ['raptor', 5, -0.5, 1]];
-        herd.forEach(([k, dx, dy, sc], i) => {
-          const sp = w.kind === 'raptors' ? 2.2 : 0.7, ph = t * sp + i * 2;
-          const off = Math.sin(ph * 0.3) * 3 * u, face = Math.cos(ph * 0.3) >= 0 ? 1 : -1;
-          c.save(); c.translate(x + dx * u + off, y + dy * u); c.scale(face * sc, sc); dino(c, u, k, ph * 4); c.restore();
-        });
-        break;
-      }
-      case 'pteros': {
-        c.fillStyle = '#6a5a48'; c.beginPath(); c.moveTo(x - 6 * u, y); c.lineTo(x - 2 * u, y - 6 * u); c.lineTo(x + 1 * u, y - 5 * u); c.lineTo(x + 6 * u, y); c.fill();
-        for (let i = 0; i < 3; i++) {
-          const q = t * 0.8 + i * 2.1, px = x + Math.cos(q) * 9 * u, py = y - 10 * u + Math.sin(q) * 3 * u;
-          c.save(); c.translate(px, py); ptero(c, u * 0.9, t * 8 + i); c.restore();
-        }
-        break;
-      }
-      case 'crater': {
-        c.fillStyle = 'rgba(20,24,18,0.85)'; c.beginPath(); c.ellipse(x, y, 7 * u, 3 * u, 0, 0, TAU); c.fill();
-        c.strokeStyle = `rgba(120,255,120,${0.5 + Math.sin(t * 2) * 0.2})`; c.lineWidth = 1 * u; c.stroke();
-        glow(c, x, y - 1 * u, 12 * u, '110,255,110', 0.3 + Math.sin(t * 2) * 0.1);
-        for (const [dx, h] of [[-3, 4], [0, 6], [2.5, 3.5], [-1, 3]]) crystal(c, x + dx * u, y, h * u, '120,255,130');
-        break;
-      }
-      case 'crystals': {
-        glow(c, x, y - 8 * u, 15 * u, '190,120,255', 0.3);
-        c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(x, y, 7 * u, 1.6 * u, 0, 0, TAU); c.fill();
-        [[-4, 8, 0], [0, 12, 1.3], [4, 7, 2.6]].forEach(([dx, h, ph]) => crystal(c, x + dx * u, y - 3 * u - Math.sin(t * 1.6 + ph) * 1.5 * u, h * u * 0.7, '200,140,255'));
-        for (let i = 0; i < 6; i++) { const q = t * 1.2 + i; c.fillStyle = `rgba(230,200,255,${0.5 + Math.sin(t * 4 + i) * 0.4})`; c.beginPath(); c.arc(x + Math.cos(q) * 8 * u, y - 6 * u + Math.sin(q) * 3 * u, 0.5 * u, 0, TAU); c.fill(); }
-        break;
-      }
-      case 'rift': {
-        glow(c, x, y - 7 * u, 16 * u, '230,80,255', 0.35);
-        c.save(); c.translate(x, y - 7 * u);
-        c.fillStyle = 'rgba(20,0,30,0.9)'; c.beginPath(); c.ellipse(0, 0, 3.2 * u, 6 * u, 0, 0, TAU); c.fill();
-        for (let i = 0; i < 5; i++) {
-          c.strokeStyle = i % 2 ? `rgba(120,220,255,${0.7 - i * 0.1})` : `rgba(240,110,255,${0.8 - i * 0.1})`; c.lineWidth = 0.8 * u;
-          c.beginPath(); c.ellipse(0, 0, (3.4 + i * 0.7) * u, (6.2 + i * 0.9) * u, 0, t * (1.5 + i * 0.3) + i, t * (1.5 + i * 0.3) + i + 3.6); c.stroke();
-        }
-        for (let i = 0; i < 6; i++) { const k = (t * 0.5 + i / 6) % 1, q = i * 1.05 + t; c.fillStyle = `rgba(250,200,255,${1 - k})`; c.beginPath(); c.arc(Math.cos(q) * k * 10 * u, Math.sin(q) * k * 10 * u, 0.5 * u, 0, TAU); c.fill(); }
-        c.restore();
-        break;
-      }
-      case 'stones': {
-        const p = 0.5 + Math.sin(t * 1.5) * 0.5;
-        glow(c, x, y - 2 * u, 12 * u, '110,220,255', 0.15 + p * 0.2);
-        c.fillStyle = `rgba(140,230,255,${0.15 + p * 0.2})`; c.fillRect(x - 0.6 * u, y - 18 * u, 1.2 * u, 18 * u);
-        for (let i = 0; i < 7; i++) {
-          const q = (i / 7) * TAU, sx = x + Math.cos(q) * 7 * u, sy = y + Math.sin(q) * 2.4 * u;
-          c.fillStyle = '#6a6c6a'; c.fillRect(sx - 1 * u, sy - 4 * u, 2 * u, 4 * u);
-          c.fillStyle = `rgba(140,230,255,${0.4 + p * 0.6})`; c.fillRect(sx - 0.4 * u, sy - 3 * u, 0.8 * u, 0.8 * u);
-        }
-        break;
-      }
-      case 'kraken': {
-        for (let i = 0; i < 3; i++) { const k = (t * 0.4 + i / 3) % 1; c.strokeStyle = `rgba(200,230,255,${0.5 * (1 - k)})`; c.lineWidth = 0.6; c.beginPath(); c.ellipse(x, y, (3 + k * 9) * u, (1 + k * 3) * u, 0, 0, TAU); c.stroke(); }
-        c.strokeStyle = '#7a2a4a'; c.lineCap = 'round';
-        for (let i = 0; i < 4; i++) {
-          const bx = x + (i - 1.5) * 3.2 * u, h = (6 + Math.sin(t * 1.7 + i * 1.3) * 2.5) * u, curl = Math.sin(t * 1.3 + i) * 3 * u;
-          c.lineWidth = 1.4 * u;
-          c.beginPath(); c.moveTo(bx, y); c.quadraticCurveTo(bx + curl, y - h * 0.6, bx + curl * 0.4 + (i % 2 ? 2 : -2) * u, y - h); c.stroke();
-          c.lineWidth = 0.5 * u; c.strokeStyle = '#d88aa8'; c.stroke(); c.strokeStyle = '#7a2a4a';
-        }
-        break;
-      }
-      case 'ship': {
-        glow(c, x, y - 4 * u, 12 * u, '150,255,200', 0.2);
-        c.globalAlpha *= 0.65 + Math.sin(t * 1.4) * 0.2;
-        c.save(); c.translate(x, y + Math.sin(t * 2) * 0.5 * u);
-        c.fillStyle = 'rgba(160,240,210,0.75)';
-        c.beginPath(); c.moveTo(-6 * u, -2 * u); c.lineTo(6 * u, -2 * u); c.lineTo(4 * u, 0.5 * u); c.lineTo(-4.5 * u, 0.5 * u); c.closePath(); c.fill();
-        c.strokeStyle = 'rgba(160,240,210,0.8)'; c.lineWidth = 0.5 * u;
-        for (const mx of [-2, 2]) {
-          c.beginPath(); c.moveTo(mx * u, -2 * u); c.lineTo(mx * u, -10 * u); c.stroke();
-          c.fillStyle = 'rgba(200,255,230,0.55)'; c.beginPath(); c.moveTo(mx * u, -9.5 * u); c.quadraticCurveTo((mx + 3 + Math.sin(t * 2) * 0.6) * u, -7 * u, mx * u, -4 * u); c.closePath(); c.fill();
-        }
-        c.restore();
-        break;
-      }
-      case 'tree': {
-        glow(c, x, y - 9 * u, 15 * u, '255,220,120', 0.3);
-        c.fillStyle = '#4a3422'; c.beginPath(); c.moveTo(x - 1.6 * u, y); c.lineTo(x - 0.8 * u, y - 8 * u); c.lineTo(x + 0.8 * u, y - 8 * u); c.lineTo(x + 1.6 * u, y); c.fill();
-        for (const [dx, dy, r] of [[0, -12, 5], [-4, -9.5, 3.6], [4, -9.5, 3.6], [-2.4, -14, 3.2], [2.6, -14, 3.2]]) { c.fillStyle = rg(c, x + dx * u, y + dy * u, r * u, '#c8d86a', '#3a6a2a'); c.beginPath(); c.arc(x + dx * u, y + dy * u, r * u, 0, TAU); c.fill(); }
-        for (let i = 0; i < 6; i++) { const k = (t * 0.3 + i / 6) % 1; c.fillStyle = `rgba(255,240,160,${1 - k})`; c.beginPath(); c.arc(x + Math.sin(i * 2.5 + t) * 6 * u, y - 6 * u - k * 12 * u, 0.5 * u, 0, TAU); c.fill(); }
-        break;
-      }
-      case 'island': {
-        const hov = Math.sin(t * 1.2) * 1.2 * u, iy = y - 10 * u + hov;
-        c.fillStyle = 'rgba(0,0,0,0.25)'; c.beginPath(); c.ellipse(x, y, 6 * u, 1.6 * u, 0, 0, TAU); c.fill();
-        c.fillStyle = '#5a4a3a'; c.beginPath(); c.moveTo(x - 6 * u, iy); c.lineTo(x + 6 * u, iy); c.lineTo(x + 1 * u, iy + 6 * u); c.lineTo(x - 1.5 * u, iy + 5 * u); c.closePath(); c.fill();
-        c.fillStyle = '#5a8a3a'; c.beginPath(); c.ellipse(x, iy, 6 * u, 1.4 * u, 0, 0, TAU); c.fill();
-        c.fillStyle = '#d8d0c0'; c.fillRect(x - 1 * u, iy - 3 * u, 2.4 * u, 2.4 * u); c.fillStyle = '#8a3a2a'; c.beginPath(); c.moveTo(x - 1.4 * u, iy - 3 * u); c.lineTo(x + 0.2 * u, iy - 4.6 * u); c.lineTo(x + 1.8 * u, iy - 3 * u); c.fill();
-        c.strokeStyle = `rgba(170,220,255,${0.6 + Math.sin(t * 6) * 0.2})`; c.lineWidth = 0.7 * u; c.beginPath(); c.moveTo(x + 4 * u, iy + 0.5 * u); c.lineTo(x + 4.4 * u, y - 1 * u); c.stroke();
-        break;
-      }
-      case 'dragon': {
-        c.fillStyle = '#4a3a34'; c.beginPath(); c.moveTo(x - 7 * u, y); c.lineTo(x - 1 * u, y - 7 * u); c.lineTo(x + 7 * u, y); c.fill();
-        const q = t * 0.7, dx = x + Math.cos(q) * 11 * u, dy = y - 11 * u + Math.sin(q) * 3.5 * u, face = -Math.sin(q) >= 0 ? 1 : -1;
-        c.save(); c.translate(dx, dy); c.scale(face, 1);
-        const flap = Math.sin(t * 7) * 2.5 * u;
-        c.fillStyle = '#a8302a';
-        c.beginPath(); c.moveTo(-1 * u, 0); c.lineTo(-3 * u, -3 * u - flap); c.lineTo(1 * u, -0.5 * u); c.fill();
-        c.beginPath(); c.ellipse(0, 0, 3 * u, 1 * u, 0, 0, TAU); c.fill();
-        c.beginPath(); c.moveTo(-3 * u, 0); c.lineTo(-6 * u, 0.6 * u); c.lineTo(-3 * u, 0.6 * u); c.fill();
-        c.beginPath(); c.arc(3.2 * u, -0.4 * u, 0.9 * u, 0, TAU); c.fill();
-        if (Math.sin(t * 0.9) > 0.55) for (let i = 0; i < 6; i++) { const k = (t * 3 + i / 6) % 1; c.fillStyle = `rgba(255,${180 - i * 15},60,${1 - k})`; c.beginPath(); c.arc((4 + k * 6) * u, (k * 2.5) * u, (0.6 + k * 0.8) * u, 0, TAU); c.fill(); }
-        c.restore();
-        break;
-      }
-      case 'temple': {
-        const p = 0.6 + Math.sin(t * 2) * 0.25;
-        c.fillStyle = `rgba(255,230,150,${0.25 * p})`; c.beginPath(); c.moveTo(x - 1.2 * u, y - 7 * u); c.lineTo(x + 1.2 * u, y - 7 * u); c.lineTo(x + 3 * u, y - 26 * u); c.lineTo(x - 3 * u, y - 26 * u); c.fill();
-        c.beginPath(); c.moveTo(x - 7 * u, y); c.lineTo(x, y - 7.5 * u); c.lineTo(x + 7 * u, y); c.closePath();
-        const g = c.createLinearGradient(x - 7 * u, 0, x + 7 * u, 0); g.addColorStop(0, '#d8b878'); g.addColorStop(0.5, '#b8945a'); g.addColorStop(1, '#7a5a34'); c.fillStyle = g; c.fill();
-        glow(c, x, y - 7 * u, 4 * u, '255,240,170', p);
-        break;
-      }
-      case 'ufo': {
-        const hov = Math.sin(t * 1.8) * 1 * u, uy = y - 11 * u + hov;
-        c.fillStyle = `rgba(160,255,200,${0.18 + Math.sin(t * 5) * 0.06})`; c.beginPath(); c.moveTo(x - 1.6 * u, uy); c.lineTo(x + 1.6 * u, uy); c.lineTo(x + 4 * u, y); c.lineTo(x - 4 * u, y); c.fill();
-        c.fillStyle = '#e8e4da'; c.beginPath(); c.ellipse(x - 0.5 * u, y - 1 * u - ((t * 0.3) % 1) * 8 * u, 1.2 * u, 0.7 * u, 0, 0, TAU); c.fill();
-        c.fillStyle = '#9aa4ac'; c.beginPath(); c.ellipse(x, uy, 5 * u, 1.4 * u, 0, 0, TAU); c.fill();
-        c.fillStyle = 'rgba(150,230,255,0.85)'; c.beginPath(); c.ellipse(x, uy - 1 * u, 2.2 * u, 1.4 * u, 0, Math.PI, TAU); c.fill();
-        for (let i = 0; i < 5; i++) { c.fillStyle = Math.sin(t * 6 + i) > 0 ? '#ffe070' : '#ff6a5a'; c.beginPath(); c.arc(x + (i - 2) * 2 * u, uy + 0.4 * u, 0.4 * u, 0, TAU); c.fill(); }
-        break;
-      }
-      case 'well': {
-        glow(c, x, y - 1 * u, 11 * u, '150,200,255', 0.35 + Math.sin(t * 1.5) * 0.1);
-        c.fillStyle = '#7a7a74'; c.beginPath(); c.ellipse(x, y, 6 * u, 2.4 * u, 0, 0, TAU); c.fill();
-        c.fillStyle = rg(c, x, y, 5 * u, 'rgba(230,245,255,1)', 'rgba(80,150,255,0.9)'); c.beginPath(); c.ellipse(x, y, 4.8 * u, 1.8 * u, 0, 0, TAU); c.fill();
-        for (let i = 0; i < 5; i++) { const k = (t * 0.35 + i / 5) % 1; c.fillStyle = `rgba(200,230,255,${1 - k})`; c.beginPath(); c.arc(x + Math.sin(i * 3 + t) * 3 * u, y - k * 10 * u, 0.45 * u, 0, TAU); c.fill(); }
-        break;
-      }
-      case 'zero': {
-        smoke(c, x, y - 3 * u, u, t, 7, '110,200,80', 12);
-        c.fillStyle = '#5a6066'; c.fillRect(x - 4 * u, y - 4 * u, 8 * u, 4 * u);
-        c.fillStyle = '#3a4046'; c.fillRect(x - 1.5 * u, y - 7 * u, 3 * u, 3 * u);
-        c.fillStyle = `rgba(140,255,100,${0.6 + Math.sin(t * 7) * 0.3})`; c.fillRect(x - 3 * u, y - 3 * u, 1.2 * u, 1 * u); c.fillRect(x + 1.8 * u, y - 3 * u, 1.2 * u, 1 * u);
-        glow(c, x, y - 2 * u, 12 * u, '120,255,90', 0.22);
-        break;
-      }
-    }
-  }
-
   // ---------- aurora, moon, meteors ----------
   function drawAurora(c, cx, cy, R, t) {
     // curtains of light rays around the north pole, shimmering as they ripple
@@ -525,11 +312,18 @@ const Globe = (() => {
     list.sort((a, b) => a.p.z - b.p.z);
     wonderHits = [];
     for (const o of list) {
-      const u = (R / 62) * (0.55 + 0.45 * o.p.z);
-      c.save(); c.globalAlpha = clamp((o.p.z - 0.08) * 4, 0, 1);
-      drawWonder(c, o.w, o.x, o.y, u, t);
+      const { p } = o;
+      // lit like the planet beneath it, tilted to follow the curve of the globe near the edge
+      const lam = p.x * SUN[0] + p.y * SUN[1] + p.z * SUN[2];
+      const light = clamp(0.14 + Math.max(0, lam) * 1.05, 0.12, 1);
+      const rr = Math.hypot(p.x, p.y), tilt = Math.atan2(p.x, p.y) * rr * rr * rr * 0.4;
+      const size = (R / 62) * (0.55 + 0.45 * p.z) * 24;
+      c.save();
+      c.globalAlpha = clamp((p.z - 0.08) * 4, 0, 1);
+      c.translate(o.x, o.y); c.rotate(tilt); c.scale(1, 0.82 + 0.18 * p.z);
+      WART.draw(c, o.w.kind, size, t, light);
       c.restore();
-      wonderHits.push({ w: o.w, x: o.x, y: o.y - 6 * u, r: 11 * u });
+      wonderHits.push({ w: o.w, x: o.x, y: o.y - size * 0.3, r: size * 0.42 });
     }
   }
   function drawInspect(c, cx, cy, R, S) {

@@ -10,6 +10,7 @@ const ASSETS = [
   'js/levels.js',
   'js/art.js',
   'js/zombies.js',
+  'js/wonders.js',
   'js/globe.js',
   'js/menufx.js',
   'js/audio.js',
