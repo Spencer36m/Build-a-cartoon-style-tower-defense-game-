@@ -214,7 +214,7 @@ function drawWater(c, M) {
   blob(TILE * 0.66); c.clip();
   c.fillStyle = linear(c, 0, 0, W, H, [[0, shade(world.water, 0.12)], [1, shade(world.water, -0.2)]]);
   c.globalAlpha = 0.7; c.fillRect(0, 0, W, H); c.globalAlpha = 1;
-  blob(TILE * 0.34); c.fillStyle = shade(world.water, -0.28); c.globalAlpha = 0.55; c.fill(); c.globalAlpha = 1;
+  blob(TILE * 0.5); c.fillStyle = shade(world.water, -0.22); c.globalAlpha = 0.45; c.fill(); c.globalAlpha = 1;
   if (world.id === 'tundra') {
     // ice sheet cracks
     const rng = mulberry32(M.L.look.seed + 9);
@@ -465,211 +465,6 @@ function drawSafehouse(c, x, y, t, hit, night) {
 // ============================================================
 // Zombies
 // ============================================================
-function zombieColors(e, def) {
-  const L = def.look;
-  const slowed = e.slowT > 0 && !def.noSlow;
-  const tint = (h) => (slowed ? mix(h, '#bfe6ff', 0.4) : h);
-  return { skin: tint(L.skin || '#8c9a72'), shirt: tint(L.shirt || '#5a4a3a'), hair: L.hair || '#2c241c' };
-}
-
-function drawZombie(c, e, t, lights) {
-  const def = ZOMBIES[e.type], L = def.look;
-  const r = e.r;
-  const ang = Math.atan2(e.diry, e.dirx);
-  const kind = L.kind;
-  const fly = def.fly;
-  const walk = t * (def.speed > 70 ? 11 : 6.5) + e.phase;
-
-  if (e.burrowed) {
-    c.save(); c.translate(e.x, e.y); c.rotate(ang);
-    ellipse(c, 0, 0, r * 1.1, r * 0.8); c.fillStyle = radial(c, 0, 0, r, '#7a6248', '#3e3022'); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,0.4)'; c.lineWidth = 1;
-    for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-r * 0.6 + i * 4, -3 + (i % 2) * 5); c.lineTo(-r * 0.2 + i * 4, 1); c.stroke(); }
-    if (e.revealed) { c.strokeStyle = 'rgba(120,220,255,0.8)'; c.lineWidth = 1.5; circle(c, 0, 0, r * 1.3); c.stroke(); }
-    c.restore();
-    return;
-  }
-
-  const { skin, shirt, hair } = zombieColors(e, def);
-  c.save();
-  if (fly) {
-    // high in the air: shadow drawn far down-right and small
-    c.save(); c.translate(e.x + 14, e.y + 20); c.rotate(ang);
-    ellipse(c, 0, 0, r * 0.9, r * 0.5); c.fillStyle = 'rgba(0,0,0,0.22)'; c.fill();
-    c.restore();
-  }
-  c.translate(e.x, e.y);
-  c.rotate(ang);
-  const wide = L.wide ? 1.3 : 1;
-
-  if (kind === 'crow') {
-    const flap = Math.sin(t * 18 + e.phase);
-    c.fillStyle = '#16161a';
-    for (const s of [-1, 1]) {
-      c.beginPath(); c.moveTo(-2, 0); c.quadraticCurveTo(-4, s * r * (1.4 + flap * 0.5), -10, s * r * (1.7 + flap * 0.6)); c.lineTo(2, s * 2); c.closePath(); c.fill();
-    }
-    ellipse(c, 0, 0, r * 0.8, r * 0.32); c.fill();
-    circle(c, r * 0.7, 0, r * 0.28); c.fill();
-    c.fillStyle = '#c9a13a'; c.beginPath(); c.moveTo(r * 0.9, -1.5); c.lineTo(r * 1.25, 0); c.lineTo(r * 0.9, 1.5); c.fill();
-    c.fillStyle = '#d23c2c'; circle(c, r * 0.78, -1.6, 0.9); c.fill();
-  } else if (kind === 'bat') {
-    for (let i = 0; i < 5; i++) {
-      const a = i * 1.3 + t * 3 + e.phase, d = r * 0.7;
-      const bx = Math.cos(a) * d, by = Math.sin(a * 1.3) * d;
-      const flap = Math.sin(t * 25 + i * 2);
-      c.fillStyle = '#231a22';
-      c.beginPath();
-      c.moveTo(bx + 2, by); c.lineTo(bx - 1, by - 4 - flap * 2.5); c.lineTo(bx - 3, by - 1); c.lineTo(bx - 1, by + 4 + flap * 2.5); c.closePath(); c.fill();
-      circle(c, bx, by, 1.8); c.fill();
-      c.fillStyle = '#ff5a3c'; circle(c, bx + 1.2, by - 0.6, 0.5); c.fill();
-    }
-  } else if (kind === 'ghost') {
-    const wob = Math.sin(t * 3 + e.phase);
-    const g = c.createRadialGradient(0, 0, 1, -r * 0.4, 0, r * 1.6);
-    g.addColorStop(0, 'rgba(225,235,240,0.85)'); g.addColorStop(0.5, 'rgba(170,190,200,0.45)'); g.addColorStop(1, 'rgba(150,170,180,0)');
-    c.fillStyle = g;
-    c.beginPath();
-    c.moveTo(r * 0.8, 0);
-    c.quadraticCurveTo(r * 0.6, -r * 0.9, -r * 0.3, -r * 0.7);
-    c.quadraticCurveTo(-r * 1.6, -r * 0.3 + wob * 3, -r * 2.2, wob * 4);
-    c.quadraticCurveTo(-r * 1.6, r * 0.3 + wob * 3, -r * 0.3, r * 0.7);
-    c.quadraticCurveTo(r * 0.6, r * 0.9, r * 0.8, 0);
-    c.fill();
-    c.fillStyle = '#d8f4ff';
-    circle(c, r * 0.35, -r * 0.22, 1.6); c.fill(); circle(c, r * 0.35, r * 0.22, 1.6); c.fill();
-    if (lights) lights.push({ x: e.x, y: e.y, r: r * 2.5, color: '150,210,255', a: 0.35 });
-  } else if (kind === 'bloater') {
-    ellipse(c, 4, 5, r * 1.05, r); c.fillStyle = SHADOW; c.fill();
-    // little legs and arms
-    const step = Math.sin(walk) * 3;
-    c.fillStyle = shade(L.skin, -0.3);
-    ellipse(c, -r * 0.3 + step, -r * 0.7, 4, 3); c.fill(); ellipse(c, -r * 0.3 - step, r * 0.7, 4, 3); c.fill();
-    circle(c, 0, 0, r); c.fillStyle = radial(c, 0, 0, r, shade(skin, 0.2), shade(skin, -0.35)); c.fill();
-    c.strokeStyle = 'rgba(70,40,60,0.45)'; c.lineWidth = 1;
-    for (let i = 0; i < 6; i++) { const a = i + e.phase; c.beginPath(); c.moveTo(Math.cos(a) * r * 0.2, Math.sin(a) * r * 0.2); c.quadraticCurveTo(Math.cos(a + 0.4) * r * 0.6, Math.sin(a + 0.4) * r * 0.6, Math.cos(a) * r * 0.9, Math.sin(a) * r * 0.9); c.stroke(); }
-    for (let i = 0; i < 5; i++) { const a = i * 1.7 + e.phase; circle(c, Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, 1.5 + (i % 3)); c.fillStyle = 'rgba(210,220,120,0.7)'; c.fill(); }
-    circle(c, r * 0.85, 0, r * 0.32); c.fillStyle = radial(c, r * 0.85, 0, r * 0.32, shade(skin, 0.1), shade(skin, -0.3)); c.fill();
-  } else if (kind === 'giant') {
-    ellipse(c, 5, 6, r * 0.85, r * 1.2); c.fillStyle = SHADOW; c.fill();
-    const sw = Math.sin(walk) * 4;
-    for (const s of [-1, 1]) {
-      c.save(); c.translate(0, s * r * 0.8); c.rotate(s * 0.15 + Math.sin(walk + s) * 0.08);
-      rr(c, -2, -r * 0.22, r * 1.1 + sw * s, r * 0.44, r * 0.2); c.fillStyle = radial(c, r * 0.4, 0, r * 0.7, shade(skin, 0.1), shade(skin, -0.35)); c.fill();
-      c.restore();
-    }
-    ellipse(c, 0, 0, r * 0.65, r * 1.05); c.fillStyle = radial(c, 0, 0, r, shade(skin, 0.15), shade(skin, -0.4)); c.fill();
-    for (let i = 0; i < 6; i++) { star(c, -r * 0.2 + (i % 2) * 4, -r * 0.6 + i * r * 0.24, 4, 1.5, 4, i); c.fillStyle = 'rgba(220,240,255,0.9)'; c.fill(); }
-    circle(c, r * 0.35, 0, r * 0.32); c.fillStyle = radial(c, r * 0.35, 0, r * 0.32, shade(skin, 0.1), shade(skin, -0.3)); c.fill();
-    c.fillStyle = '#9fe3ff'; circle(c, r * 0.58, -r * 0.1, 1.8); c.fill(); circle(c, r * 0.58, r * 0.1, 1.8); c.fill();
-    if (lights) lights.push({ x: e.x, y: e.y, r: r * 1.6, color: '160,220,255', a: 0.25 });
-  } else {
-    // humans, skeletons and the rest walk upright: legs, reaching arms, shoulders, head
-    const skel = kind === 'skeleton';
-    const small = L.small;
-    const sx = small ? 1.25 : L.lean ? 1.15 : 1;
-    ellipse(c, 4, 5, r * 0.75 * sx, r * 0.85 * wide); c.fillStyle = SHADOW; c.fill();
-    // feet step out in front of and behind the body
-    const stride = Math.sin(walk) * r * 0.62;
-    const legCol = skel ? '#d8d2c0' : '#2a2520';
-    c.fillStyle = legCol;
-    ellipse(c, stride - r * 0.05, -r * 0.3 * wide, r * 0.3, r * 0.15); c.fill();
-    ellipse(c, -stride - r * 0.05, r * 0.3 * wide, r * 0.3, r * 0.15); c.fill();
-    // arms reach forward, swaying slightly out of step
-    for (const s of [-1, 1]) {
-      const reach = r * (small ? 0.9 : 1.05) + Math.sin(walk + s) * r * 0.12;
-      c.save(); c.translate(0, s * r * 0.52 * wide); c.rotate(-s * 0.12);
-      rr(c, 0, -r * (skel ? 0.08 : 0.13), reach, r * (skel ? 0.16 : 0.26), r * 0.12);
-      c.fillStyle = skel ? '#d8d2c0' : linear(c, 0, -r * 0.13, 0, r * 0.13, [[0, shade(skin, 0.12)], [1, shade(skin, -0.25)]]);
-      c.fill();
-      circle(c, reach, 0, r * (skel ? 0.12 : 0.17)); c.fillStyle = skel ? '#cfc8b4' : shade(skin, -0.1); c.fill();
-      c.restore();
-    }
-    // shoulders / torso
-    ellipse(c, 0, 0, r * 0.48 * sx, r * 0.78 * wide);
-    if (skel) {
-      c.fillStyle = 'rgba(40,36,30,0.45)'; c.fill();
-      c.strokeStyle = '#ddd6c2'; c.lineWidth = 2; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(-r * 0.4, 0); c.lineTo(r * 0.3, 0); c.stroke();
-      for (let i = -2; i <= 1; i++) { c.beginPath(); c.moveTo(i * r * 0.16, 0); c.quadraticCurveTo(i * r * 0.16 + 2, -r * 0.6, i * r * 0.16 - 1, -r * 0.62); c.moveTo(i * r * 0.16, 0); c.quadraticCurveTo(i * r * 0.16 + 2, r * 0.6, i * r * 0.16 - 1, r * 0.62); c.stroke(); }
-    } else {
-      c.fillStyle = radial(c, 0, 0, r * 0.8, shade(shirt, 0.18), shade(shirt, -0.4)); c.fill();
-      // torn cloth and stains
-      c.fillStyle = 'rgba(70,15,12,0.55)';
-      ellipse(c, -r * 0.15, r * 0.25 * ((e.phase * 10) % 2 > 1 ? 1 : -1), r * 0.18, r * 0.12); c.fill();
-      if (L.gear === 'plate') {
-        for (const s of [-1, 1]) { rr(c, -r * 0.35, s * r * 0.35 - r * 0.22, r * 0.7, r * 0.44, 3); c.fillStyle = linear(c, 0, -r, 0, r, [[0, '#9a9ea3'], [1, '#4a4d52']]); c.fill(); }
-      }
-      if (L.cross) { c.fillStyle = '#b83228'; c.fillRect(-r * 0.32, -r * 0.08, r * 0.4, r * 0.16); c.fillRect(-r * 0.2, -r * 0.2, r * 0.16, r * 0.4); }
-      if (L.gear === 'hood') { ellipse(c, -r * 0.05, 0, r * 0.5 * sx, r * 0.72 * wide); c.fillStyle = 'rgba(15,10,25,0.35)'; c.fill(); }
-    }
-    // head
-    const hr = r * (small ? 0.36 : 0.38) * (L.wide ? 1.1 : 1);
-    const hx = r * (small ? 0.3 : 0.08);
-    circle(c, hx, 0, hr);
-    c.fillStyle = skel ? radial(c, hx, 0, hr, '#efeadc', '#a49d88') : radial(c, hx, 0, hr, shade(skin, 0.15), shade(skin, -0.3));
-    c.fill();
-    if (skel) {
-      c.fillStyle = '#1b1814'; circle(c, hx + hr * 0.45, -hr * 0.35, hr * 0.22); c.fill(); circle(c, hx + hr * 0.45, hr * 0.35, hr * 0.22); c.fill();
-    } else if (!L.gear || L.gear === 'plate') {
-      // matted hair on the back of the head
-      c.beginPath(); c.arc(hx, 0, hr, Math.PI * 0.55, Math.PI * 1.45); c.closePath(); c.fillStyle = hair; c.fill();
-      if (L.gear === 'plate') { circle(c, hx, 0, hr * 1.05); c.fillStyle = linear(c, hx, -hr, hx, hr, [[0, '#8e9298'], [1, '#45484c']]); c.fill(); c.fillStyle = '#111'; c.fillRect(hx + hr * 0.3, -hr * 0.6, hr * 0.25, hr * 1.2); }
-    }
-    switch (L.gear) {
-      case 'cone':
-        circle(c, hx, 0, hr * 1.25); c.fillStyle = '#d4602a'; c.fill();
-        circle(c, hx, 0, hr * 0.85); c.fillStyle = '#e9e4dc'; c.fill();
-        circle(c, hx, 0, hr * 0.55); c.fillStyle = radial(c, hx, 0, hr * 0.55, '#f08a4a', '#b8461c'); c.fill();
-        break;
-      case 'riot':
-        circle(c, hx, 0, hr * 1.18); c.fillStyle = radial(c, hx, 0, hr * 1.18, '#5a6068', '#15181c'); c.fill();
-        c.fillStyle = 'rgba(140,170,190,0.55)'; c.beginPath(); c.arc(hx, 0, hr * 1.12, -0.9, 0.9); c.closePath(); c.fill();
-        break;
-      case 'hardhat':
-        ellipse(c, hx, 0, hr * 1.25, hr * 1.15); c.fillStyle = '#c9a227'; c.fill();
-        circle(c, hx, 0, hr * 0.9); c.fillStyle = radial(c, hx, 0, hr * 0.9, '#f2d35a', '#a8821a'); c.fill();
-        c.fillStyle = '#fff6c2'; circle(c, hx + hr * 0.85, 0, 1.6); c.fill();
-        if (lights) lights.push({ x: e.x + Math.cos(ang) * (hx + hr + 4), y: e.y + Math.sin(ang) * (hx + hr + 4), r: 22, color: '255,240,180', a: 0.35 });
-        break;
-      case 'hood':
-        circle(c, hx - 1, 0, hr * 1.2); c.fillStyle = radial(c, hx - 1, 0, hr * 1.2, shade(shirt, 0.15), shade(shirt, -0.45)); c.fill();
-        c.fillStyle = '#0c0a10'; c.beginPath(); c.arc(hx, 0, hr * 0.8, -0.7, 0.7); c.closePath(); c.fill();
-        break;
-      case 'mask':
-        c.beginPath(); c.moveTo(hx + hr * 0.5, -hr * 0.4); c.lineTo(hx + hr * 2, 0); c.lineTo(hx + hr * 0.5, hr * 0.4); c.closePath(); c.fillStyle = '#d9cfb8'; c.fill();
-        c.fillStyle = '#2a2420'; circle(c, hx, 0, hr * 0.95); c.fill();
-        break;
-      case 'ice':
-        for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; c.beginPath(); c.moveTo(hx + Math.cos(a) * hr * 0.5, Math.sin(a) * hr * 0.5); c.lineTo(hx + Math.cos(a + 0.2) * hr * 1.5, Math.sin(a + 0.2) * hr * 1.5); c.lineTo(hx + Math.cos(a + 0.5) * hr * 0.6, Math.sin(a + 0.5) * hr * 0.6); c.fillStyle = 'rgba(220,245,255,0.9)'; c.fill(); }
-        break;
-      case 'straw':
-        circle(c, hx, 0, hr * 1.9); c.fillStyle = radial(c, hx, 0, hr * 1.9, '#d8bf72', '#8a7234'); c.fill();
-        c.strokeStyle = 'rgba(90,70,30,0.45)'; c.lineWidth = 1; circle(c, hx, 0, hr * 1.3); c.stroke(); circle(c, hx, 0, hr * 0.8); c.stroke();
-        break;
-    }
-    if (L.staff) {
-      c.strokeStyle = '#4a3a2a'; c.lineWidth = 2.2;
-      c.beginPath(); c.moveTo(-r * 0.2, r * 0.65 * wide); c.lineTo(r * 1.4, r * 0.75 * wide); c.stroke();
-      circle(c, r * 1.45, r * 0.75 * wide, 3.2); c.fillStyle = '#9dff6a'; c.fill();
-      if (lights) lights.push({ x: e.x + Math.cos(ang) * r * 1.45 - Math.sin(ang) * r * 0.75 * wide, y: e.y + Math.sin(ang) * r * 1.45 + Math.cos(ang) * r * 0.75 * wide, r: 26, color: '150,255,110', a: 0.55 });
-    }
-    if (L.scythe) {
-      c.strokeStyle = '#4a3a2a'; c.lineWidth = 2.5;
-      c.beginPath(); c.moveTo(-r * 0.3, -r * 0.7 * wide); c.lineTo(r * 1.3, -r * 0.9 * wide); c.stroke();
-      c.strokeStyle = '#b9bcc0'; c.lineWidth = 3;
-      c.beginPath(); c.arc(r * 1.3, -r * 0.3 * wide, r * 0.6, -Math.PI / 2, Math.PI * 0.15); c.stroke();
-    }
-  }
-  // hit flash, frost and fire
-  if (e.flash > 0) { c.globalAlpha = 0.5; circle(c, 0, 0, r * 0.9); c.fillStyle = '#ffffff'; c.fill(); c.globalAlpha = 1; }
-  if (e.slowT > 0 && !def.noSlow) {
-    c.fillStyle = 'rgba(200,240,255,0.85)';
-    for (let i = 0; i < 4; i++) { const a = i * 1.6 + e.phase; star(c, Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6, 2.6, 1, 4, a); c.fill(); }
-  }
-  c.restore();
-  if (e.burnT > 0 && lights) lights.push({ x: e.x, y: e.y, r: r * 2.6, color: '255,140,50', a: 0.5 });
-}
-
 function drawHealthBar(c, e) {
   const def = ZOMBIES[e.type];
   if (def.boss && !def.mini) return; // bosses get the big plate at the top
@@ -887,12 +682,11 @@ function drawTowerIcon(c, type, level, size) {
 }
 
 function drawZombieIcon(c, type, size) {
-  const def = ZOMBIES[type];
-  const k = (size * 0.4) / Math.max(10, def.r * (def.look.kind === 'ghost' ? 1.4 : 1.1));
+  const spr = ZART.get(type, 0);
+  const k = size / spr.B * 1.05;
   c.save();
   c.translate(size / 2, size / 2);
-  c.scale(k, k);
   c.rotate(-Math.PI / 2);
-  drawZombie(c, { type, r: def.r, x: 0, y: 0, dirx: 1, diry: 0, phase: 0.6, flash: 0, slowT: 0, burnT: 0, hp: 1, maxHp: 1, armor: 0 }, 0.3, null);
+  c.drawImage(spr.frames[2], -spr.B * k / 2, -spr.B * k / 2, spr.B * k, spr.B * k);
   c.restore();
 }

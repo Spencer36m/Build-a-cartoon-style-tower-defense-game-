@@ -229,6 +229,7 @@ function startGame(index, save) {
   setPaused(false);
   initWeather();
   hideScreens();
+  ZART.prewarm([...new Set([...L.pool.map(([t]) => t), ...(L.boss ? [L.boss] : []), 'imp', 'skeleton', 'runner'])]);
   $('#st-id').textContent = L.id;
   $('#st-name').textContent = L.name;
   resize();
@@ -375,6 +376,7 @@ function spawnEnemy(type, wave, route, d = 0) {
     r: def.r, d, x: -60, y: -60, dirx: 1, diry: 0,
     cur: def.speed, slowT: 0, slowF: 0, burnT: 0, burnDps: 0, burnSrc: null, flash: 0,
     phase: Math.random() * TAU, dead: false, burrowed: false, revealed: false,
+    variant: Math.floor(Math.random() * ZART.variants(type)), size: rand(0.94, 1.06),
     sumCd: def.summon ? def.summon.every * 0.6 : 0, healCd: def.heal ? def.heal.every : 0, stompCd: def.stomp ? def.stomp.every * 0.5 : 0,
   };
   placeOnPath(z);
@@ -1830,4 +1832,4 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { bu
 requestAnimationFrame(frame);
 
 // Small hook for automated tests and tinkering in the console.
-window.ZombieBash = { S, meta, LEVEL_META, getLevel, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, selectLevel, usePower, callAirstrike, saveMeta };
+window.ZombieBash = { S, meta, LEVEL_META, getLevel, spawnEnemy, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, selectLevel, usePower, callAirstrike, saveMeta };

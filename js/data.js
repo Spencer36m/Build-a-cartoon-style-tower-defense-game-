@@ -43,7 +43,11 @@ function mix(a, b, k) {
   return `rgb(${Math.round(lerp(A[0], B[0], k))},${Math.round(lerp(A[1], B[1], k))},${Math.round(lerp(A[2], B[2], k))})`;
 }
 function shade(h, k) { return k >= 0 ? mix(h, '#ffffff', k) : mix(h, '#000000', -k); }
-function rgba(h, a) { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; }
+function rgba(h, a) {
+  const m = h[0] === '#' ? null : h.match(/\d+(\.\d+)?/g);
+  const [r, g, b] = m ? m.slice(0, 3).map(Number) : hexRgb(h);
+  return `rgba(${r},${g},${b},${a})`;
+}
 
 // ============================================================
 // Worlds
