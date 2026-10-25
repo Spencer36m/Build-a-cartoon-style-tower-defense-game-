@@ -29,7 +29,11 @@ function mulberry32(seed) {
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } },
+  remove(k) { try { localStorage.removeItem(k); } catch (e) { /* storage unavailable */ } },
 };
+const SAVE_KEY = 'blobbash.save';
+const coarse = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
+const buzz = (ms) => { try { if (!Sound.muted && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* no haptics */ } };
 
 // ============================================================
 // Data: maps, enemies, towers, waves
@@ -692,8 +696,8 @@ const S = {
   towers: [], enemies: [], projectiles: [], fx: [], decals: [], spawners: [],
   towerAt: new Map(),
   speed: 1, paused: false, auto: false, autoT: 0, endless: false,
-  placing: null, selected: null,
-  hover: { x: 0, y: 0, col: -1, row: -1, inside: false },
+  placing: null, selected: null, pending: null, dirty: false,
+  hover: { x: 0, y: 0, col: -1, row: -1, inside: false, mouse: true },
   time: 0, anim: 0, shake: 0, castleHit: 0, banner: null, leakFlash: 0,
 };
 
@@ -709,12 +713,18 @@ let scale = 1;
 
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const availW = stage.clientWidth;
-  const hud = $('.hud').getBoundingClientRect().height;
-  const wide = window.innerWidth > 900;
-  const availH = wide ? window.innerHeight - hud - 52 : Infinity;
-  const cssW = Math.max(260, Math.floor(Math.min(availW, (availH * W) / H)));
+  const frame = canvas.offsetWidth - canvas.clientWidth; // left + right border
+  const availW = stage.clientWidth - frame;
+  let availH = Infinity;
+  if (getComputedStyle($('.layout')).flexDirection === 'row') {
+    // Panel sits beside the playfield, so fit the playfield to the screen height.
+    const top = stage.getBoundingClientRect().top + window.scrollY;
+    const padB = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    availH = window.innerHeight - top - padB - frame - 8;
+  }
+  const cssW = Math.max(240, Math.floor(Math.min(availW, (availH * W) / H)));
   const cssH = Math.round((cssW * H) / W);
+  document.documentElement.style.setProperty('--panel-h', cssH + frame + 'px');
   canvas.style.width = cssW + 'px';
   canvas.style.height = cssH + 'px';
   canvas.width = Math.round(cssW * dpr);
@@ -727,7 +737,7 @@ function resize() {
 // ============================================================
 // Game flow
 // ============================================================
-function startGame(mapIndex) {
+function startGame(mapIndex, save) {
   const map = MAPS[mapIndex];
   S.mapIndex = mapIndex;
   S.map = map;
@@ -736,15 +746,53 @@ function startGame(mapIndex) {
   S.towers = []; S.enemies = []; S.projectiles = []; S.fx = []; S.decals = []; S.spawners = [];
   S.towerAt = new Map();
   S.paused = false; S.endless = false; S.autoT = 0;
-  S.placing = null; S.selected = null;
+  S.placing = null; S.selected = null; S.pending = null;
   S.time = 0; S.shake = 0; S.castleHit = 0; S.banner = null; S.leakFlash = 0;
   S.state = 'playing';
+  for (const b of document.querySelectorAll('.tower-btn')) b.classList.remove('active');
   $('#title-screen').hidden = true;
   $('#end-screen').hidden = true;
   $('#pause-screen').hidden = true;
   resize();
-  showBanner(map.name, 'Build towers, then start wave 1');
+  if (save) applySave(save);
+  else showBanner(map.name, 'Build towers, then start wave 1');
+  checkpoint();
   renderInfo(); renderNextWave(); updateHUD(true);
+}
+
+// ---------- save & resume (checkpoints are taken between waves) ----------
+function checkpoint() {
+  if (S.state !== 'playing' || S.spawners.length || S.enemies.length) return;
+  S.dirty = false;
+  store.set(SAVE_KEY, JSON.stringify({
+    v: 1, map: S.mapIndex, lives: S.lives, gold: S.gold, wave: S.wave, endless: S.endless,
+    towers: S.towers.map((t) => ({ type: t.type, col: t.col, row: t.row, level: t.level, spent: t.spent, mode: t.mode, kills: t.kills, dealt: Math.round(t.dealt) })),
+  }));
+}
+
+function loadSave() {
+  try {
+    const sv = JSON.parse(store.get(SAVE_KEY));
+    if (sv && sv.v === 1 && MAPS[sv.map] && Array.isArray(sv.towers) && sv.lives > 0) return sv;
+  } catch (e) { /* corrupt save */ }
+  return null;
+}
+
+function applySave(sv) {
+  const num = (v, d) => (Number.isFinite(v) ? v : d);
+  S.lives = num(sv.lives, S.lives);
+  S.gold = num(sv.gold, S.gold);
+  S.wave = clamp(num(sv.wave, 0), 0, 999);
+  S.endless = !!sv.endless;
+  for (const t of sv.towers) {
+    if (!TOWERS[t.type] || !canPlace(t.col, t.row)) continue;
+    const tw = makeTower(t.type, t.col, t.row);
+    tw.level = clamp(t.level | 0, 0, TOWERS[t.type].levels.length - 1);
+    tw.spent = num(t.spent, TOWERS[t.type].cost);
+    if (MODES.some((m) => m[0] === t.mode)) tw.mode = t.mode;
+    tw.kills = num(t.kills, 0); tw.dealt = num(t.dealt, 0);
+  }
+  showBanner('Welcome back!', `Wave ${S.wave + 1} is up next`);
 }
 
 function startWave() {
@@ -777,8 +825,10 @@ function makeSpawner(n) {
 
 function gameOver() {
   S.state = 'over';
-  S.placing = null;
+  S.placing = null; S.pending = null;
+  store.remove(SAVE_KEY);
   Sound.play('lose');
+  buzz([80, 60, 160]);
   saveBest();
   const reached = Math.max(0, S.wave - 1);
   showEnd(false, 'The blobs got in!', `The castle fell on wave ${S.wave}. You held off ${reached} full wave${reached === 1 ? '' : 's'} on ${S.map.name}.`);
@@ -786,7 +836,8 @@ function gameOver() {
 
 function victory() {
   S.state = 'won';
-  S.placing = null;
+  S.placing = null; S.pending = null;
+  store.remove(SAVE_KEY);
   Sound.play('win');
   saveBest();
   for (let i = 0; i < 60; i++) burstStar(rand(0, W), rand(0, H * 0.5), ['#ffcf3f', '#ff5d8f', '#7ed957', '#7fd8ff'][i % 4]);
@@ -855,6 +906,7 @@ function updateEnemy(e, dt) {
     addShake(lost > 2 ? 10 : 4);
     floatText(`-${lost}`, S.M.end.x, S.M.end.y - 50, '#ff5d5d', 24);
     Sound.play('leak');
+    buzz(40);
     bumpStat('.stat-lives');
     return;
   }
@@ -896,16 +948,22 @@ function kill(e, tower) {
   bumpStat('.stat-gold');
 }
 
-function placeTower(type, col, row) {
-  const def = TOWERS[type];
+function makeTower(type, col, row) {
   const t = {
     type, col, row, x: col * TILE + TILE / 2, y: row * TILE + TILE / 2,
-    level: 0, angle: -Math.PI / 2, cd: 0.2, recoil: 0, spent: def.cost,
+    level: 0, angle: -Math.PI / 2, cd: 0.2, recoil: 0, spent: TOWERS[type].cost,
     mode: type === 'owl' ? 'strong' : 'first', kills: 0, dealt: 0, pop: 0.35,
   };
   S.towers.push(t);
   S.towerAt.set(row * COLS + col, t);
-  S.gold -= def.cost;
+  return t;
+}
+
+function placeTower(type, col, row) {
+  const t = makeTower(type, col, row);
+  S.gold -= TOWERS[type].cost;
+  S.dirty = true;
+  buzz(12);
   for (let i = 0; i < 10; i++) {
     const a = rand(0, TAU);
     S.fx.push({ kind: 'dust', x: t.x + Math.cos(a) * 14, y: t.y + 10 + Math.sin(a) * 6, vx: Math.cos(a) * 60, vy: Math.sin(a) * 25 - 10, r: rand(4, 7), life: 0.45, max: 0.45 });
@@ -921,6 +979,7 @@ function upgradeTower(t) {
   S.gold -= next.cost;
   t.spent += next.cost;
   t.level++;
+  S.dirty = true;
   t.pop = 0.4;
   for (let i = 0; i < 14; i++) burstStar(t.x, t.y - 10, '#ffcf3f');
   floatText('Level up!', t.x, t.y - 34, '#7ed957', 18);
@@ -932,6 +991,7 @@ function sellTower(t) {
   if (S.state !== 'playing') return;
   const refund = sellValue(t);
   S.gold += refund;
+  S.dirty = true;
   S.towers = S.towers.filter((o) => o !== t);
   S.towerAt.delete(t.row * COLS + t.col);
   floatText(`+${refund}`, t.x, t.y - 20, '#ffcf3f', 18);
@@ -1246,6 +1306,7 @@ function update(dt) {
       sp.paid = true;
       const bonus = waveBonus(sp.wave);
       S.gold += bonus;
+      S.dirty = true;
       floatText(`Wave ${sp.wave} cleared! +${bonus}`, W / 2, H / 2 - 40, '#ffcf3f', 28);
       Sound.play('coin');
       bumpStat('.stat-gold');
@@ -1257,6 +1318,7 @@ function update(dt) {
   if (S.lives <= 0) { gameOver(); return; }
   if (!S.endless && S.wave >= TOTAL_WAVES && !S.spawners.length && !S.enemies.length) { victory(); return; }
   const idle = !S.spawners.length && !S.enemies.length;
+  if (idle && S.dirty) checkpoint();
   if (S.auto && idle && (S.endless || S.wave < TOTAL_WAVES)) {
     S.autoT += dt;
     if (S.autoT > 1.6) { S.autoT = 0; startWave(); }
@@ -1291,9 +1353,10 @@ function render() {
     drawRange(c, S.selected.x, S.selected.y - 8, st.range * TILE, true, t);
   }
   const h = S.hover;
-  if (S.placing && h.inside && S.state === 'playing') {
-    const ok = canPlace(h.col, h.row) && S.gold >= TOWERS[S.placing].cost;
-    const x = h.col * TILE, y = h.row * TILE;
+  const spot = S.pending || (h.inside && h.mouse ? h : null);
+  if (S.placing && spot && S.state === 'playing') {
+    const ok = canPlace(spot.col, spot.row) && S.gold >= TOWERS[S.placing].cost;
+    const x = spot.col * TILE, y = spot.row * TILE;
     rr(c, x + 2, y + 2, TILE - 4, TILE - 4, 8);
     c.fillStyle = ok ? 'rgba(126,217,87,.35)' : 'rgba(255,93,93,.35)'; c.fill();
     c.lineWidth = 2.5; c.strokeStyle = ok ? '#2f8f2f' : '#d43d3d'; c.setLineDash([6, 4]); c.stroke(); c.setLineDash([]);
@@ -1328,8 +1391,10 @@ function render() {
     else drawCastle(c, S.M.end.x, S.M.end.y, t, S.castleHit);
   }
 
-  if (S.placing && h.inside && S.state === 'playing' && canPlace(h.col, h.row)) {
-    drawTower(c, S.placing, 0, h.col * TILE + TILE / 2, h.row * TILE + TILE / 2, -Math.PI / 2 + Math.sin(t * 2) * 0.4, 0, t, { alpha: 0.65 });
+  if (S.placing && spot && S.state === 'playing' && canPlace(spot.col, spot.row)) {
+    const gx = spot.col * TILE + TILE / 2, gy = spot.row * TILE + TILE / 2;
+    drawTower(c, S.placing, 0, gx, gy, -Math.PI / 2 + Math.sin(t * 2) * 0.4, 0, t, { alpha: 0.65 });
+    if (S.pending) outlinedText(c, 'Tap again to build', gx, gy - 44 + Math.sin(t * 5) * 2, 15, '#ffffff', 4);
   }
 
   for (const p of S.projectiles) drawProjectile(c, p);
@@ -1477,6 +1542,7 @@ function buildShop() {
 function selectPlacing(type) {
   if (S.state !== 'playing') return;
   S.placing = S.placing === type ? null : type;
+  S.pending = null;
   if (S.placing) S.selected = null;
   Sound.play('click');
   for (const b of document.querySelectorAll('.tower-btn')) b.classList.toggle('active', b.dataset.type === S.placing);
@@ -1484,7 +1550,7 @@ function selectPlacing(type) {
 }
 
 function cancelAll() {
-  S.placing = null; S.selected = null;
+  S.placing = null; S.selected = null; S.pending = null;
   for (const b of document.querySelectorAll('.tower-btn')) b.classList.remove('active');
   renderInfo();
 }
@@ -1505,6 +1571,7 @@ function statRows(type, st, next) {
 function renderInfo() {
   const info = $('#info');
   info.innerHTML = '';
+  $('.panel').classList.toggle('busy', !!(S.selected || S.placing));
   if (S.selected) {
     const t = S.selected, def = TOWERS[t.type], st = def.levels[t.level], next = def.levels[t.level + 1];
     const head = document.createElement('div');
@@ -1532,11 +1599,11 @@ function renderInfo() {
     head.insertAdjacentHTML('beforeend', `<div><h3>${def.name}</h3><div class="info-level">Costs ${def.cost} gold</div></div>`);
     info.append(head);
     info.insertAdjacentHTML('beforeend', `<p>${def.desc}</p>${statRows(S.placing, def.levels[0])}
-      <p class="hint">Tap a grass tile to build. Hold <kbd>Shift</kbd> to build several. <kbd>Esc</kbd> cancels.</p>`);
+      <p class="hint">${coarse() ? 'Tap a grass tile to preview it, then tap the same tile again to build.' : 'Click a grass tile to build. Hold <kbd>Shift</kbd> to build several. <kbd>Esc</kbd> cancels.'}</p>`);
   } else {
     info.innerHTML = `<h2 class="card-title">How to play</h2>
       <p>Blobs hop along the dirt path toward your castle. Each one that gets inside costs lives.</p>
-      <p>Pick a tower, tap a grass tile to build it, then tap it later to upgrade or sell. Bonking blobs earns gold.</p>
+      <p class="more">Pick a tower, tap a grass tile to build it, then tap it later to upgrade or sell. Bonking blobs earns gold.</p>
       <p class="hint">Mix towers: frost slows, zaps ignore armor, owls snipe big blobs.</p>`;
   }
   refreshInfo();
@@ -1558,6 +1625,7 @@ function refreshInfo() {
 function cycleTarget(t) {
   const i = MODES.findIndex((m) => m[0] === t.mode);
   t.mode = MODES[(i + 1) % MODES.length][0];
+  S.dirty = true;
   Sound.play('click');
   const b = $('#btn-target');
   if (b) b.textContent = `Target: ${MODES.find((m) => m[0] === t.mode)[1]}`;
@@ -1616,10 +1684,24 @@ function buildMapList() {
 }
 
 function showTitle() {
+  if (S.state === 'playing') checkpoint();
   S.state = 'title';
   S.paused = false;
   $('#pause-screen').hidden = true;
   $('#end-screen').hidden = true;
+  const sv = loadSave();
+  const box = $('#continue-box');
+  box.hidden = !sv;
+  box.innerHTML = '';
+  if (sv) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-go btn-continue';
+    b.textContent = `Continue ${MAPS[sv.map].name}: wave ${sv.wave + 1}`;
+    b.addEventListener('click', () => { Sound.init(); Sound.play('click'); startGame(sv.map, sv); });
+    box.append(b);
+  }
+  renderInstall();
   buildMapList();
   $('#title-screen').hidden = false;
 }
@@ -1629,10 +1711,14 @@ function showTitle() {
 // ============================================================
 function toLogical(ev) {
   const r = canvas.getBoundingClientRect();
-  return { x: ((ev.clientX - r.left) / r.width) * W, y: ((ev.clientY - r.top) / r.height) * H };
+  return {
+    x: ((ev.clientX - r.left - canvas.clientLeft) / canvas.clientWidth) * W,
+    y: ((ev.clientY - r.top - canvas.clientTop) / canvas.clientHeight) * H,
+  };
 }
 function setHover(ev) {
   const p = toLogical(ev);
+  S.hover.mouse = ev.pointerType === 'mouse';
   S.hover.x = p.x; S.hover.y = p.y;
   S.hover.col = Math.floor(p.x / TILE); S.hover.row = Math.floor(p.y / TILE);
   S.hover.inside = p.x >= 0 && p.y >= 0 && p.x < W && p.y < H;
@@ -1650,6 +1736,13 @@ canvas.addEventListener('pointerdown', (ev) => {
   const tw = S.towerAt.get(row * COLS + col);
   if (S.placing) {
     if (canPlace(col, row)) {
+      // Touch: the first tap previews the spot, a second tap on the same tile builds.
+      if (ev.pointerType !== 'mouse' && !(S.pending && S.pending.col === col && S.pending.row === row)) {
+        S.pending = { col, row };
+        Sound.play('click');
+        return;
+      }
+      S.pending = null;
       if (S.gold >= TOWERS[S.placing].cost) {
         const t = placeTower(S.placing, col, row);
         if (!ev.shiftKey || S.gold < TOWERS[S.placing].cost) {
@@ -1663,7 +1756,7 @@ canvas.addEventListener('pointerdown', (ev) => {
         Sound.play('error');
       }
     } else if (tw) {
-      S.placing = null; S.selected = tw;
+      S.placing = null; S.pending = null; S.selected = tw;
       for (const b of document.querySelectorAll('.tower-btn')) b.classList.remove('active');
       renderInfo();
     } else {
@@ -1734,11 +1827,65 @@ $('#btn-menu').addEventListener('click', showTitle);
 $('#btn-endless').addEventListener('click', () => {
   S.endless = true;
   S.state = 'playing';
+  checkpoint();
   $('#end-screen').hidden = true;
   showBanner('Endless mode', 'How long can the castle hold?');
   renderNextWave(); renderInfo(); updateHUD(true);
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden && S.state === 'playing') setPaused(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && S.state === 'playing') { checkpoint(); setPaused(true); }
+});
+
+// ---------- full screen, install, rotate hint ----------
+const standalone = (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) || navigator.standalone === true;
+let topLevel = false;
+try { topLevel = window.top === window; } catch (e) { topLevel = false; }
+const root = document.documentElement;
+const fsRequest = root.requestFullscreen || root.webkitRequestFullscreen;
+const fsActive = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsBtn = $('#btn-full');
+fsBtn.hidden = standalone || !fsRequest || !(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+fsBtn.addEventListener('click', () => {
+  if (fsActive()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+  Promise.resolve(fsRequest.call(root))
+    .then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'))
+    .catch(() => { /* full screen or rotation lock refused */ });
+});
+const syncFs = () => { fsBtn.textContent = fsActive() ? 'Exit full' : 'Full screen'; };
+document.addEventListener('fullscreenchange', syncFs);
+document.addEventListener('webkitfullscreenchange', syncFs);
+
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; renderInstall(); });
+window.addEventListener('appinstalled', () => { installEvt = null; renderInstall(); });
+function renderInstall() {
+  const box = $('#install-box');
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  box.innerHTML = '';
+  box.hidden = true;
+  if (standalone || !topLevel) return;
+  if (installEvt) {
+    box.hidden = false;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn'; b.textContent = 'Install Blob Bash';
+    b.addEventListener('click', () => {
+      installEvt.prompt();
+      installEvt.userChoice.finally(() => { installEvt = null; renderInstall(); });
+    });
+    box.append(b);
+    box.insertAdjacentHTML('beforeend', '<span>Adds it to your home screen. Plays full screen, even offline.</span>');
+  } else if (ios && location.protocol === 'https:') {
+    box.hidden = false;
+    box.innerHTML = '<span>Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</span>';
+  }
+}
+
+if (store.get('blobbash.hint') === '1') document.body.classList.add('hint-dismissed');
+$('#btn-hint-close').addEventListener('click', () => {
+  document.body.classList.add('hint-dismissed');
+  store.set('blobbash.hint', '1');
+  resize();
+});
 
 // ============================================================
 // Boot
@@ -1758,9 +1905,10 @@ updateHUD(true);
 showTitle();
 new ResizeObserver(() => resize()).observe(stage);
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 250));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { buildShop(); updateHUD(true); });
 requestAnimationFrame(frame);
 
 // Small hook for automated tests and tinkering in the console.
-window.BlobBash = { S, startGame, startWave, placeTower, upgradeTower, update, canPlace, TOWERS, ENEMIES, makeWave };
+window.BlobBash = { S, startGame, startWave, placeTower, upgradeTower, update, canPlace, checkpoint, loadSave, drawEnemy, drawTower, TOWERS, ENEMIES, makeWave };
 })();

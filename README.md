@@ -13,6 +13,23 @@ python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
+## Play it on your phone
+
+Blob Bash is an installable web app. Once it's hosted (see below), open the link on your phone and add it to your home screen. It then launches full screen like a regular app and works offline.
+
+- **iPhone (Safari):** tap **Share**, then **Add to Home Screen**.
+- **Android (Chrome):** tap **Install Blob Bash** on the title screen, or open the menu and choose **Install app** / **Add to Home screen**.
+
+Hold the phone sideways for the best view. The game saves itself between waves, so if your phone closes it, tap **Continue** on the title screen. Updates arrive automatically the next time you open the game.
+
+On a touchscreen, the first tap on a tile previews the tower and its range, and a second tap on the same tile builds it.
+
+### Hosting on GitHub Pages
+
+1. In the repository on GitHub, open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **Deploy from a branch**, choose the branch that holds the game and the `/ (root)` folder, then **Save**.
+3. After a minute the game is live at `https://<your-username>.github.io/<repository-name>/`.
+
 ## How to play
 
 1. Pick a map: **Sunny Meadow** (easy), **Biscuit Canyon** (medium) or **Frosty Peaks** (hard).
@@ -56,12 +73,13 @@ python3 -m http.server 8000
 | `M` | Mute |
 | `Esc` / right-click | Cancel building or deselect |
 
-Touch works too: tap a tower card, then tap a tile.
+Touch works too: tap a tower card, then tap a tile twice.
 
 ## Files
 
 - `index.html`: page layout, HUD, side panel and overlays
 - `style.css`: the chunky, inked cartoon UI
-- `game.js`: game data (maps, towers, enemies, waves), simulation, canvas rendering and sound
+- `game.js`: game data (maps, towers, enemies, waves), simulation, canvas rendering, sound and save/resume
+- `manifest.webmanifest`, `sw.js`, `icons/`: what makes it installable and playable offline
 
-Best wave per map is saved in `localStorage`.
+Your current run (saved between waves) and best wave per map are kept in `localStorage` on your device.

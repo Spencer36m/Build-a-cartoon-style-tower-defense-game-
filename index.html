@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Blob Bash</title>
+<meta name="description" content="A cartoon tower defense game. Build silly towers to bonk jelly blobs across 30 waves.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#8fd3ff">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Blob Bash">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap">
@@ -33,8 +42,14 @@
       <button class="btn btn-small" id="btn-speed" type="button" title="Game speed (F)">1×</button>
       <button class="btn btn-small" id="btn-pause" type="button" title="Pause (P)">Pause</button>
       <button class="btn btn-small" id="btn-sound" type="button" aria-pressed="true" title="Sound (M)">Sound</button>
+      <button class="btn btn-small" id="btn-full" type="button" title="Full screen" hidden>Full screen</button>
     </div>
   </header>
+
+  <div class="rotate-hint" id="rotate-hint">
+    <span>Turn your phone sideways for a bigger playfield.</span>
+    <button class="btn btn-small" id="btn-hint-close" type="button">Got it</button>
+  </div>
 
   <main class="layout">
     <div class="stage" id="stage">
@@ -66,8 +81,10 @@
   <div class="title-box">
     <h1 class="big-logo">Blob<span>Bash</span></h1>
     <p class="tagline">The jelly blobs are marching on your castle. Build silly towers, bonk every blob, and survive 30 waves.</p>
+    <div class="continue-box" id="continue-box" hidden></div>
     <h2 class="pick">Pick a map</h2>
     <div class="maps" id="map-list"></div>
+    <div class="install-box" id="install-box" hidden></div>
     <p class="keys"><kbd>1</kbd>–<kbd>5</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>U</kbd> upgrade · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
   </div>
 </div>
@@ -85,5 +102,11 @@
 </div>
 
 <script src="game.js"></script>
+<script>
+  // Offline support and "Add to Home Screen" (needs https or localhost).
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
 </body>
 </html>

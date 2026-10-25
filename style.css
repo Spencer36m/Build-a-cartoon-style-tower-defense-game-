@@ -18,7 +18,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
-html, body { height: 100%; }
+html, body { height: 100%; overscroll-behavior: none; }
 
 body {
   margin: 0;
@@ -38,8 +38,12 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 12px;
   overflow-x: hidden;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* It's a game: no accidental text selection or long-press callouts while tapping fast. */
+.app, .screen { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 
 h1, h2, h3 { margin: 0; font-weight: 400; font-family: var(--font-display); text-wrap: balance; }
 
@@ -130,6 +134,7 @@ h1, h2, h3 { margin: 0; font-weight: 400; font-family: var(--font-display); text
 }
 #game {
   display: block;
+  box-sizing: content-box;
   border: 4px solid var(--ink);
   border-radius: 18px;
   box-shadow: 0 6px 0 var(--ink);
@@ -277,6 +282,32 @@ h1, h2, h3 { margin: 0; font-weight: 400; font-family: var(--font-display); text
 .badge.hard { background: var(--berry); }
 .keys { margin: 16px 0 0; font-size: .9rem; color: var(--ink-soft); line-height: 1.9; }
 
+/* ---------- Title extras ---------- */
+.continue-box { margin: 4px 0 14px; }
+.btn-continue { font-size: 1.25rem; padding: 8px 22px; }
+.install-box {
+  margin: 14px auto 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: center;
+  font-size: .95rem; max-width: 60ch;
+}
+
+/* ---------- Rotate hint (phones held upright) ---------- */
+.rotate-hint {
+  display: none;
+  align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--sun);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 6px 8px 6px 12px;
+  font-weight: 700; font-size: .95rem;
+}
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 700px) {
+  body:not(.hint-dismissed) .rotate-hint { display: flex; }
+}
+@media (pointer: coarse) {
+  .keys { display: none; }
+}
+
 /* ---------- Narrow screens ---------- */
 @media (max-width: 900px) {
   .layout { flex-direction: column; align-items: stretch; }
@@ -294,6 +325,74 @@ h1, h2, h3 { margin: 0; font-weight: 400; font-family: var(--font-display); text
   .stat { min-width: 0; font-size: 1.05rem; }
   .btn { font-size: .95rem; padding: 5px 10px; }
   .title-box { padding: 16px; }
+}
+
+/* ---------- Phones held sideways: playfield fills the height, slim sidebar ---------- */
+@media (orientation: landscape) and (max-height: 560px) {
+  body {
+    padding-block: max(6px, env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-bottom, 0px));
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px));
+  }
+  .app { gap: 6px; max-width: none; }
+  .hud { flex-wrap: nowrap; gap: 6px; padding: 3px 6px; border-width: 2px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+  .logo { display: none; }
+  .stats { gap: 4px; flex-wrap: nowrap; }
+  .stat { min-width: 0; font-size: .95rem; gap: 3px; padding: 0 8px 0 3px; border-width: 2px; }
+  .stat svg { width: 18px; height: 18px; }
+  .controls { flex-wrap: nowrap; gap: 5px; margin-left: auto; }
+  .btn { font-size: .82rem; padding: 3px 8px; border-width: 2px; border-radius: 10px; box-shadow: 0 3px 0 var(--ink); }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+  .layout { flex-direction: row; align-items: flex-start; gap: 8px; }
+  #game { border-width: 3px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+  .overlay { border-radius: 12px; }
+  .panel {
+    width: 214px; display: flex; flex-direction: column; gap: 6px;
+    max-height: var(--panel-h, 300px); overflow-y: auto; overscroll-behavior: contain;
+    padding-bottom: 4px;
+  }
+  .card { flex: none; padding: 6px 8px; border-width: 2px; border-radius: 12px; box-shadow: 0 3px 0 var(--ink); }
+  /* While a tower is picked, the wave preview steps aside so upgrade and sell stay on screen. */
+  .panel.busy #next-wave { display: none; }
+  .card-title { font-size: .95rem; margin-bottom: 4px; }
+  .shop { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .tower-btn { min-width: 0; padding: 2px 0 3px; border-width: 2px; border-radius: 9px; box-shadow: 0 2px 0 var(--ink); }
+  .tower-btn canvas { width: 30px; height: 30px; }
+  .tower-btn .t-name, .tower-btn .t-key { display: none; }
+  .tower-btn .t-cost { font-size: .68rem; gap: 2px; }
+  .tower-btn .t-cost::before { width: 7px; height: 7px; border-width: 1.5px; }
+  .info { min-height: 0; }
+  .info p { font-size: .8rem; margin-bottom: 4px; }
+  .info .more { display: none; }
+  .info-head { gap: 6px; margin-bottom: 2px; }
+  .info-head canvas { width: 36px; height: 36px; }
+  .info-head h3 { font-size: 1rem; }
+  .pip { width: 9px; height: 9px; border-width: 1.5px; }
+  .stat-list { font-size: .78rem; margin-bottom: 6px; gap: 0; }
+  .info-actions { gap: 5px; }
+  /* Actions first so Upgrade and Sell never hide below the fold. */
+  .info { display: flex; flex-direction: column; }
+  .info-head { order: -2; }
+  .info-actions { order: -1; margin-bottom: 6px; }
+  #info-kills { display: none; }
+  .map-card .m-row .best + .best { display: none; }
+  .chip { padding: 0 6px 0 0; font-size: .8rem; border-radius: 9px; }
+  .chip canvas { width: 24px; height: 24px; }
+  .screen { align-items: flex-start; }
+  .title-box { width: 640px; padding: 10px 14px; border-radius: 18px; }
+  .big-logo { font-size: 2.6rem; -webkit-text-stroke-width: 2px; text-shadow: 0 4px 0 var(--ink); }
+  .tagline { font-size: .95rem; margin: 6px auto; }
+  .pick { font-size: 1.1rem; margin: 2px 0 8px; }
+  .maps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .map-card { padding: 6px; gap: 3px; border-radius: 14px; }
+  .map-card h3 { font-size: 1rem; }
+  .map-card p { display: none; }
+  .map-card .best { font-size: .75rem; }
+  .continue-box { margin: 2px 0 8px; }
+  .btn-continue { font-size: 1.05rem; padding: 5px 16px; }
+  .install-box { margin-top: 8px; font-size: .85rem; }
+  .dialog { padding: 14px; }
+  .dialog h2 { font-size: 1.7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
