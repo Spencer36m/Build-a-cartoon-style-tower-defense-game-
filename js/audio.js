@@ -37,13 +37,17 @@ const MUSIC_MODES = {
   tension: { bpm: 88, pad: 1, arp: [0, 6, 12], bass: [0, 3, 6, 8, 11, 14], kick: [0, 8], snare: [], hat: 0, quiet: true },
 };
 
+// a tenth of a second of silence, used to unlock audio on older iPhones
+const SILENT_WAV = 'data:audio/wav;base64,' + btoa(String.fromCharCode(...[82, 73, 70, 70, 36, 9, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 64, 31, 0, 0, 64, 31, 0, 0, 1, 0, 8, 0, 100, 97, 116, 97, 0, 9, 0, 0], ...new Array(2304).fill(128)));
+
 const Sound = {
   ac: null, master: null, sfx: null, musicBus: null, ambBus: null, verb: null, noiseBuf: null, curve: null,
   muted: false, musicOn: true, last: {}, recent: [],
   music: { mode: null, world: 0, step: 0, next: 0 }, amb: null, ticker: null,
 
   init() {
-    if (this.ac) { if (this.ac.state === 'suspended' && !document.hidden) this.ac.resume(); return; }
+    this.unlock();
+    if (this.ac) return;
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
@@ -70,7 +74,26 @@ const Sound = {
       this.curve = new Float32Array(256);
       for (let i = 0; i < 256; i++) { const x = (i / 255) * 2 - 1; this.curve[i] = Math.tanh(x * 3); }
       this.ticker = setInterval(() => this.tick(), 60);
+      this.unlock();
     } catch (e) { this.ac = null; }
+  },
+  // Phones only let audio start inside a tap, and iOS pauses it ("interrupted") for calls and app
+  // switches. This runs on every touch, click and key press to keep the context running.
+  unlock() {
+    // iPhone mutes web audio with the ring/silent switch unless the page asks for media playback
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { /* not supported */ }
+    if (!navigator.audioSession && /iP(hone|ad|od)|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document && !this.silent) {
+      // older iOS: a looping silent <audio> element switches the audio session to playback
+      const a = this.silent = document.createElement('audio');
+      a.setAttribute('playsinline', ''); a.loop = true; a.preload = 'auto'; a.src = SILENT_WAV;
+    }
+    if (this.silent && this.silent.paused && !document.hidden) { const p = this.silent.play(); if (p && p.catch) p.catch(() => {}); }
+    const ac = this.ac;
+    if (ac && ac.state !== 'running' && ac.state !== 'closed' && !document.hidden) {
+      const p = ac.resume(); if (p && p.catch) p.catch(() => {});
+      // a one-sample silent buffer started inside the gesture fully wakes WebKit's output
+      try { const b = ac.createBufferSource(); b.buffer = ac.createBuffer(1, 1, 22050); b.connect(ac.destination); b.start(0); } catch (e) { /* ignore */ }
+    }
   },
   setMuted(m) {
     this.muted = m;
@@ -80,7 +103,9 @@ const Sound = {
     this.musicOn = on;
     if (this.musicBus) this.musicBus.gain.setTargetAtTime(on ? 0.55 : 0, this.ac.currentTime, 0.2);
   },
-  suspend() { if (this.ac && this.ac.state === 'running') this.ac.suspend(); },
+  suspend() { if (this.ac && this.ac.state === 'running') this.ac.suspend(); if (this.silent) this.silent.pause(); },
+  // coming back to the app: resume straight away where the browser allows it, else on the next tap
+  wake() { if (this.ac && this.ac.state !== 'running' && this.ac.state !== 'closed') { const p = this.ac.resume(); if (p && p.catch) p.catch(() => {}); } if (this.silent && this.silent.paused) { const p = this.silent.play(); if (p && p.catch) p.catch(() => {}); } },
 
   // ---------- building blocks ----------
   out(x, bus = this.sfx) {
@@ -282,13 +307,18 @@ const Sound = {
       const o = ac.createOscillator(), g = ac.createGain();
       o.type = 'triangle'; o.frequency.value = midiHz(key + 24 + root + iv); o.detune.value = det;
       const len = dur * 16;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.045 * cfg.pad, t + len * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06 * cfg.pad, t + len * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
       o.connect(g); g.connect(bus); const sg = ac.createGain(); sg.gain.value = 0.5; g.connect(sg); sg.connect(this.verb);
       o.start(t); o.stop(t + len + 0.05);
     }
-    if (cfg.bass.includes(s)) note(key + root + (m.mode === 'boss' && s % 4 === 2 ? 12 : 0), dur * (m.mode === 'menu' ? 6 : 1.8), 'sawtooth', 0.12, 0.01, 0, m.mode === 'boss' ? 500 : 300);
+    if (cfg.bass.includes(s)) {
+      const bn = key + root + (m.mode === 'boss' && s % 4 === 2 ? 12 : 0), bl = dur * (m.mode === 'menu' ? 6 : 1.8);
+      note(bn, bl, 'sawtooth', 0.12, 0.01, 0, m.mode === 'boss' ? 500 : 300);
+      // the same line an octave up with a brighter filter, so phone and laptop speakers can hear it
+      note(bn + 12, bl, 'sawtooth', 0.05, 0.01, 0, 1400);
+    }
     const ai = cfg.arp.indexOf(s);
-    if (ai >= 0) note(key + 36 + root + triad[(ai + bar) % 3] + (bar % 2 ? 12 : 0), dur * 3, 'sine', 0.05, 0.01, 0.5);
+    if (ai >= 0) { const an = key + 36 + root + triad[(ai + bar) % 3] + (bar % 2 ? 12 : 0); note(an, dur * 3, 'sine', 0.07, 0.01, 0.5); note(an, dur * 2, 'triangle', 0.025, 0.01, 0.3); }
     if (m.mode === 'boss' && s === 0) note(key + 12 + root, dur * 6, 'sawtooth', 0.08, 0.02, 0.3, 900);
     // drums
     if (cfg.kick.includes(s) || (m.mode === 'battle' && bar % 2 && s === 14)) {
@@ -339,3 +369,7 @@ const Sound = {
     if (a.world === 0 && Math.random() < dt * 0.04) for (const d of [0, 0.25]) this.voice(800, 560, 0.16, 0.04, 1500, bus, d);
   },
 };
+
+// keep audio alive on phones: every gesture can restart it, and coming back to the app resumes it
+for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) window.addEventListener(ev, () => { if (Sound.ac || ev !== 'keydown') Sound.init(); }, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) Sound.wake(); });
