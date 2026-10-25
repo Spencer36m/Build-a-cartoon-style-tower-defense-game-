@@ -1,16 +1,29 @@
 // Zombie Bash service worker: caches the game so it starts instantly and plays offline.
 // Files are served from cache first and refreshed in the background, so an update
 // shows up the next time the game is opened.
-const CACHE = 'zbash-v2';
+const CACHE = 'zbash-v4';
 const ASSETS = [
   './',
   'index.html',
   'style.css',
-  'game.js',
+  'js/data.js',
+  'js/levels.js',
+  'js/art.js',
+  'js/globe.js',
+  'js/game.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
+  'fonts/fonts.css',
+  'fonts/barlow-400.woff2',
+  'fonts/barlow-500.woff2',
+  'fonts/barlow-600.woff2',
+  'fonts/barlow-700.woff2',
+  'fonts/barlow-condensed-500.woff2',
+  'fonts/barlow-condensed-600.woff2',
+  'fonts/barlow-condensed-700.woff2',
+  'fonts/barlow-condensed-800.woff2',
 ];
 
 self.addEventListener('install', (e) => {

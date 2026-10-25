@@ -1,0 +1,10 @@
+{
+  "appId": "com.spencer36m.zombiebash",
+  "appName": "Zombie Bash",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0e1114",
+    "scrollEnabled": false
+  }
+}
