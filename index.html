@@ -110,13 +110,18 @@
 </div>
 
 <div class="screen levels-screen" id="levels-screen" hidden>
+  <canvas class="level-fx" id="level-fx" aria-hidden="true"></canvas>
   <div class="screen-top">
     <button class="btn btn-back" id="btn-levels-back" type="button">Globe</button>
     <h2 class="screen-title" id="levels-title">World</h2>
     <div class="coin-chip" id="levels-coins"></div>
   </div>
   <div class="levels-body">
-    <div class="level-grid" id="level-grid"></div>
+    <div class="level-map" id="level-map">
+      <canvas class="level-road" id="level-road" aria-hidden="true"></canvas>
+      <div class="level-grid" id="level-grid"></div>
+      <p class="level-toast" id="level-toast" hidden></p>
+    </div>
     <div class="level-detail" id="level-detail"></div>
   </div>
 </div>

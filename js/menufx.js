@@ -182,3 +182,185 @@ const MenuFX = (() => {
     stop() { running = false; },
   };
 })();
+
+// ============================================================
+// Level select backdrops: an animated scene for each world behind the mission map.
+// ============================================================
+const LevelFX = (() => {
+  let cv = null, c = null, w = 0, h = 0, dpr = 1, running = false, last = 0, t = 0, world = 0;
+  let parts = [], props = null;
+  const still = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SKIES = [
+    [[0, '#2a2140'], [0.45, '#8a3f3a'], [0.75, '#e0864a'], [1, '#f2c070']],
+    [[0, '#07080f'], [0.6, '#1c1a33'], [1, '#3a2f4a']],
+    [[0, '#081424'], [0.55, '#1c3550'], [1, '#6d8aa0']],
+    [[0, '#0c140e'], [0.5, '#24331f'], [1, '#5a6a3a']],
+  ];
+
+  function resize() {
+    const r = cv.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    w = Math.max(1, r.width); h = Math.max(1, r.height);
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    build();
+  }
+  function build() {
+    const rng = mulberry32(17 + world * 101);
+    parts = [];
+    const n = world === 2 ? 120 : world === 3 ? 40 : world === 1 ? 14 : 10;
+    for (let i = 0; i < n; i++) parts.push({ x: rng() * w, y: rng() * h, s: 0.5 + rng(), ph: rng() * TAU });
+    props = { rng: Array.from({ length: 80 }, () => rng()) };
+  }
+  const hills = (y0, amp, col, seed, freq = 0.006) => {
+    c.fillStyle = col; c.beginPath(); c.moveTo(0, h);
+    for (let x = 0; x <= w + 20; x += 20) c.lineTo(x, y0 - (Math.sin(x * freq + seed) * 0.6 + Math.sin(x * freq * 2.3 + seed * 2) * 0.4) * amp);
+    c.lineTo(w, h); c.closePath(); c.fill();
+  };
+  const glowAt = (x, y, r, col, a) => { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); };
+  const R = (i) => props.rng[i % props.rng.length];
+
+  function farmland() {
+    glowAt(w * 0.72, h * 0.62, Math.min(w, h) * 0.5, '255,190,110', 0.5);
+    c.fillStyle = '#ffd58a'; c.beginPath(); c.arc(w * 0.72, h * 0.62, Math.min(w, h) * 0.07, 0, TAU); c.fill();
+    hills(h * 0.7, 30, '#5a3a3a', 1);
+    hills(h * 0.78, 24, '#3a2a26', 4);
+    // barn, silo and windmill
+    const bx = w * 0.16, by = h * 0.8;
+    c.fillStyle = '#1e1614';
+    c.fillRect(bx, by - 46, 70, 46); c.beginPath(); c.moveTo(bx - 6, by - 46); c.lineTo(bx + 35, by - 76); c.lineTo(bx + 76, by - 46); c.fill();
+    c.fillRect(bx + 80, by - 90, 24, 90); c.beginPath(); c.arc(bx + 92, by - 90, 12, Math.PI, TAU); c.fill();
+    const mx = w * 0.88, my = h * 0.78;
+    c.beginPath(); c.moveTo(mx - 8, my); c.lineTo(mx - 3, my - 80); c.lineTo(mx + 3, my - 80); c.lineTo(mx + 8, my); c.fill();
+    c.save(); c.translate(mx, my - 80); c.rotate(t * 0.6);
+    for (let i = 0; i < 4; i++) { c.rotate(TAU / 4); c.fillRect(-2, 0, 4, 46); c.fillRect(-7, 14, 10, 30); }
+    c.restore();
+    // corn rows
+    c.strokeStyle = '#2a2018'; c.lineWidth = 2;
+    for (let x = 0; x < w; x += 9) { const sw = Math.sin(t * 1.5 + x * 0.05) * 3; c.beginPath(); c.moveTo(x, h); c.lineTo(x + sw, h - 30 - R(x) * 16); c.stroke(); }
+    // crows
+    c.strokeStyle = '#1a1210'; c.lineWidth = 1.6;
+    for (const p of parts) { const x = (p.x + t * 25 * p.s) % (w + 60) - 30, y = h * 0.2 + p.y * 0.25 + Math.sin(t + p.ph) * 10, f = Math.sin(t * 9 + p.ph) * 4; c.beginPath(); c.moveTo(x - 6, y + f); c.lineTo(x, y); c.lineTo(x + 6, y + f); c.stroke(); }
+  }
+  function cemetery() {
+    glowAt(w * 0.78, h * 0.22, Math.min(w, h) * 0.4, '200,210,255', 0.25);
+    c.fillStyle = '#e6e8f0'; c.beginPath(); c.arc(w * 0.78, h * 0.22, Math.min(w, h) * 0.08, 0, TAU); c.fill();
+    hills(h * 0.72, 16, '#141320', 2);
+    // dead trees
+    c.strokeStyle = '#0c0b12'; c.lineCap = 'round';
+    const tree = (x, y, s) => {
+      const br = (x0, y0, a, len, d) => { if (d > 4) return; const x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len; c.lineWidth = Math.max(1, 6 - d * 1.4) * s; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); br(x1, y1, a - 0.5 + R(d * 7 + x) * 0.2, len * 0.7, d + 1); br(x1, y1, a + 0.45, len * 0.65, d + 1); };
+      br(x, y, -Math.PI / 2, 60 * s, 0);
+    };
+    tree(w * 0.1, h * 0.8, 1.1); tree(w * 0.9, h * 0.78, 0.9);
+    // mausoleum and tombstones
+    c.fillStyle = '#0e0d16';
+    const mx = w * 0.5, my = h * 0.78;
+    c.fillRect(mx - 40, my - 50, 80, 50); c.beginPath(); c.moveTo(mx - 48, my - 50); c.lineTo(mx, my - 78); c.lineTo(mx + 48, my - 50); c.fill();
+    for (let i = 0; i < 14; i++) {
+      const x = (i / 14) * w + R(i) * 30, y = h * (0.84 + R(i + 20) * 0.1);
+      if (i % 3 === 0) { c.fillRect(x - 2, y - 26, 4, 26); c.fillRect(x - 9, y - 19, 18, 4); }
+      else { c.beginPath(); c.moveTo(x - 9, y); c.lineTo(x - 9, y - 16); c.arc(x, y - 16, 9, Math.PI, TAU); c.lineTo(x + 9, y); c.fill(); }
+    }
+    // ghost lights and bats
+    for (const p of parts) {
+      const x = p.x + Math.sin(t * 0.4 + p.ph) * 30, y = h * 0.65 + p.y * 0.3 + Math.sin(t * 0.9 + p.ph) * 8;
+      glowAt(x, y, 14 * p.s, '150,230,200', 0.35 + Math.sin(t * 3 + p.ph) * 0.15);
+    }
+    c.strokeStyle = '#05050a'; c.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) { const x = (t * 60 + i * 140) % (w + 80) - 40, y = h * 0.3 + Math.sin(t * 2 + i) * 20, f = Math.sin(t * 15 + i) * 4; c.beginPath(); c.moveTo(x - 6, y + f); c.lineTo(x, y); c.lineTo(x + 6, y + f); c.stroke(); }
+    // rolling fog
+    for (let i = 0; i < 6; i++) glowAt(((t * 14 + i * 230) % (w + 400)) - 200, h * 0.86, 220, '150,150,180', 0.12);
+  }
+  function tundra() {
+    // northern lights
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const [y0, col] of [[0.18, '80,255,170'], [0.26, '170,110,255']]) {
+      for (let x = 0; x < w; x += 4) {
+        const y = h * y0 + Math.sin(x * 0.008 + t * 0.6) * 24, len = 40 + Math.sin(x * 0.03 + t * 1.8) * 25;
+        const g = c.createLinearGradient(x, y, x, y + len); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(0.5, `rgba(${col},0.12)`); g.addColorStop(1, `rgba(${col},0)`);
+        c.fillStyle = g; c.fillRect(x, y, 4, len);
+      }
+    }
+    c.restore();
+    // mountains with snowy peaks
+    const peaks = (y0, amp, col, snow, seed) => {
+      c.fillStyle = col; c.beginPath(); c.moveTo(0, h);
+      const pts = [];
+      for (let x = 0; x <= w + 60; x += 60) { const y = y0 - amp * (0.4 + R(x / 60 + seed) * 0.6); pts.push([x, y]); c.lineTo(x, y); }
+      c.lineTo(w, h); c.closePath(); c.fill();
+      c.fillStyle = snow;
+      for (let i = 0; i < pts.length - 1; i++) { const [x, y] = pts[i]; if (y > y0 - amp * 0.7) continue; c.beginPath(); c.moveTo(x - 14, y + 18); c.lineTo(x, y); c.lineTo(x + 14, y + 18); c.fill(); }
+    };
+    peaks(h * 0.62, h * 0.3, '#2c4258', 'rgba(230,240,250,0.8)', 3);
+    peaks(h * 0.74, h * 0.2, '#1c2c3c', 'rgba(220,235,245,0.7)', 9);
+    // snowy ground with pines and a lit cabin
+    c.fillStyle = '#d8e4ec'; c.fillRect(0, h * 0.86, w, h * 0.14);
+    c.fillStyle = '#0e1a20';
+    for (let i = 0; i < 16; i++) { const x = (i / 16) * w + R(i) * 20, s = 0.7 + R(i + 9) * 0.6, y = h * 0.88; c.beginPath(); c.moveTo(x, y - 60 * s); c.lineTo(x + 16 * s, y); c.lineTo(x - 16 * s, y); c.fill(); }
+    const cx2 = w * 0.62, cy2 = h * 0.88;
+    c.fillRect(cx2, cy2 - 30, 50, 30); c.beginPath(); c.moveTo(cx2 - 6, cy2 - 30); c.lineTo(cx2 + 25, cy2 - 50); c.lineTo(cx2 + 56, cy2 - 30); c.fill();
+    c.fillStyle = `rgba(255,200,110,${0.8 + Math.sin(t * 7) * 0.1})`; c.fillRect(cx2 + 10, cy2 - 22, 9, 9);
+    glowAt(cx2 + 14, cy2 - 18, 40, '255,190,110', 0.3);
+    // snowfall
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    for (const p of parts) { const y = (p.y + t * 30 * p.s) % h, x = (p.x + Math.sin(t + p.ph) * 20 + w) % w; c.beginPath(); c.arc(x, y, 1.3 * p.s, 0, TAU); c.fill(); }
+  }
+  function bayou() {
+    glowAt(w * 0.3, h * 0.45, Math.min(w, h) * 0.5, '200,220,120', 0.2);
+    hills(h * 0.66, 12, '#1a2416', 5);
+    // dark water with reflections
+    c.fillStyle = '#0e1612'; c.fillRect(0, h * 0.74, w, h * 0.26);
+    c.strokeStyle = 'rgba(160,190,120,0.15)'; c.lineWidth = 1;
+    for (let i = 0; i < 12; i++) { const y = h * (0.77 + i * 0.02), x = (i * 97 + t * 10) % w; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 60, y); c.stroke(); }
+    // cypress trees with hanging moss
+    const cypress = (x, s) => {
+      const base = h * 0.76;
+      c.fillStyle = '#0a100a';
+      c.beginPath(); c.moveTo(x - 18 * s, base); c.quadraticCurveTo(x - 5 * s, base - 40 * s, x - 4 * s, base - 150 * s); c.lineTo(x + 4 * s, base - 150 * s); c.quadraticCurveTo(x + 5 * s, base - 40 * s, x + 18 * s, base); c.fill();
+      for (const [dx, dy, r] of [[0, -160, 40], [-36, -140, 28], [34, -138, 30]]) { c.beginPath(); c.ellipse(x + dx * s, base + dy * s, r * s, r * 0.45 * s, 0, 0, TAU); c.fill(); }
+      c.strokeStyle = 'rgba(80,100,60,0.7)'; c.lineWidth = 1.2;
+      for (let i = 0; i < 8; i++) { const mx = x + (i - 4) * 9 * s, my = base - 140 * s, len = (20 + R(i + x) * 30) * s, sw = Math.sin(t * 1.2 + i) * 3; c.beginPath(); c.moveTo(mx, my); c.quadraticCurveTo(mx + sw, my + len * 0.5, mx + sw * 0.5, my + len); c.stroke(); }
+    };
+    cypress(w * 0.12, 1); cypress(w * 0.86, 0.85); cypress(w * 0.45, 0.6);
+    // shack on stilts
+    c.fillStyle = '#0c120c';
+    const sx = w * 0.64, sy = h * 0.7;
+    c.fillRect(sx, sy - 34, 60, 34); c.beginPath(); c.moveTo(sx - 6, sy - 34); c.lineTo(sx + 30, sy - 54); c.lineTo(sx + 66, sy - 34); c.fill();
+    for (const px of [4, 26, 52]) c.fillRect(sx + px, sy, 3, h * 0.08);
+    c.fillStyle = `rgba(255,200,110,${0.7 + Math.sin(t * 5) * 0.2})`; c.fillRect(sx + 22, sy - 26, 10, 9);
+    // fireflies
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const p of parts) { const x = p.x + Math.sin(t * 0.5 + p.ph) * 40, y = h * 0.45 + p.y * 0.4 + Math.cos(t * 0.7 + p.ph) * 20, a = Math.max(0, Math.sin(t * 2 + p.ph)); glowAt(x, y, 8, '220,255,120', 0.7 * a); }
+    c.restore();
+    for (let i = 0; i < 5; i++) glowAt(((t * 10 + i * 260) % (w + 400)) - 200, h * 0.78, 240, '140,160,110', 0.12);
+  }
+
+  function draw() {
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const g = c.createLinearGradient(0, 0, 0, h);
+    for (const [k, col] of SKIES[world] || SKIES[0]) g.addColorStop(k, col);
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    [farmland, cemetery, tundra, bayou][world]();
+    // darken the middle so the mission map stays readable
+    const v = c.createRadialGradient(w * 0.4, h * 0.55, h * 0.1, w * 0.4, h * 0.55, w * 0.7);
+    v.addColorStop(0, 'rgba(6,8,10,0.45)'); v.addColorStop(1, 'rgba(6,8,10,0.2)');
+    c.fillStyle = v; c.fillRect(0, 0, w, h);
+  }
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min(0.05, (now - last) / 1000 || 0);
+    last = now; t += dt;
+    draw();
+    requestAnimationFrame(frame);
+  }
+  return {
+    init(canvas) { cv = canvas; c = cv.getContext('2d'); new ResizeObserver(() => { if (cv.offsetParent) { resize(); if (!running) draw(); } }).observe(cv); },
+    start(wi) {
+      world = wi; resize();
+      if (still()) { draw(); return; }
+      if (running) return;
+      running = true; last = performance.now(); requestAnimationFrame(frame);
+    },
+    stop() { running = false; },
+  };
+})();

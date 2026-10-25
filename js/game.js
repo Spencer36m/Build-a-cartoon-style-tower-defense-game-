@@ -1828,7 +1828,7 @@ function renderPowerbar() {
 // Menus: main, globe, level grid, store
 // ============================================================
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#end-screen'];
-function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); Sound.play('open'); }
+function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
 function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); }
 
@@ -1906,39 +1906,105 @@ function selectWorld(w) {
   $('#w-go').addEventListener('click', () => { Sound.play('click'); showLevels(w); });
 }
 
+const SKULL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5c0 2.8 1.5 4.6 2.9 5.4V18a1 1 0 0 0 1 1h1.1v-1.8h1.6V19h1.8v-1.8h1.6V19h1.1a1 1 0 0 0 1-1v-2.6c1.4-.8 2.9-2.6 2.9-5.4A7.5 7.5 0 0 0 12 2.5z"/><circle cx="9" cy="10.5" r="1.9" fill="#1a0a08"/><circle cx="15" cy="10.5" r="1.9" fill="#1a0a08"/></svg>';
 function showLevels(w, focus) {
   leaveGame();
   hideScreens();
   $('#levels-screen').hidden = false;
+  LevelFX.start(w);
   $('#levels-coins').textContent = coinText();
   $('#levels-title').textContent = `World ${w + 1} · ${WORLDS[w].name}`;
   S.worldSel = w;
   const grid = $('#level-grid');
   grid.innerHTML = '';
-  let firstOpen = w * LEVELS_PER_WORLD;
+  let firstOpen = w * LEVELS_PER_WORLD, next = -1;
   for (let k = 0; k < LEVELS_PER_WORLD; k++) {
     const i = w * LEVELS_PER_WORLD + k;
     const m = LEVEL_META[i], open = levelUnlocked(i), st = starsFor(i);
     if (open) firstOpen = i;
+    if (open && !st && next < 0) next = i;
+    const kind = m.boss ? (m.boss === 'juggernaut' ? ' elite' : ' boss') : '';
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'level-btn' + (m.boss ? ' boss' : '') + (st ? ' done' : '');
-    b.disabled = !open;
+    b.className = `level-btn rank-${st}${kind}${open ? '' : ' locked'}${i === next ? ' next' : ''}`;
+    b.setAttribute('aria-disabled', String(!open));
     b.dataset.index = i;
-    b.title = `${m.id} ${m.name}`;
-    b.innerHTML = `<span class="n">${m.num}</span><span class="s">${[1, 2, 3].map((s) => `<i class="${s <= st ? 'on' : ''}"></i>`).join('')}</span>`;
-    b.addEventListener('click', () => { Sound.play('click'); selectLevel(i); });
+    b.title = open ? `${m.id} ${m.name}` : `${m.id} is locked`;
+    b.style.animationDelay = `${k * 14}ms`;
+    const tag = m.boss ? `<span class="b-tag">${m.boss === 'juggernaut' ? 'Elite' : SKULL_SVG}</span>` : '';
+    b.innerHTML = `<span class="shield"><span class="s">${[1, 2, 3].map((s) => `<i class="${s <= st ? 'on' : ''}"></i>`).join('')}</span><span class="n">${m.num}</span>${tag}</span>${open ? '' : `<span class="lock">${LOCK_SVG}</span>`}`;
+    b.addEventListener('click', () => {
+      if (!open) {
+        b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake');
+        Sound.play('error');
+        levelToast(b, `Clear ${LEVEL_META[i - 1].id} first`);
+        return;
+      }
+      Sound.play('select'); selectLevel(i);
+    });
     grid.append(b);
   }
-  selectLevel(focus != null && levelUnlocked(focus) ? focus : firstOpen);
+  layoutLevels();
+  selectLevel(focus != null && levelUnlocked(focus) ? focus : next >= 0 ? next : firstOpen);
+}
+// Levels snake back and forth so the road between them reads like a route across the map.
+function layoutLevels() {
+  const grid = $('#level-grid');
+  if (!grid.children.length || $('#levels-screen').hidden) return;
+  const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  [...grid.children].forEach((b, k) => {
+    const r = Math.floor(k / cols), cc = k % cols;
+    b.style.gridRow = r + 1; b.style.gridColumn = r % 2 ? cols - cc : cc + 1;
+  });
+  drawLevelRoad();
+}
+function drawLevelRoad() {
+  const cv = $('#level-road'), map = $('#level-map'), grid = $('#level-grid');
+  const box = map.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+  const c = cv.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const btns = [...grid.children];
+  const pts = btns.map((b) => { const r = b.getBoundingClientRect(); return [r.left - box.left + r.width / 2, r.top - box.top + r.height / 2]; });
+  if (pts.length < 2) return;
+  const done = btns.reduce((n, b, k) => (b.classList.contains('locked') ? n : k), 0);
+  const trace = (upTo) => {
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let k = 1; k <= upTo; k++) {
+      const [x0, y0] = pts[k - 1], [x1, y1] = pts[k];
+      if (Math.abs(y1 - y0) > 4) { const bend = (x0 > box.width / 2 ? 1 : -1) * Math.abs(y1 - y0) * 0.6; c.bezierCurveTo(x0 + bend, y0, x1 + bend, y1, x1, y1); }
+      else c.lineTo(x1, y1);
+    }
+  };
+  const width = Math.max(8, (pts[1][0] - pts[0][0]) * 0.16 || 10);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  trace(pts.length - 1);
+  c.strokeStyle = 'rgba(10,8,6,0.75)'; c.lineWidth = width * 1.6; c.stroke();
+  c.strokeStyle = 'rgba(92,74,52,0.9)'; c.lineWidth = width; c.stroke();
+  c.setLineDash([width * 0.6, width * 0.9]);
+  c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = width * 0.18; c.stroke();
+  trace(done);
+  c.strokeStyle = 'rgba(240,183,82,0.95)'; c.lineWidth = width * 0.24; c.shadowColor = 'rgba(240,183,82,0.8)'; c.shadowBlur = 6; c.stroke();
+  c.setLineDash([]); c.shadowBlur = 0;
+}
+let toastTimer = 0;
+function levelToast(b, text) {
+  const tt = $('#level-toast'), map = $('#level-map').getBoundingClientRect(), r = b.getBoundingClientRect();
+  tt.textContent = text; tt.hidden = false;
+  tt.style.left = `${clamp(r.left - map.left + r.width / 2, 70, map.width - 70)}px`; tt.style.top = `${r.top - map.top - 8}px`;
+  tt.classList.remove('pop'); void tt.offsetWidth; tt.classList.add('pop');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { tt.hidden = true; }, 1600);
 }
 
 function selectLevel(i) {
   S.levelSel = i;
   for (const b of document.querySelectorAll('.level-btn')) b.classList.toggle('sel', +b.dataset.index === i);
-  const L = getLevel(i), M = buildLevel(L);
+  const L = getLevel(i), M = buildLevel(L), st = starsFor(i);
   const box = $('#level-detail');
   box.innerHTML = '';
+  box.classList.remove('flip'); void box.offsetWidth; box.classList.add('flip');
+  box.insertAdjacentHTML('beforeend', `<span class="ld-kicker">Mission briefing · Sector ${L.id}</span>
+    <div class="ld-head"><h3>${L.name}</h3><span class="ld-stars">${[1, 2, 3].map((s) => `<i class="${s <= st ? 'on' : ''}"></i>`).join('')}</span></div>`);
   const cv = document.createElement('canvas'); cv.width = 480; cv.height = 288;
   const c = cv.getContext('2d');
   renderBackground(c, M, 480 / W);
@@ -1946,19 +2012,23 @@ function selectLevel(i) {
   drawSafehouse(c, M.end.x, M.end.y, 0, 0);
   const light = TIME_LIGHT[L.look.time];
   if (light.tint) { c.fillStyle = light.tint; c.fillRect(0, 0, W, H); }
-  box.append(cv);
+  const mapBox = document.createElement('div'); mapBox.className = 'ld-map';
+  mapBox.append(cv);
+  const stamp = L.boss ? (L.boss === 'juggernaut' ? 'Elite' : 'Boss') : st ? 'Cleared' : 'Active';
+  mapBox.insertAdjacentHTML('beforeend', `<span class="ld-stamp ${stamp.toLowerCase()}">${stamp}</span>`);
+  box.append(mapBox);
   const tags = [`${L.waves} waves`, L.look.time, L.look.weather === 'clear' ? 'clear skies' : L.look.weather];
   if (L.paths.length > 1) tags.push('2 entrances');
   if (L.water.some((v) => v)) tags.push('water');
   if (L.boss) tags.push(L.boss === 'juggernaut' ? 'elite' : 'boss');
-  box.insertAdjacentHTML('beforeend', `<h3>${L.id} · ${L.name}</h3><div class="tags">${tags.map((t) => `<span>${t}</span>`).join('')}</div>`);
+  box.insertAdjacentHTML('beforeend', `<div class="tags">${tags.map((t) => `<span>${t}</span>`).join('')}</div>`);
   const chips = document.createElement('div'); chips.className = 'wave-chips';
   const seen = L.pool.map(([type]) => type);
   if (L.boss) seen.push(L.boss);
   for (const type of seen) chips.append(zombieChip(type, ZOMBIES[type].name, FIRST_SEEN[type] === L.index));
   box.append(chips);
-  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">Best: ${starsFor(i)} of 3 stars · first clear pays ${Math.round(30 + 45 + L.index * 1.5)} coins with 3 stars</p>`);
-  const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary'; go.textContent = 'Start mission';
+  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${Math.round(30 + 45 + L.index * 1.5)} coins.`}</p>`);
+  const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary ld-go'; go.textContent = st ? 'Replay mission' : 'Start mission';
   go.addEventListener('click', () => { Sound.init(); startGame(i); });
   box.append(go);
 }
@@ -2314,6 +2384,8 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
   initWeather();
 }
 MenuFX.init($('#menu-fx'));
+LevelFX.init($('#level-fx'));
+new ResizeObserver(() => layoutLevels()).observe($('#level-grid'));
 buildShop(); renderInfo(); renderNextWave(); renderPowerbar();
 resize();
 updateHUD(true);
