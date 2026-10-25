@@ -1,7 +1,7 @@
-// Blob Bash service worker: caches the game so it starts instantly and plays offline.
+// Zombie Bash service worker: caches the game so it starts instantly and plays offline.
 // Files are served from cache first and refreshed in the background, so an update
 // shows up the next time the game is opened.
-const CACHE = 'blobbash-v1';
+const CACHE = 'zbash-v2';
 const ASSETS = [
   './',
   'index.html',

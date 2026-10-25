@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Blob Bash</title>
-<meta name="description" content="A cartoon tower defense game. Build silly towers to bonk jelly blobs across 30 waves.">
+<title>Zombie Bash</title>
+<meta name="description" content="A cartoon zombie tower defense game. Build silly towers and defend the safehouse across four worlds.">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#8fd3ff">
+<meta name="theme-color" content="#3f3470">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Blob Bash">
+<meta name="apple-mobile-web-app-title" content="Zombie Bash">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap">
@@ -21,10 +21,11 @@
 <body>
 <div class="app" id="app">
   <header class="hud">
-    <h1 class="logo">Blob<span>Bash</span></h1>
+    <h1 class="logo">Zombie<span>Bash</span></h1>
+    <span class="level-tag" id="level-tag">Level 1-1</span>
     <div class="stats">
-      <div class="stat stat-lives" title="Lives">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.3-9.4C1.4 8 3.6 4.5 7.1 4.5c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.5 0 5.7 3.5 4.4 7.1C19.5 16.4 12 21 12 21z"/></svg>
+      <div class="stat stat-lives" title="Brains left">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.5 4.2C10.6 3.4 9.4 3 8.2 3.3 6.6 3.6 5.5 5 5.4 6.5 3.9 7 3 8.4 3.2 10c-1 .9-1.4 2.4-.9 3.7-.5 1.4 0 3 1.2 3.8.3 1.8 2 3.1 3.8 2.9 1 .9 2.6 1.1 3.9.4.3-.1.3-.3.3-.6zM12.5 4.2c.9-.8 2.1-1.2 3.3-.9 1.6.3 2.7 1.7 2.8 3.2 1.5.5 2.4 1.9 2.2 3.5 1 .9 1.4 2.4.9 3.7.5 1.4 0 3-1.2 3.8-.3 1.8-2 3.1-3.8 2.9-1 .9-2.6 1.1-3.9.4-.3-.1-.3-.3-.3-.6z"/><path class="brain-fold" d="M7 8.5c1 .2 1.8 1 1.8 2M5.5 13c1.2-.4 2.5.1 3 1.2M17 8.5c-1 .2-1.8 1-1.8 2M18.5 13c-1.2-.4-2.5.1-3 1.2"/></svg>
         <span id="lives">0</span>
       </div>
       <div class="stat stat-gold" title="Gold">
@@ -33,7 +34,7 @@
       </div>
       <div class="stat stat-wave" title="Wave">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18"/><path class="flag" d="M5 4h12l-3 4 3 4H5z"/></svg>
-        <span id="wave">0 / 30</span>
+        <span id="wave">0 / 10</span>
       </div>
     </div>
     <div class="controls">
@@ -59,8 +60,8 @@
           <h2>Paused</h2>
           <div class="dialog-actions">
             <button class="btn btn-go" id="btn-resume" type="button">Resume</button>
-            <button class="btn" id="btn-restart" type="button">Restart map</button>
-            <button class="btn" id="btn-maps" type="button">Change map</button>
+            <button class="btn" id="btn-restart" type="button">Restart level</button>
+            <button class="btn" id="btn-maps" type="button">Level select</button>
           </div>
         </div>
       </div>
@@ -79,24 +80,27 @@
 
 <div class="screen" id="title-screen">
   <div class="title-box">
-    <h1 class="big-logo">Blob<span>Bash</span></h1>
-    <p class="tagline">The jelly blobs are marching on your castle. Build silly towers, bonk every blob, and survive 30 waves.</p>
+    <h1 class="big-logo">Zombie<span>Bash</span></h1>
+    <p class="tagline">The zombies are coming for your brains! Build silly towers, bonk every zombie, and fight your way across four worlds.</p>
     <div class="continue-box" id="continue-box" hidden></div>
-    <h2 class="pick">Pick a map</h2>
+    <div class="pick-row"><h2 class="pick">Pick a level</h2><span class="total-stars" id="total-stars"></span></div>
+    <div class="world-tabs" id="world-tabs" role="tablist" aria-label="Worlds"></div>
+    <div class="world-info" id="world-info"></div>
     <div class="maps" id="map-list"></div>
     <div class="install-box" id="install-box" hidden></div>
-    <p class="keys"><kbd>1</kbd>–<kbd>5</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>U</kbd> upgrade · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
+    <p class="keys"><kbd>1</kbd>–<kbd>6</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>U</kbd> upgrade · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
   </div>
 </div>
 
 <div class="screen" id="end-screen" hidden>
   <div class="dialog dialog-end">
     <h2 id="end-title">Oh no!</h2>
+    <div class="end-stars" id="end-stars" role="img" hidden></div>
     <p id="end-text"></p>
     <div class="dialog-actions">
-      <button class="btn btn-go" id="btn-endless" type="button" hidden>Keep going</button>
-      <button class="btn btn-go" id="btn-retry" type="button">Try again</button>
-      <button class="btn" id="btn-menu" type="button">Change map</button>
+      <button class="btn btn-go" id="btn-next" type="button" hidden>Next level</button>
+      <button class="btn" id="btn-retry" type="button">Try again</button>
+      <button class="btn" id="btn-menu" type="button">Level select</button>
     </div>
   </div>
 </div>
