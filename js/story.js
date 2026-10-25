@@ -79,6 +79,22 @@ return {
         { at: [[642, 288], [986, 288], [986, 548], [632, 548]], art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'speed', x: 0.62, turn: -0.2 }, cam: [1.08, 1],
           text: [{ k: 'say', who: 'Moreno', x: 650, y: 300, w: 170, t: "Slow, loud and hungry. Light 'em up before they reach the fence.", tail: [800, 400] }] },
       ] },
+      { music: 'tension', panels: [
+        { at: R(14, 14, 986, 250), art: 'scope', snd: 'sniper', fx: 'slam', cam: [1.12, 1],
+          text: [{ k: 'sfx', x: 640, y: 70, t: 'BLAM!', size: 74, rot: -0.1, col: 'amber' }] },
+        { at: [[14, 262], [480, 262], [460, 548], [14, 548]], art: 'sniperRoof', cam: [1.1, 1, -0.03, 0],
+          text: [{ k: 'cap', x: 30, y: 276, w: 260, t: 'Somebody had been holding the farmhouse.' }] },
+        { at: [[492, 262], [986, 262], [986, 548], [472, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'lines', x: 0.58, y: 0.5 }, fx: 'shake', cam: [1.1, 1],
+          text: [{ k: 'say', who: 'Laila', x: 492, y: 280, w: 150, t: "Took y'all long enough.", tail: [690, 410] }, { k: 'say', x: 492, y: 450, w: 190, t: "Forty days I've held this place alone. Try to keep up.", tail: [660, 440] }] },
+      ] },
+      { panels: [
+        { at: R(14, 14, 400, 548), art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'speed', x: 0.55, turn: 0.2 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Moreno', x: 30, y: 40, w: 170, t: 'Who taught you to shoot like that?', tail: [190, 190] }] },
+        { at: R(412, 14, 986, 330), art: 'tattoo', cam: [1.12, 1, -0.03, 0],
+          text: [{ k: 'say', who: 'Laila', x: 430, y: 30, w: 110, t: 'My daddy.', tail: [560, 140] }, { k: 'say', x: 720, y: 236, w: 220, t: 'The dead taught me the rest.', tail: [986, 300] }] },
+        { at: R(412, 342, 986, 548), art: 'convoy', cam: [1.08, 1, 0.03, 0],
+          text: [{ k: 'cap', x: 428, y: 356, w: 330, t: 'Laila. Last of the Hollow Creek ranchers, and the best shot Bastion Company would ever have.' }, { k: 'radio', who: 'Voss', x: 690, y: 470, w: 270, t: 'Welcome to Bastion, Laila. Stay close to the Commander.', tail: [986, 470] }] },
+      ] },
     ],
   },
   'w0-mid': {
@@ -88,6 +104,11 @@ return {
         text: [{ k: 'radio', who: 'Unknown signal', x: 30, y: 30, w: 250, t: '...Bastion... this is Okafor... do you read...', tail: [180, 190] }, { k: 'radio', x: 300, y: 400, w: 260, t: '...Blackwood... the buried are moving... hurry...', tail: [250, 300] }, { k: 'sfx', x: 360, y: 90, t: 'KSSHHH', size: 40, rot: 0.1, col: 'green' }] },
       { at: [[632, 14], [986, 14], [986, 548], [602, 548]], art: 'portrait', o: { who: 'voss', mood: 'shout', bg: 'lines', x: 0.55 }, fx: 'shake', cam: [1.1, 1],
         text: [{ k: 'shout', who: 'Voss', x: 650, y: 30, w: 170, t: "That's her. She's alive!", tail: [790, 170] }, { k: 'say', x: 760, y: 420, w: 200, t: 'Hold this valley, Commander. Then we go get her.', tail: [800, 330] }] },
+    ] }, { panels: [
+      { at: [[14, 14], [560, 14], [540, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', bg: 'night', x: 0.42 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Laila', x: 290, y: 40, w: 220, t: 'Okafor... she came out to our ranch before it all went bad.', tail: [260, 200] }, { k: 'say', x: 300, y: 430, w: 220, t: 'She was asking about the meteor. About Mr. Crane.', tail: [250, 400] }] },
+      { at: [[572, 14], [986, 14], [986, 548], [552, 548]], art: 'meteorSky', cam: [1, 1.1, 0, -0.03], snd: 'missile',
+        text: [{ k: 'cap', x: 590, y: 470, w: 370, t: 'Laila watched it fall from her porch that night. So did Elias Crane.' }] },
     ] }],
   },
   'w0-outro': {
@@ -96,7 +117,7 @@ return {
       { at: R(14, 14, 986, 330), art: 'bossFall', o: { kind: 'harvester', spot: 'amber' }, fx: 'slam', snd: 'stomp', cam: [1.12, 1.02],
         text: [{ k: 'sfx', x: 640, y: 70, t: 'THOOOM', size: 70, rot: 0.08, col: 'amber', grow: 1 }, { k: 'cap', x: 30, y: 30, w: 300, t: 'Elias Crane. The farmer who found the meteor. The first to turn.' }] },
       { at: R(14, 342, 560, 548), art: 'badge', cam: [1.1, 1],
-        text: [{ k: 'say', who: 'Moreno', x: 30, y: 356, w: 210, t: "Doc was right. He was on Kessler-Vane's payroll.", tail: [14, 460] }] },
+        text: [{ k: 'say', who: 'Moreno', x: 30, y: 356, w: 210, t: "Doc was right. He was on Kessler-Vane's payroll.", tail: [14, 460] }, { k: 'say', who: 'Laila', x: 290, y: 466, w: 250, t: 'Mr. Crane fixed our fence every spring. He was kind, once.', tail: [560, 530] }] },
       { at: R(572, 342, 986, 548), art: 'worldMap', o: { upto: 1 }, cam: [1.12, 1, -0.05, 0],
         text: [{ k: 'radio', who: 'Voss', x: 760, y: 450, w: 210, t: "Okafor's signal came from Blackwood. Wheels up, Commander.", tail: [986, 420] }] },
     ] }],
@@ -122,7 +143,7 @@ return {
       { at: [[14, 14], [560, 14], [560, 548], [14, 548]], art: 'radio', o: { ch: 'CH 07  ·  OKAFOR, M.' }, snd: 'static', cam: [1.1, 1],
         text: [{ k: 'radio', who: 'Okafor', x: 30, y: 30, w: 260, t: "I'm heading north. Frostfall. Station Seven.", tail: [170, 200] }, { k: 'radio', x: 280, y: 400, w: 260, t: 'The cold slows the strain. I can finish the work there.', tail: [260, 330] }] },
       { at: R(572, 14, 986, 548), art: 'portrait', o: { who: 'moreno', mood: 'tired', bg: 'storm', x: 0.5 }, cam: [1.08, 1],
-        text: [{ k: 'say', who: 'Moreno', x: 600, y: 36, w: 140, t: 'North. Great.', tail: [740, 160] }, { k: 'say', x: 800, y: 420, w: 150, t: 'I hate the cold.', tail: [820, 340] }] },
+        text: [{ k: 'say', who: 'Moreno', x: 600, y: 36, w: 140, t: 'North. Great.', tail: [740, 160] }, { k: 'say', x: 800, y: 420, w: 150, t: 'I hate the cold.', tail: [820, 340] }, { k: 'say', who: 'Laila', x: 590, y: 250, w: 170, t: "Quit whining. I'll keep you warm with gunfire.", tail: [572, 330] }] },
     ] }],
   },
   'w1-outro': {
@@ -180,7 +201,7 @@ return {
         { at: [[14, 242], [640, 242], [620, 548], [14, 548]], art: 'behemothRise', fx: 'shake', snd: 'roar', cam: [1, 1.1, 0, 0.04],
           text: [{ k: 'radio', who: 'Voss', x: 30, y: 258, w: 230, t: 'That thing is the hive.', tail: [14, 300] }, { k: 'radio', x: 400, y: 470, w: 210, t: 'Every infected on the planet answers to it.', tail: [620, 520] }] },
         { at: [[652, 242], [986, 242], [986, 548], [632, 548]], art: 'trio', cam: [1.1, 1],
-          text: [{ k: 'say', who: 'Okafor', x: 660, y: 256, w: 170, t: 'Bring it down, and the core does the rest.', tail: [810, 400] }, { k: 'say', who: 'Moreno', x: 840, y: 470, w: 130, t: 'Last stand, then.', tail: [880, 410] }] },
+          text: [{ k: 'say', who: 'Okafor', x: 660, y: 256, w: 170, t: 'Bring it down, and the core does the rest.', tail: [810, 400] }, { k: 'say', who: 'Moreno', x: 850, y: 420, w: 120, t: 'Last stand, then.', tail: [880, 400] }, { k: 'say', who: 'Laila', x: 660, y: 480, w: 160, t: "Then let's make it count.", tail: [740, 440] }] },
       ] },
     ],
   },
@@ -196,21 +217,35 @@ return {
     ] }],
   },
   'w3-outro': {
-    title: 'Dawn', kicker: 'Chapter 4', world: 3,
+    title: 'One Shot', kicker: 'Chapter 4', world: 3,
     pages: [
       { music: 'boss', panels: [
-        { at: R(14, 14, 986, 300), art: 'explosion', o: { spot: 'green' }, fx: 'slam', snd: 'boom', cam: [1.15, 1.02],
-          text: [{ k: 'sfx', x: 520, y: 60, t: 'KRA-THOOOM!', size: 76, rot: -0.08, col: 'green', grow: 1 }] },
-        { at: R(14, 312, 500, 548), art: 'injection', snd: 'pulse', cam: [1.1, 1],
-          text: [{ k: 'cap', x: 30, y: 326, w: 260, t: "Okafor drove the Lazarus Core into the hive's heart." }] },
-        { at: R(512, 312, 986, 548), art: 'sunrise', cam: [1, 1.08, 0, -0.02],
-          text: [{ k: 'cap', x: 528, y: 326, w: 280, t: 'One by one, the dead lay down again.' }] },
+        { at: R(14, 14, 986, 290), art: 'tendril', fx: 'shake', snd: 'roar', cam: [1.12, 1],
+          text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'Okafor ran for the heart. The hive saw her coming.' }, { k: 'radio', who: 'Voss', x: 660, y: 200, w: 300, t: "Laila! She's not going to make it!", tail: [986, 240] }] },
+        { at: [[14, 302], [520, 302], [500, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', hat: true, bg: 'lines', x: 0.4, y: 0.52, zoom: 1.15 }, cam: [1.12, 1],
+          text: [{ k: 'say', who: 'Laila', x: 330, y: 330, w: 160, t: "I've got her.", tail: [260, 450] }] },
+        { at: [[532, 302], [986, 302], [986, 548], [512, 548]], art: 'tattoo', o: { spot: 'green' }, cam: [1.15, 1.02],
+          text: [{ k: 'cap', x: 740, y: 500, w: 230, t: 'One breath. One shot.' }] },
+      ] },
+      { music: 'boss', panels: [
+        { at: [[14, 14], [470, 14], [440, 548], [14, 548]], art: 'scope', o: { target: 'hive' }, fx: 'slam', snd: 'sniper', cam: [1.2, 1.02],
+          text: [{ k: 'sfx', x: 60, y: 420, t: 'BLAM!', size: 80, rot: -0.12, col: 'green' }] },
+        { at: [[482, 14], [986, 14], [986, 548], [452, 548]], art: 'explosion', o: { spot: 'green' }, fx: 'flash', snd: 'boom', cam: [1.15, 1.02],
+          text: [{ k: 'sfx', x: 520, y: 60, t: 'KRA-THOOOM!', size: 64, rot: -0.08, col: 'green', grow: 1 }, { k: 'cap', x: 500, y: 470, w: 330, t: "The shot split the hive's eye wide open." }] },
       ] },
       { panels: [
-        { at: [[14, 14], [400, 14], [380, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.45 }, cam: [1.08, 1],
-          text: [{ k: 'say', who: 'Voss', x: 200, y: 36, w: 170, t: "Commander. It's over.", tail: [210, 150] }] },
-        { at: [[412, 14], [986, 14], [986, 548], [392, 548]], art: 'meteorSky', o: { many: true }, snd: 'missile', cam: [1, 1.1, 0, -0.03],
-          text: [{ k: 'say', who: 'Moreno', x: 720, y: 440, w: 220, t: 'Doc... what is that?', tail: [560, 380] }] },
+        { at: R(14, 14, 500, 548), art: 'injection', snd: 'pulse', cam: [1.1, 1],
+          text: [{ k: 'cap', x: 30, y: 30, w: 260, t: 'Okafor drove the Lazarus Core into its heart.' }] },
+        { at: R(512, 14, 986, 548), art: 'sunrise', cam: [1, 1.08, 0, -0.02],
+          text: [{ k: 'cap', x: 528, y: 30, w: 300, t: 'One by one, the dead lay down again.' }] },
+      ] },
+      { panels: [
+        { at: [[14, 14], [330, 14], [320, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.5 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Voss', x: 30, y: 36, w: 160, t: "Commander. It's over.", tail: [150, 170] }] },
+        { at: [[342, 14], [656, 14], [646, 548], [332, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'tone', glow: 'amber', x: 0.5, y: 0.52 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Laila', x: 356, y: 400, w: 200, t: 'Told you I could keep up, Commander.', tail: [480, 360] }] },
+        { at: [[668, 14], [986, 14], [986, 548], [658, 548]], art: 'meteorSky', o: { many: true }, snd: 'missile', cam: [1, 1.1, 0, -0.03],
+          text: [{ k: 'say', who: 'Moreno', x: 700, y: 440, w: 220, t: 'Doc... what is that?', tail: [760, 380] }] },
       ] },
       { panels: [{ at: FULL, art: 'titleCard', o: { title: 'HOLD THE LINE', sub: 'TO BE CONTINUED', spot: 'green' }, fx: 'flash', snd: 'impact', cam: [1.06, 1] }] },
     ],
@@ -324,7 +359,7 @@ const Story = (() => {
       if (t.k === 'loc') { ctx.fillStyle = SPOT[st.spot] || SPOT.red; ctx.fillRect(0, 0, s * 5, h); }
       typeLines(L, pad + (t.k === 'loc' ? s * 4 : 0), pad * 0.7, t.k === 'loc' ? PAPER : INK, vis, 'left');
     } else {
-      const rx = L.tw / 2 + pad * 1.5, ry = L.th / 2 + pad * 1.15, cx = clamp(bx + rx, X(10) + rx, X(PW - 10) - rx), cy = clamp(by + ry, Y(10) + ry, Y(PH - 10) - ry);
+      const rx = L.tw / 2 * (L.lines.length > 2 ? 1.16 : 1.08) + pad * 1.5, ry = L.th / 2 + pad * 1.15, cx = clamp(bx + rx, X(10) + rx, X(PW - 10) - rx), cy = clamp(by + ry, Y(10) + ry, Y(PH - 10) - ry);
       const tail = t.tail ? [X(t.tail[0]), Y(t.tail[1])] : null;
       ctx.translate(cx, cy); ctx.scale(pop, pop); ctx.translate(-cx, -cy);
       const lw = Math.max(1.2, s * 2.4);
@@ -532,7 +567,7 @@ const Story = (() => {
 const STORY_INTEL = [
   { 1: 'First contact. Keep them off the farm road and the survivors stay breathing.', 25: 'That transmission came from somewhere near here. Hold the valley and we can trace it.', 50: "Crane's place. Whatever is left of him is waiting at the end of the road.",
     boss: 'Something big is moving through the corn. Concentrate your fire.',
-    lines: ['The corn hides them until the last second. Cover the bends.', 'Survivors spotted near the silos. Buy them time.', 'Fuel is short. Make every shot count.', 'They are drawn to the noise of the guns. Use that.', 'The farm roads meet here. Expect company from more than one side.', 'Moreno says the fast ones come at dusk. Do not let them slip by.', 'Kessler-Vane trucks used this road before the outbreak. Find out why.', 'Hold here and the next town gets another night.'] },
+    lines: ['The corn hides them until the last second. Cover the bends.', 'Survivors spotted near the silos. Buy them time.', 'Fuel is short. Make every shot count.', 'They are drawn to the noise of the guns. Use that.', 'The farm roads meet here. Expect company from more than one side.', 'Laila knows these fields better than anyone. Trust her sight lines.', 'Kessler-Vane trucks used this road before the outbreak. Find out why.', 'Hold here and the next town gets another night.'] },
   { 1: 'Blackwood. Stay on the paths. The ground here is not solid.', 25: "Okafor's last transmission came from the chapel tower. Keep it standing.", 50: 'The Grave Lord holds the old crypt. End it, and the rift should close.',
     boss: 'The crypt doors are open. Whatever came out of them is heading your way.',
     lines: ['The fog hides the crawlers. Watch the low ground.', 'Every grave you pass is a grave that might open.', 'The rift pulses when they mass. Hit them before it does.', 'Bats in the bell tower. Something spooked them.', 'Mausoleum doors have been forced from the inside.', 'The dead here are older and slower, but there are so many more of them.', 'Keep the lanterns lit. They hate the light.', 'Okafor marked this crossing on her map. Hold it.'] },
@@ -541,7 +576,7 @@ const STORY_INTEL = [
     lines: ['Whiteout incoming. Trust your sight lines, not your eyes.', 'The frozen ones thaw as they walk. They speed up the closer they get.', 'Generators are failing. Keep the heaters on and the guns warm.', 'Something under the ice is moving with them.', 'Kessler-Vane cargo crates on the road. Do not let them reach the lab.', 'The cold keeps the strain sluggish. Use the time.', 'The supply drop is delayed by the storm. Spend wisely.', "Station Seven's antenna is our only link home. Defend it."] },
   { 1: 'Black Bayou. Every infected on the planet is heading here.', 25: 'The horde is converging. This is the line.', 50: 'The hive is awake. Okafor goes in with the core on your signal. Hold the line.',
     boss: 'The water is boiling. Something is coming up out of the bayou.',
-    lines: ['The water carries them faster than the roads. Watch the channels.', 'Bloaters in the reeds. Pop them early.', "The hive's pulse is getting louder. They are answering it.", 'Spores in the air. Masks on.', 'The shacks hide nests. Burn them out.', 'Every road ends here. So does this.', "Okafor's core is charging. Buy her minutes.", 'They are not attacking anymore. They are protecting it.'] },
+    lines: ['The water carries them faster than the roads. Watch the channels.', 'Bloaters in the reeds. Pop them early.', "The hive's pulse is getting louder. They are answering it.", 'Spores in the air. Masks on.', 'The shacks hide nests. Burn them out.', 'Laila has eyes on the treeline. Nothing gets close without her knowing.', "Okafor's core is charging. Buy her minutes.", 'They are not attacking anymore. They are protecting it.'] },
 ];
 function storyIntel(L) {
   const I = STORY_INTEL[L.world] || STORY_INTEL[0], n = L.num;

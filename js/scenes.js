@@ -147,6 +147,7 @@ const SCENES = (() => {
     kneel: { lean: 0.5, head: 0.5, ua1: 0.4, la1: 0.2, ua2: 0.9, la2: 0.1, th1: 1.5, sh1: 1.55, th2: 0.1, sh2: 2.6 },
     thrust: { lean: 0.42, head: -0.05, ua1: 1.6, la1: 0.05, ua2: 1.45, la2: 0.2, th1: 0.75, sh1: 0.7, th2: -0.6, sh2: 0.3 },
     sit: { lean: -0.05, head: 0.35, ua1: 0.55, la1: 0.9, ua2: 0.3, la2: 1.0, th1: 1.45, sh1: 1.6, th2: 1.3, sh2: 1.3 },
+    aim: { lean: 0.06, head: 0.14, ua1: 1.5, la1: 0.12, ua2: 0.85, la2: 1.5, th1: 0.32, sh1: 0.12, th2: -0.28, sh2: 0.18 },
     point: { lean: 0.02, head: 0, ua1: 1.45, la1: 0.05, ua2: -0.05, la2: 0.3, th1: 0.12, sh1: 0.04, th2: -0.1, sh2: 0.05 },
   };
   // kinds: soldier, moreno, voss, okafor, coat, parka, farmer, zombie, and the giants harvester, grave, frozen
@@ -157,7 +158,7 @@ const SCENES = (() => {
     const s = h / 100, f = o.face || 1;
     const dir = (a, l) => [Math.sin(a) * l, Math.cos(a) * l];
     const add = (p, v, k = 1) => [p[0] + v[0] * k, p[1] + v[1] * k];
-    const b = giant ? 1.18 : kind === 'parka' || kind === 'moreno' ? 1.22 : kind === 'zombie' ? 1.1 : kind === 'okafor' || kind === 'voss' ? 0.9 : 1;
+    const b = giant ? 1.18 : kind === 'parka' || kind === 'moreno' ? 1.22 : kind === 'zombie' ? 1.1 : kind === 'okafor' || kind === 'voss' || kind === 'laila' ? 0.9 : 1;
     const H = [0, -52], up = [Math.sin(P.lean), -Math.cos(P.lean)], perp = [Math.cos(P.lean), Math.sin(P.lean)];
     const S = add(H, up, 29), N = add(S, up, 4.5);
     const ha = P.lean + P.head, hd = add(N, [Math.sin(ha), -Math.cos(ha)], 7);
@@ -175,6 +176,8 @@ const SCENES = (() => {
     const draw = (col) => {
       c.fillStyle = col; c.strokeStyle = col;
       limb(A2, 6.2 * b, 4.6 * b); hand(A2); limb(L2, 9.2 * b, 6.2 * b); foot(L2);
+      // Laila's long waves hang down her back
+      if (kind === 'laila') { const back = [-Math.cos(ha), -Math.sin(ha)]; let p0 = add(hd, back, 2); for (let i = 1; i <= 8; i++) { const k = i / 8, p1 = add(add(lerp2(hd, lerp2(S, H, 0.55), k), back, 6 + k * 3), perp, Math.sin(k * 7) * 1.6); c.lineWidth = lerp(10, 4, k); c.beginPath(); c.moveTo(...p0); c.lineTo(...p1); c.stroke(); p0 = p1; } }
       // torso: broad shoulders, a narrower waist, hips
       const t0 = tp(0, 10.5 * b), t1 = tp(0.35, 9.4 * b), t2 = tp(0.75, 7 * b), t3 = tp(1, 8.2 * b);
       c.beginPath(); c.moveTo(...t0[0]); c.lineTo(...t1[0]); c.lineTo(...t2[0]); c.lineTo(...t3[0]); c.lineTo(...t3[1]); c.lineTo(...t2[1]); c.lineTo(...t1[1]); c.lineTo(...t0[1]); c.closePath(); c.fill();
@@ -202,6 +205,13 @@ const SCENES = (() => {
       if (kind === 'farmer' || kind === 'harvester') { c.save(); c.translate(...hd); c.rotate(ha); c.beginPath(); ell(c, 0, -5, kind === 'harvester' ? 22 : 15, 2.8); ell(c, 0, -6.5, 7.5, 6, 0, Math.PI, TAU); c.fill(); c.restore(); }
       if (kind === 'grave') { c.save(); c.translate(...hd); c.rotate(ha); c.beginPath(); ell(c, 0, -1, 9.5, 10.5, 0, Math.PI * 0.9, Math.PI * 2.1); sub(c, [[-8, -6], [-8, -10], [-6, -16], [-4, -10], [-2, -18], [0, -11], [2, -18], [4, -10], [6, -16], [8, -10], [8, -6]]); c.fill(); c.restore(); }
       if (kind === 'okafor') { c.beginPath(); c.arc(...add(hd, [Math.sin(ha - 0.9), -Math.cos(ha - 0.9)], 7.5), 4, 0, TAU); c.fill(); }
+      if (kind === 'laila') {
+        // a cowboy hat, brim curled up at both sides
+        c.save(); c.translate(...hd); c.rotate(ha); c.beginPath();
+        c.moveTo(-15, -9); c.quadraticCurveTo(-12, -3.5, 0, -3.5); c.quadraticCurveTo(12, -3.5, 15, -9); c.quadraticCurveTo(10, -5.5, 0, -6); c.quadraticCurveTo(-10, -5.5, -15, -9); c.closePath();
+        c.moveTo(-7, -5); c.bezierCurveTo(-8, -12, -5, -14, -1, -12.5); c.lineTo(1, -12.5); c.bezierCurveTo(5, -14, 8, -12, 7, -5); c.closePath(); c.fill();
+        c.restore();
+      }
       if (kind === 'parka') { c.lineWidth = 2; c.beginPath(); c.arc(hd[0], hd[1], 9.5, ha - Math.PI * 0.95, ha + Math.PI * 0.2); c.stroke(); }
       if (kind === 'voss') { c.lineWidth = 1.6; c.beginPath(); c.arc(hd[0], hd[1] - 1, 8.2, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); c.beginPath(); c.moveTo(hd[0] + 7, hd[1] + 1); c.lineTo(hd[0] + 9, hd[1] + 6); c.stroke(); c.beginPath(); ell(c, hd[0] - 3, hd[1] - 3, 7, 6.5); c.fill(); }
       // weapons and props
@@ -214,17 +224,26 @@ const SCENES = (() => {
       }
       if (kind === 'harvester') { c.lineWidth = 2.6; c.beginPath(); c.moveTo(hn[0] - 4, hn[1] + 40); c.lineTo(hn[0] + 4, hn[1] - 50); c.stroke(); c.beginPath(); c.moveTo(hn[0] + 4, hn[1] - 50); c.quadraticCurveTo(hn[0] - 26, hn[1] - 62, hn[0] - 44, hn[1] - 34); c.quadraticCurveTo(hn[0] - 22, hn[1] - 50, hn[0] + 2, hn[1] - 42); c.fill(); }
       if (o.prop === 'case') c.fillRect(hn[0] - 7, hn[1] - 1, 14, 10);
+      if (kind === 'laila') {
+        // a scoped hunting rifle: stock in the shoulder, barrel out past the leading hand
+        const tr = A2[2], ang = Math.atan2(hn[1] - tr[1], hn[0] - tr[0]), ca = Math.cos(ang), sa = Math.sin(ang), at = (d, o2 = 0) => [tr[0] + ca * d - sa * o2, tr[1] + sa * d + ca * o2];
+        c.lineWidth = 4.2; c.beginPath(); c.moveTo(...at(-12, 1.5)); c.lineTo(...at(8)); c.stroke();
+        c.lineWidth = 2.2; c.beginPath(); c.moveTo(...at(4)); c.lineTo(...at(Math.hypot(hn[0] - tr[0], hn[1] - tr[1]) + 26)); c.stroke();
+        c.lineWidth = 3; c.beginPath(); c.moveTo(...at(0, -4)); c.lineTo(...at(12, -4)); c.stroke();
+        c.beginPath(); c.moveTo(...at(-12, 0)); c.lineTo(...at(-14, 4)); c.lineTo(...at(-10, 4.5)); c.closePath(); c.fill();
+        o.muzzle = at(Math.hypot(hn[0] - tr[0], hn[1] - tr[1]) + 27);
+      }
       limb(A1, 6.2 * b, 4.6 * b); hand(A1);
     };
     if (o.rim) { c.save(); c.translate(-1.9, -1.3); draw(o.rim); c.restore(); }
     draw(o.col || INK);
     if (o.eyes) { c.fillStyle = o.eyes; for (const dx of giant ? [-2.5, 3.5] : [3.5]) { c.beginPath(); c.arc(...add(add(hd, [Math.cos(ha), Math.sin(ha)], dx), [Math.sin(ha), -Math.cos(ha)], 0.5), giant ? 1.6 : 1.3, 0, TAU); c.fill(); } }
     const m = c.getTransform(), map = (p) => { const q = m.transformPoint(new DOMPoint(p[0], p[1])); return [q.x, q.y]; };
-    const res = { hand: map(A1[2]), back: map(A2[2]), head: map(hd) };
+    const res = { hand: map(A1[2]), back: map(A2[2]), head: map(hd), muzzle: map(o.muzzle || A1[2]) };
     c.restore();
     // transformPoint gives device space; undo the caller's transform so results are in its units
     const inv = c.getTransform().inverse(), un = (p) => { const q = inv.transformPoint(new DOMPoint(p[0], p[1])); return [q.x, q.y]; };
-    return { hand: un(res.hand), back: un(res.back), head: un(res.head) };
+    return { hand: un(res.hand), back: un(res.back), head: un(res.head), muzzle: un(res.muzzle) };
   }
   const lerp2 = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t)];
   // a clawing hand at the end of a forearm reaching from (x, y) toward ang; bony adds knuckle highlights
@@ -1344,7 +1363,7 @@ const SCENES = (() => {
       hills(c, w, h, hy + h * 0.02, h * 0.01, 3, tone(c, 0.8, k));
       // a ridge and the three of them from behind
       c.fillStyle = INK; c.beginPath(); c.moveTo(0, h); c.lineTo(0, h * 0.84); c.quadraticCurveTo(w * 0.5, h * 0.76, w, h * 0.86); c.lineTo(w, h); c.fill();
-      for (const [x, kind, hh, f, pose] of [[0.36, 'voss', 0.5, 1, 'stand'], [0.5, 'okafor', 0.47, 1, 'stand'], [0.64, 'moreno', 0.54, -1, 'gun']]) figure(c, w * x, h * 0.84, h * hh, kind, { face: f, rim: SPOT.green, pose });
+      for (const [x, kind, hh, f, pose] of [[0.22, 'voss', 0.44, 1, 'stand'], [0.4, 'okafor', 0.42, 1, 'stand'], [0.6, 'laila', 0.44, -1, 'stand'], [0.8, 'moreno', 0.47, -1, 'gun']]) figure(c, w * x, h * 0.84, h * hh, kind, { face: f, rim: SPOT.green, pose });
       vignette(c, w, h, 0.6, k);
     },
     anim(c, w, h, t) { glow(c, w * 0.5, h * 0.62, unit(w, h) * (22 + 6 * pulse(t, 2)), SPOT.green, 0.3); },
@@ -1442,6 +1461,141 @@ const SCENES = (() => {
       spot(c, SPOT.amber, () => c.fillRect(0, 0, w, h), 0.4);
     },
     anim(c, w, h, t) { motes(c, w, h * 0.7, t, 24, 61, '#fff6d8', 0.6, unit(w, h) * 0.3, -unit(w, h) * 0.6, unit(w, h) * 1.5, unit(w, h) * 2); },
+  };
+
+
+  // ============================================================ LAILA
+  // through her rifle scope: a lens circle, crosshair and range marks over the target
+  S.scope = {
+    base(c, w, h, o) {
+      const k = cellOf(w, h), u = unit(w, h), cx = w * 0.5, cy = h * 0.5, R = Math.min(w, h) * 0.46, hive = o.target === 'hive';
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      c.save(); c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.clip();
+      if (hive) {
+        c.fillStyle = INK; c.fillRect(0, 0, w, h); radialTone(c, cx, cy, R * 0.3, R, 0.4, 1, k, [cx - R, cy - R, R * 2, R * 2]);
+        const rng = mulberry32(3); c.strokeStyle = INK; c.lineCap = 'round';
+        for (let i = 0; i < 12; i++) { c.lineWidth = u * (0.5 + rng()); crack(c, cx + (rng() - 0.5) * R * 1.8, cy + (rng() - 0.5) * R * 1.8, R * 0.5, rng() * TAU, 30 + i, u * 0.6, 1); }
+        const ew = R * 0.62, eh = R * 0.3, lid = () => { c.beginPath(); c.moveTo(cx - ew, cy); c.quadraticCurveTo(cx, cy - eh * 1.8, cx + ew, cy); c.quadraticCurveTo(cx, cy + eh * 1.8, cx - ew, cy); c.closePath(); };
+        glow(c, cx, cy, R * 0.9, SPOT.green, 0.8); lid(); c.fillStyle = '#e4ffe9'; c.fill();
+        c.save(); lid(); c.clip(); glow(c, cx, cy, eh * 1.6, SPOT.green, 1); c.fillStyle = '#123018'; c.beginPath(); c.arc(cx, cy, eh * 0.95, 0, TAU); c.fill(); c.strokeStyle = SPOT.green; c.lineWidth = u * 0.4; for (let i = 0; i < 36; i++) { const a = i / 36 * TAU; c.beginPath(); c.moveTo(cx + Math.cos(a) * eh * 0.3, cy + Math.sin(a) * eh * 0.3); c.lineTo(cx + Math.cos(a) * eh * 0.9, cy + Math.sin(a) * eh * 0.9); c.stroke(); } c.fillStyle = INK; c.beginPath(); c.ellipse(cx, cy, eh * 0.12, eh * 0.6, 0, 0, TAU); c.fill(); c.restore();
+        lid(); c.strokeStyle = INK; c.lineWidth = u * 1.4; c.stroke();
+      } else {
+        paper(c, w, h); vTone(c, 0, cy - R, w, cy + R * 0.3, 0.55, 0.05, k);
+        glow(c, cx + R * 0.4, cy + R * 0.1, R, SPOT.amber, 0.6);
+        // the farmhouse porch and a dead man reaching for the door
+        c.fillStyle = INK; c.fillRect(cx - R, cy + R * 0.28, R * 2, R); c.fillRect(cx + R * 0.15, cy - R * 0.5, R * 0.9, R * 0.8);
+        c.fillStyle = SPOT.amber; c.fillRect(cx + R * 0.32, cy - R * 0.3, R * 0.18, R * 0.25);
+        figure(c, cx - R * 0.02, cy + R * 0.32, R * 1.05, 'zombie', { rim: SPOT.amber, eyes: SPOT.red, adj: { head: 0.1 } });
+      }
+      // lens shading and a curved reflection
+      radialTone(c, cx, cy, R * 0.7, R, 0, 1, k, [cx - R, cy - R, R * 2, R * 2]);
+      c.strokeStyle = 'rgba(242,238,228,0.25)'; c.lineWidth = u * 2; c.beginPath(); c.arc(cx, cy, R * 0.85, Math.PI * 1.1, Math.PI * 1.45); c.stroke();
+      c.restore();
+      // the reticle
+      const tx = hive ? cx : cx - R * 0.02 + R * 0.25, ty = hive ? cy : cy - R * 0.56;
+      c.strokeStyle = INK; c.lineWidth = u * 0.5;
+      c.beginPath(); c.moveTo(cx - R, ty); c.lineTo(tx - R * 0.08, ty); c.moveTo(tx + R * 0.08, ty); c.lineTo(cx + R, ty); c.moveTo(tx, cy - R); c.lineTo(tx, ty - R * 0.08); c.moveTo(tx, ty + R * 0.08); c.lineTo(tx, cy + R); c.stroke();
+      c.lineWidth = u * 1.6; for (const [x0, y0, x1, y1] of [[cx - R, ty, cx - R * 0.6, ty], [cx + R * 0.6, ty, cx + R, ty], [tx, cy + R * 0.6, tx, cy + R]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+      c.fillStyle = INK; for (let i = 1; i <= 4; i++) for (const sd of [-1, 1]) { c.beginPath(); c.arc(tx + sd * i * R * 0.12, ty, u * 0.6, 0, TAU); c.fill(); c.beginPath(); c.arc(tx, ty + sd * i * R * 0.12, u * 0.6, 0, TAU); c.fill(); }
+      c.strokeStyle = SPOT.red; c.lineWidth = u * 0.5; c.beginPath(); c.arc(tx, ty, R * 0.05, 0, TAU); c.stroke();
+      c.strokeStyle = tone(c, 0.6, k); c.lineWidth = u * 2.4; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke();
+      label(c, hive ? 'RNG 410 M' : 'RNG 350 M', cx + R * 0.55, cy + R * 0.85, u * 3, PAPER, 'center');
+    },
+    anim(c, w, h, t, o) { const R = Math.min(w, h) * 0.46; if (o.target === 'hive') glow(c, w / 2, h / 2, R * (0.25 + 0.06 * pulse(t, 4)), SPOT.green, 0.35); },
+  };
+
+  // Laila on the farmhouse roof at dusk, mid-shot
+  S.sniperRoof = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h), hy = h * 0.78;
+      paper(c, w, h); vTone(c, 0, 0, w, hy, 0.7, 0.05, k);
+      glow(c, w * 0.25, hy, w * 0.5, SPOT.amber, 0.75);
+      c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.25, hy, h * 0.14, Math.PI, TAU); c.fill();
+      rays(c, w * 0.25, hy, 30, w, 0.22, 5, PAPER, Math.PI, TAU);
+      hills(c, w, h, hy, h * 0.01, 3); M.cornRow(c, w, hy + 4, h * 0.12, 11);
+      // the roof ridge running up from the bottom right
+      c.fillStyle = INK; poly(c, [[w * 0.32, h], [w * 0.62, h * 0.62], [w * 1.05, h * 0.74], [w * 1.05, h]]); c.fill();
+      c.strokeStyle = PAPER; c.lineWidth = u * 0.4; for (let i = 1; i < 8; i++) { const f = i / 8; c.beginPath(); c.moveTo(lerp(w * 0.32, w * 0.62, f), lerp(h, h * 0.62, f)); c.lineTo(lerp(w * 0.32, w * 0.62, f) + w * 0.45, lerp(h, h * 0.62, f) + h * 0.12); c.globalAlpha = 0.35; c.stroke(); } c.globalAlpha = 1;
+      c.fillRect(w * 0.84, h * 0.5, w * 0.05, h * 0.22);
+      const { muzzle } = figure(c, w * 0.66, h * 0.645, h * 0.46, 'laila', { pose: 'aim', face: -1, rim: SPOT.amber });
+      // the shot: a starburst at the muzzle and a smoke curl
+      c.save(); c.translate(...muzzle); c.fillStyle = PAPER; poly(c, Array.from({ length: 14 }, (_, i) => { const a = i / 14 * TAU, r = (i % 2 ? 1 : 2.6) * u * 2.2; return [Math.cos(a) * r * 1.4, Math.sin(a) * r]; })); c.fill(); c.restore();
+      glow(c, muzzle[0], muzzle[1], u * 16, SPOT.amber, 0.9);
+      M.motionLines(c, 0, muzzle[1] - u * 1.2, muzzle[0] - u * 4, u * 2.4, Math.PI, 6, PAPER, 8);
+      for (let i = 0; i < 3; i++) M.zombie(c, w * (0.08 + i * 0.09), hy + h * 0.04, h * 0.1, { rim: SPOT.amber, lean: i === 1 ? 1.2 : 0.3 });
+      spot(c, SPOT.amber, () => c.fillRect(0, 0, w, h), 0.3);
+      vignette(c, w, h, 0.55, k);
+    },
+  };
+
+  // her forearm along the rifle stock, the butterfly tattoo on the inside of the arm
+  S.tattoo = {
+    base(c, w, h, o) {
+      const k = cellOf(w, h), u = unit(w, h), col = SPOT[o.spot || 'amber'];
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      M.focusLines(c, w * 0.62, h * 0.5, w, h, 90, Math.min(w, h) * 0.5, tone(c, 0.35, k), 13);
+      glow(c, w * 0.6, h * 0.4, w * 0.5, col, 0.4);
+      // the rifle running across the frame: scope above, walnut stock below the arm
+      c.save(); c.translate(w * 0.5, h * 0.5); c.rotate(-0.1);
+      c.beginPath(); c.roundRect(-w * 0.62, -h * 0.4, w * 1.2, h * 0.14, h * 0.07); fillT(c, 0.85, k); c.strokeStyle = PAPER; c.lineWidth = u * 0.4; c.stroke();
+      c.fillStyle = tone(c, 0.4, k); c.fillRect(-w * 0.5, -h * 0.37, w * 0.95, h * 0.025);
+      c.fillStyle = INK; for (const x of [-0.25, 0.2]) c.fillRect(w * x, -h * 0.27, w * 0.05, h * 0.1);
+      c.beginPath(); c.moveTo(-w * 0.62, -h * 0.17); c.lineTo(w * 0.62, -h * 0.2); c.lineTo(w * 0.62, h * 0.38); c.lineTo(-w * 0.62, h * 0.42); c.closePath(); fillT(c, 0.55, k);
+      c.strokeStyle = INK; c.lineWidth = u * 0.6; c.stroke();
+      c.lineWidth = u * 0.3; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(-w * 0.62, -h * 0.13 + i * h * 0.06); c.bezierCurveTo(-w * 0.2, -h * 0.16 + i * h * 0.065, w * 0.2, -h * 0.1 + i * h * 0.055, w * 0.62, -h * 0.16 + i * h * 0.06); c.stroke(); }
+      c.restore();
+      // the forearm, elbow off the lower left, wrist off the right edge
+      const arm = () => { c.beginPath(); c.moveTo(-w * 0.05, h * 0.48); c.bezierCurveTo(w * 0.3, h * 0.34, w * 0.7, h * 0.3, w * 1.05, h * 0.33); c.lineTo(w * 1.05, h * 0.56); c.bezierCurveTo(w * 0.7, h * 0.55, w * 0.35, h * 0.68, -w * 0.05, h * 0.92); c.closePath(); };
+      c.save(); c.translate(u * 1.5, u * 2); arm(); c.fillStyle = 'rgba(0,0,0,0.5)'; c.fill(); c.restore();
+      arm(); fillT(c, 0, k);
+      c.save(); arm(); c.clip(); gradTone(c, 0, h * 0.42, 0, h * 0.9, 0, 0.75, k, INK, [0, h * 0.3, w, h * 0.65]);
+      const rng = mulberry32(4); c.fillStyle = INK; for (let i = 0; i < 50; i++) { const x = rng() * w, y = h * (0.36 + rng() * 0.14); c.globalAlpha = 0.5; c.beginPath(); c.arc(x, y, u * 0.22, 0, TAU); c.fill(); } c.globalAlpha = 1;
+      c.strokeStyle = PAPER; c.lineWidth = u * 0.5; c.beginPath(); c.moveTo(w * 0.1, h * 0.43); c.bezierCurveTo(w * 0.35, h * 0.35, w * 0.7, h * 0.33, w * 1.0, h * 0.35); c.stroke();
+      c.restore();
+      arm(); c.strokeStyle = INK; c.lineWidth = u * 0.8; c.stroke();
+      // the butterfly, fine-line, its wings open along the arm
+      c.save(); c.translate(w * 0.5, h * 0.45); c.rotate(-0.12); const b = Math.min(w, h) * 0.12;
+      c.strokeStyle = INK; c.lineWidth = Math.max(1, u * 0.35); c.lineJoin = 'round';
+      for (const sd of [-1, 1]) {
+        c.beginPath(); c.moveTo(0, 0); c.bezierCurveTo(sd * b * 0.4, -b * 1.2, sd * b * 1.5, -b * 1.1, sd * b * 1.25, -b * 0.25); c.quadraticCurveTo(sd * b * 0.9, b * 0.1, 0, 0.05 * b); c.stroke();
+        c.beginPath(); c.moveTo(0, b * 0.05); c.bezierCurveTo(sd * b * 0.9, b * 0.1, sd * b * 1.05, b * 0.8, sd * b * 0.55, b * 0.85); c.quadraticCurveTo(sd * b * 0.2, b * 0.75, 0, b * 0.15); c.stroke();
+        c.lineWidth = Math.max(0.8, u * 0.22);
+        for (const [x0, y0, x1, y1] of [[0.1, -0.05, 0.75, -0.75], [0.1, -0.02, 1.05, -0.45], [0.1, 0.1, 0.75, 0.55]]) { c.beginPath(); c.moveTo(sd * b * x0, b * y0); c.lineTo(sd * b * x1, b * y1); c.stroke(); }
+        c.fillStyle = INK; for (const [x, y, r] of [[0.95, -0.6, 0.07], [1.1, -0.38, 0.05], [0.7, 0.62, 0.06]]) { c.beginPath(); c.arc(sd * b * x, b * y, b * r, 0, TAU); c.fill(); }
+        c.lineWidth = Math.max(0.8, u * 0.25); c.beginPath(); c.moveTo(0, -b * 0.15); c.quadraticCurveTo(sd * b * 0.15, -b * 0.6, sd * b * 0.32, -b * 0.75); c.stroke();
+      }
+      c.fillStyle = INK; c.beginPath(); c.ellipse(0, b * 0.15, b * 0.07, b * 0.38, 0, 0, TAU); c.fill();
+      c.restore();
+    },
+  };
+
+  // the hive lashes out at Okafor as she runs for its heart
+  S.tendril = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h), cx = w * 0.72, cy = h * 0.55;
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      glow(c, cx, cy, w * 0.45, SPOT.green, 0.85); rays(c, cx, cy, 40, w, 0.25, 4);
+      glow(c, cx, cy, u * 20, '#eafff0', 1);
+      // ribbed walls of the chamber
+      c.strokeStyle = tone(c, 0.6, k); c.lineWidth = u * 1.2; for (let i = 1; i < 6; i++) { c.beginPath(); c.ellipse(cx, cy, w * 0.12 * i, h * 0.16 * i, 0, 0, TAU); c.stroke(); }
+      // a tentacle slamming down across the frame, ridged and suckered
+      const pts = [[-w * 0.08, -h * 0.05], [w * 0.3, h * 0.0], [w * 0.62, h * 0.12], [w * 0.62, h * 0.62]];
+      const along = (t) => { const [a, b2, c2, d] = pts, m = 1 - t; return [m * m * m * a[0] + 3 * m * m * t * b2[0] + 3 * m * t * t * c2[0] + t * t * t * d[0], m * m * m * a[1] + 3 * m * m * t * b2[1] + 3 * m * t * t * c2[1] + t * t * t * d[1]]; };
+      const side = [], other = [];
+      for (let i = 0; i <= 30; i++) { const t = i / 30, p0 = along(t), p1 = along(Math.min(1, t + 0.01)), a = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) + Math.PI / 2, r = lerp(u * 16, u * 2.5, t); side.push([p0[0] + Math.cos(a) * r, p0[1] + Math.sin(a) * r]); other.push([p0[0] - Math.cos(a) * r, p0[1] - Math.sin(a) * r]); }
+      const tent = () => poly(c, [...side, ...other.reverse()]);
+      c.save(); c.translate(-u * 0.8, -u * 0.6); tent(); c.fillStyle = SPOT.green; c.fill(); c.restore(); other.reverse();
+      tent(); fillT(c, 0.72, k); other.reverse();
+      c.save(); tent(); c.clip(); other.reverse(); c.fillStyle = INK; poly(c, [...side, ...side.map((p, i) => [lerp(p[0], other[i][0], 0.45), lerp(p[1], other[i][1], 0.45)]).reverse()]); c.fill(); other.reverse(); c.restore(); other.reverse();
+      tent(); c.strokeStyle = INK; c.lineWidth = u * 0.8; c.stroke(); other.reverse();
+      for (let i = 2; i < 28; i += 2) { const p = other[i], r = u * lerp(2.6, 0.8, i / 30); c.beginPath(); c.ellipse(p[0], p[1], r, r * 0.7, 0, 0, TAU); c.fillStyle = PAPER; c.fill(); c.strokeStyle = INK; c.lineWidth = u * 0.4; c.stroke(); c.beginPath(); c.ellipse(p[0], p[1], r * 0.45, r * 0.3, 0, 0, TAU); c.fillStyle = INK; c.fill(); }
+      M.motionLines(c, w * 0.2, h * 0.1, w * 0.5, h * 0.6, 1.9, 24, PAPER, 6);
+      // Okafor sprinting for the light, core in hand
+      figure(c, w * 0.42, h * 0.97, h * 0.42, 'okafor', { pose: 'run', prop: 'case', rim: SPOT.green });
+      c.fillStyle = INK; c.fillRect(0, h * 0.96, w, h * 0.04);
+      vignette(c, w, h, 0.6, k);
+    },
+    anim(c, w, h, t) { glow(c, w * 0.72, h * 0.55, unit(w, h) * (18 + 8 * pulse(t, 7)), SPOT.green, 0.4); },
   };
 
   S.blank = { base(c, w, h, o) { c.fillStyle = o.ink ? INK : PAPER; c.fillRect(0, 0, w, h); } };

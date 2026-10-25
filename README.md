@@ -143,10 +143,10 @@ The music follows the action: a menu theme, a calm arrangement between waves, dr
 The campaign is told in manga-style motion-comic cutscenes: inked panels with screentones, lettered speech balloons, sound effects, camera drift and page turns. Tap, click or press `Space` to move on, `Esc` or **Skip** to jump ahead.
 
 - **Prologue, Starfall:** a green meteor lands in Hollow Creek, Kansas. Kessler-Vane Biotech's secret lab turns it into Project Lazarus, the dead get up, and Dr. Mara Okafor escapes with the Lazarus Core. What is left of the army becomes Bastion Company, and you are its Commander.
-- **Chapter 1, Harvest:** the farmland where it started, a broken radio call from Okafor and the fall of Elias Crane, the Harvester.
+- **Chapter 1, Harvest:** the farmland where it started. You meet Laila, the last of the Hollow Creek ranchers, who has held a farmhouse alone for forty days with her rifle and joins Bastion as its sharpshooter. Then a broken radio call from Okafor, and the fall of Elias Crane, the Harvester.
 - **Chapter 2, The Restless:** Blackwood Cemetery, a rift torn in the sky and the Grave Lord.
 - **Chapter 3, White Silence:** Station Seven on the Frostfall ice, and Lazarus Two.
-- **Chapter 4, The Hive:** Black Bayou, the horde converging and the last stand.
+- **Chapter 4, The Hive:** Black Bayou, the horde converging and the last stand, where Laila's one shot saves Okafor and opens the hive's heart.
 
 Each world's intro plays when you first deploy there, and new chapters play after your first clear of sectors 25 and 50. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu.
 
