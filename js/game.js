@@ -626,8 +626,12 @@ function upgradeTower(t, p) {
   setTiers(t, tiers);
   refreshTowers();
   S.dirty = true;
-  floatText(u.up.name, t.x, t.y - 30, PATH_COLORS[p], 15);
-  S.fx.push({ kind: 'ring', x: t.x, y: t.y, r: 16, life: 0.5, max: 0.5, color: hexRgb(PATH_COLORS[p]).join(',') });
+  floatText(u.up.name, t.x, t.y - 34, PATH_COLORS[p], 16);
+  floatText(`Tier ${tiers[p]}`, t.x, t.y - 50, '#ece6d6', 12);
+  const rgb = hexRgb(PATH_COLORS[p]).join(',');
+  S.fx.push({ kind: 'ring', x: t.x, y: t.y, r: 16, life: 0.6, max: 0.6, color: rgb });
+  S.fx.push({ kind: 'ring', x: t.x, y: t.y, r: 26, life: 0.9, max: 0.9, color: rgb });
+  S.fx.push({ kind: 'pillar', x: t.x, y: t.y, color: rgb, big: tiers[p] >= 3, life: 0.8, max: 0.8 });
   for (let i = 0; i < 10; i++) { const a = rand(0, TAU), sp = rand(40, 110); S.fx.push({ kind: 'spark', x: t.x, y: t.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4, max: 0.4 }); }
   Sound.play('upgrade'); buzz(15);
   renderInfo(); updateHUD(true);
@@ -1159,6 +1163,16 @@ function drawFx(c, f, lights) {
       c.strokeStyle = `rgba(${f.color},0.9)`; c.lineWidth = f.width || 1.4;
       c.beginPath(); c.moveTo(lerp(f.x1, f.x2, 0.15), lerp(f.y1, f.y2, 0.15)); c.lineTo(f.x2, f.y2); c.stroke();
       break;
+    case 'pillar': {
+      // a column of light where a tower was just upgraded
+      const w = (f.big ? 30 : 22) * (0.6 + k * 0.4), h = f.big ? 120 : 80;
+      c.globalCompositeOperation = 'lighter';
+      const g = c.createLinearGradient(0, f.y - h, 0, f.y + 10);
+      g.addColorStop(0, `rgba(${f.color},0)`); g.addColorStop(0.7, `rgba(${f.color},${0.55 * k})`); g.addColorStop(1, `rgba(255,255,255,${0.7 * k})`);
+      c.fillStyle = g; c.fillRect(f.x - w / 2, f.y - h, w, h + 10);
+      if (lights) lights.push({ x: f.x, y: f.y, r: 60, color: f.color, a: 0.8 * k });
+      break;
+    }
     case 'beam': {
       c.lineCap = 'round';
       c.globalCompositeOperation = 'lighter';
@@ -1741,7 +1755,7 @@ function renderInfo() {
     const head = document.createElement('div'); head.className = 'info-head';
     head.append(towerIcon(t.type, t.tiers, 54));
     const title = towerTitle(t.type, t.tiers);
-    head.insertAdjacentHTML('beforeend', `<div class="plate"><span class="sub">${title === def.name ? def.role : def.name} · ${tierText(t.tiers)}</span><h3>${title}</h3></div>`);
+    head.insertAdjacentHTML('beforeend', `<div class="plate"><span class="sub"><b class="tier-tag">${tierText(t.tiers)}</b> ${title === def.name ? def.role : def.name}</span><h3>${title}</h3></div>`);
     const close = document.createElement('button');
     close.type = 'button'; close.className = 'info-close'; close.setAttribute('aria-label', 'Close'); close.textContent = '×';
     close.addEventListener('click', cancelAll);

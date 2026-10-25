@@ -194,6 +194,8 @@ kbd {
 .hint { color: var(--muted); font-size: 0.86rem; }
 .info-head { position: relative; }
 .info-head .plate { padding-right: 30px; }
+.info-head .plate .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tier-tag { color: var(--text); background: rgba(255, 255, 255, 0.1); padding: 0 4px; margin-right: 3px; font-weight: 700; }
 .info-close {
   position: absolute; top: -2px; right: -2px; width: 28px; height: 28px;
   font: 700 1.2rem/1 var(--font-display); color: var(--muted);
@@ -505,7 +507,7 @@ kbd {
 .arm-tile[data-state="owned"] .t-badge { color: var(--green); }
 .arm-tile[data-state="ready"] { border-color: var(--green); box-shadow: inset 0 0 12px rgba(134, 179, 86, 0.35); }
 .arm-tile[data-state="ready"] .t-badge { color: var(--green); }
-.arm-tile[data-state="locked"] canvas, .arm-tile[data-state="next"] canvas { filter: grayscale(0.85) brightness(0.55); }
+.arm-tile[data-state="locked"] canvas, .arm-tile[data-state="next"] canvas { filter: saturate(0.55) brightness(0.72); }
 .arm-tile[data-state="locked"] { opacity: 0.7; }
 .arm-tile[aria-pressed="true"] { border-color: var(--amber); outline: 1px solid var(--amber); background: linear-gradient(180deg, #3a3222, #231d14); }
 .armory-detail {

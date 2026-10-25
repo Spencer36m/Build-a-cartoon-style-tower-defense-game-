@@ -480,7 +480,86 @@ function drawHealthBar(c, e) {
 // ============================================================
 // Towers
 // ============================================================
-function sandbags(c, r, n = 12) {
+// ---------- upgrade looks ----------
+// Each path paints its tower in its own colours, deeper with every tier, and the tower grows.
+const PAINT = {
+  gunner: ['#2f7fd0', '#d8862a', '#b0302a'], sniper: ['#2c4a80', '#c0902a', '#3f8a4a'], mortar: ['#d0582a', '#2f9a8a', '#3f72a8'],
+  cryo: ['#4fc8ff', '#eef4fa', '#5a62e0'], gunboat: ['#2f4f78', '#d0a030', '#a8302a'], flame: ['#e8401a', '#e8a81e', '#3f8aff'],
+  tesla: ['#8a5cff', '#ffc62e', '#22d0aa'], heli: ['#262b30', '#a8502a', '#e4e4dc'], sub: ['#2a4a8a', '#a02a2a', '#2a9a5a'],
+  jet: ['#3a6a9a', '#3c3c2e', '#b03a3a'], farm: ['#e0b830', '#c9483d', '#4a7aa8'],
+};
+const LOOK_K = [0, 0.34, 0.48, 0.62, 0.74, 0.84];
+const LOOK_SCALE = [1, 1.04, 1.08, 1.13, 1.18, 1.25];
+function towerLook(tw) {
+  let n = 0, p = 0;
+  (tw.tiers || [0, 0, 0]).forEach((v, i) => { if (v > n) { n = v; p = i; } });
+  return { n, p, hue: n ? PAINT[tw.type][p] : null, k: LOOK_K[n], col: n ? PATH_COLORS[p] : null };
+}
+const paintCache = new Map();
+// A base colour shifted toward the tower's path colour (returns hex so shade() still works).
+function paint(base, L, mult = 1) {
+  if (!L || !L.hue) return base;
+  const k = Math.min(0.92, L.k * mult), key = base + L.hue + k;
+  let v = paintCache.get(key);
+  if (!v) {
+    const A = hexRgb(base), B = hexRgb(L.hue);
+    v = '#' + A.map((q, i) => Math.round(lerp(q, B[i], k)).toString(16).padStart(2, '0')).join('');
+    paintCache.set(key, v);
+  }
+  return v;
+}
+function octagon(c, R, ox = 0, oy = 0) {
+  c.beginPath();
+  for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; c.lineTo(ox + Math.cos(q) * R, oy + Math.sin(q) * R); }
+  c.closePath();
+}
+// The ground under an upgraded tower: a painted ring at tier 2, a steel platform at 3,
+// a bigger lit platform at 4 and a gold one with a spinning ring at 5.
+function upgradePlinth(c, L, t, type, lights, x, y) {
+  const n = L.n;
+  if (n < 2) return;
+  const col = L.col, rgb = hexRgb(col).join(',');
+  if (type === 'gunboat' || type === 'sub') {
+    circle(c, 0, 0, 18 + n * 1.5); c.strokeStyle = `rgba(${rgb},${0.2 + n * 0.09})`; c.lineWidth = 1 + n * 0.5; c.stroke();
+    if (n === 5) { c.setLineDash([5, 5]); c.lineDashOffset = -t * 18; circle(c, 0, 0, 28); c.strokeStyle = 'rgba(240,200,100,0.7)'; c.lineWidth = 1.5; c.stroke(); c.setLineDash([]); }
+    return;
+  }
+  if (type === 'farm') return;
+  if (n === 2) { circle(c, 0, 0, 21); c.strokeStyle = `rgba(${rgb},0.6)`; c.lineWidth = 2.2; c.stroke(); return; }
+  const R = n >= 4 ? 24 : 22;
+  octagon(c, R, 3, 4); c.fillStyle = SHADOW; c.fill();
+  octagon(c, R);
+  c.fillStyle = n === 5 ? linear(c, -R, -R, R, R, [[0, '#f4d98a'], [0.5, '#c9973a'], [1, '#7a5418']]) : linear(c, -R, -R, R, R, [[0, '#858b90'], [1, '#3c4146']]);
+  c.fill();
+  octagon(c, R - 3); c.strokeStyle = col; c.lineWidth = n >= 4 ? 3 : 2.2; c.stroke();
+  c.fillStyle = 'rgba(0,0,0,0.45)';
+  for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; circle(c, Math.cos(q) * (R - 1.5), Math.sin(q) * (R - 1.5), 0.9); c.fill(); }
+  if (n >= 4) {
+    for (let i = 0; i < 4; i++) {
+      const q = (i / 4) * TAU + Math.PI / 4, lx = Math.cos(q) * (R - 1), ly = Math.sin(q) * (R - 1);
+      const on = Math.sin(t * 4 + i * 1.6) > -0.3;
+      circle(c, lx, ly, 2.2); c.fillStyle = on ? col : 'rgba(0,0,0,0.5)'; c.fill();
+      if (on && lights) lights.push({ x: x + lx, y: y + ly, r: 12, color: rgb, a: 0.6 });
+    }
+  }
+  if (n === 5) {
+    c.save(); c.setLineDash([6, 5]); c.lineDashOffset = -t * 20;
+    octagon(c, R + 3); c.strokeStyle = col; c.lineWidth = 1.6; c.stroke();
+    c.restore();
+  }
+}
+// Tier 5 towers shed rising sparks in their path colour.
+function upgradeSparks(c, L, t, x, lights, y) {
+  if (L.n < 5) return;
+  for (let i = 0; i < 7; i++) {
+    const k = (t * 0.55 + i / 7 + x * 0.001) % 1;
+    const px = Math.sin(i * 2.3 + x) * 15, py = 8 - k * 34;
+    circle(c, px, py, 1.6 * (1 - k * 0.5)); c.fillStyle = rgba(i % 2 ? L.col : '#ffe7a0', 1 - k); c.fill();
+  }
+  if (lights) lights.push({ x, y, r: 44, color: hexRgb(L.col).join(','), a: 0.35 });
+}
+
+function sandbags(c, r, n = 12, L = null) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * TAU;
     ellipse(c, Math.cos(a) * r + 2, Math.sin(a) * r + 3, 6, 4, a + Math.PI / 2); c.fillStyle = SHADOW; c.fill();
@@ -488,7 +567,7 @@ function sandbags(c, r, n = 12) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * TAU;
     ellipse(c, Math.cos(a) * r, Math.sin(a) * r, 6, 4, a + Math.PI / 2);
-    c.fillStyle = radial(c, Math.cos(a) * r, Math.sin(a) * r, 6, '#b3a476', '#6b5f40'); c.fill();
+    c.fillStyle = radial(c, Math.cos(a) * r, Math.sin(a) * r, 6, paint('#b3a476', L, 0.28), paint('#6b5f40', L, 0.28)); c.fill();
   }
 }
 function pad(c, size = 36, top = '#8f918b', bottom = '#5a5c57') {
@@ -562,18 +641,23 @@ function drawTower(c, tw, t, lights, opts = {}) {
   c.save();
   if (opts.alpha != null) c.globalAlpha = opts.alpha;
   c.translate(x, y);
-  if (top === 5 && type !== 'gunboat' && type !== 'sub') {
-    const col = hexRgb(PATH_COLORS[tiers.indexOf(5)]).join(',');
-    c.fillStyle = radial(c, 0, 0, 30, `rgba(${col},${0.28 + Math.sin(t * 3 + x) * 0.08})`, `rgba(${col},0)`, 0, 0);
-    circle(c, 0, 0, 30); c.fill();
+  const L = towerLook(tw);
+  if (top === 5) {
+    const col = hexRgb(L.col).join(',');
+    c.fillStyle = radial(c, 0, 0, 34, `rgba(${col},${0.32 + Math.sin(t * 3 + x) * 0.1})`, `rgba(${col},0)`, 0, 0);
+    circle(c, 0, 0, 34); c.fill();
   }
+  upgradePlinth(c, L, t, type, lights, x, y);
+  const sz = type === 'farm' ? Math.min(1.08, LOOK_SCALE[L.n]) : LOOK_SCALE[L.n];
+  c.scale(sz, sz);
+  const helmet = (base = '#4d5a3a') => paint(base, L, 1.15), uniform = (base = '#56603f') => paint(base, L, 0.85);
   switch (type) {
     case 'gunner': {
       // Energy turns it into a laser, Heavy into a walking mech, Spread into a gun bunker.
       const ray = a >= 5, mech = b >= 5, bunker = d >= 4;
       if (ray) {
         circle(c, 3, 4, 19); c.fillStyle = SHADOW; c.fill();
-        circle(c, 0, 0, 19); c.fillStyle = radial(c, 0, 0, 19, '#9aa3a6', '#3e4548'); c.fill();
+        circle(c, 0, 0, 19); c.fillStyle = radial(c, 0, 0, 19, paint('#9aa3a6', L, 0.5), paint('#3e4548', L, 0.5)); c.fill();
         c.strokeStyle = 'rgba(120,255,110,0.55)'; c.lineWidth = 1.5; circle(c, 0, 0, 15); c.stroke();
         c.fillStyle = '#2a2f31';
         for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU; circle(c, Math.cos(q) * 17, Math.sin(q) * 17, 1.2); c.fill(); }
@@ -581,18 +665,18 @@ function drawTower(c, tw, t, lights, opts = {}) {
         const R = d >= 5 ? 21 : 17;
         c.beginPath(); for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; c.lineTo(Math.cos(q) * R + 3, Math.sin(q) * R + 4); } c.closePath(); c.fillStyle = SHADOW; c.fill();
         c.beginPath(); for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; c.lineTo(Math.cos(q) * R, Math.sin(q) * R); } c.closePath();
-        c.fillStyle = linear(c, -R, -R, R, R, [[0, '#a19e94'], [1, '#5c5a54']]); c.fill();
+        c.fillStyle = linear(c, -R, -R, R, R, [[0, paint('#a19e94', L, 0.5)], [1, paint('#5c5a54', L, 0.5)]]); c.fill();
         c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 1; c.stroke();
         if (d >= 5) { c.fillStyle = '#c9483d'; for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; c.fillRect(Math.cos(q) * R * 0.9 - 1.5, Math.sin(q) * R * 0.9 - 1.5, 3, 3); } }
       } else if (mech) {
         for (const s of [-1, 1]) {
           ellipse(c, 2, s * 13 + 3, 8, 4.5); c.fillStyle = SHADOW; c.fill();
-          rr(c, -7, s * 13 - 4, 14, 8, 2); c.fillStyle = linear(c, 0, s * 13 - 4, 0, s * 13 + 4, [[0, '#7a8084'], [1, '#3e4346']]); c.fill();
+          rr(c, -7, s * 13 - 4, 14, 8, 2); c.fillStyle = linear(c, 0, s * 13 - 4, 0, s * 13 + 4, [[0, paint('#7a8084', L, 0.7)], [1, paint('#3e4346', L, 0.7)]]); c.fill();
           c.fillStyle = '#d8a02a'; for (let k = 0; k < 3; k++) c.fillRect(-5 + k * 4, s * 13 + (s > 0 ? 2.5 : -3.5), 2, 1);
         }
       } else {
-        if (d >= 1) sandbags(c, 19, 16);
-        sandbags(c, 15);
+        if (d >= 1) sandbags(c, 19, 16, L);
+        sandbags(c, 15, 12, L);
       }
       if (!ray && !mech && !bunker) {
         if (b >= 1) crate(c, 9, -16, 8, 6, b >= 2 ? '#2a2c28' : '#4b4a2c', b >= 2 ? '#c9483d' : '#b89a4a');
@@ -602,19 +686,19 @@ function drawTower(c, tw, t, lights, opts = {}) {
       c.rotate(ang);
       if (ray) {
         // the Doom Ray: a huge emitter on a turret ring
-        c.fillStyle = '#2f3436'; rr(c, -12, -9, 22, 18, 4); c.fill();
+        c.fillStyle = paint('#2f3436', L, 0.6); rr(c, -12, -9, 22, 18, 4); c.fill();
         c.fillStyle = linear(c, 0, -5, 0, 5, [[0, '#8a9296'], [1, '#3a4043']]); c.fillRect(4 - kick, -5, 26, 10);
         for (let k = 0; k < 4; k++) { c.fillStyle = k % 2 ? '#c79a2e' : '#7d5a1e'; c.fillRect(8 + k * 5 - kick, -6.5, 2.5, 13); }
         c.beginPath(); c.moveTo(30 - kick, -6); c.lineTo(38 - kick, 0); c.lineTo(30 - kick, 6); c.closePath();
         c.fillStyle = '#9bff8a'; c.fill();
-        c.save(); c.translate(-8, 0); soldier(c, '#2a3a2a', '#3e4a3a'); c.restore();
+        c.save(); c.translate(-8, 0); soldier(c, helmet('#2a3a2a'), uniform('#3e4a3a')); c.restore();
         if (lights) lights.push({ x: x + Math.cos(ang) * 34, y: y + Math.sin(ang) * 34, r: 34, color: '120,255,110', a: 0.7 });
       } else if (mech) {
         // Siege Mech: armored body, cockpit and twin rocket pods
         c.fillStyle = SHADOW; rr(c, -10, -10, 22, 22, 5); c.fill();
-        c.fillStyle = linear(c, -11, -11, 11, 11, [[0, '#8a9094'], [1, '#43484b']]); rr(c, -11, -11, 21, 22, 5); c.fill();
+        c.fillStyle = linear(c, -11, -11, 11, 11, [[0, paint('#8a9094', L, 0.8)], [1, paint('#43484b', L, 0.8)]]); rr(c, -11, -11, 21, 22, 5); c.fill();
         for (const s of [-1, 1]) {
-          c.fillStyle = '#33383b'; rr(c, -6, s * 12 - 5, 16, 10, 2); c.fill();
+          c.fillStyle = paint('#33383b', L, 0.45); rr(c, -6, s * 12 - 5, 16, 10, 2); c.fill();
           c.fillStyle = '#d8702a'; c.fillRect(-6, s * 12 - 5, 2, 10);
           c.fillStyle = '#0e1011'; for (const [hx, hy] of [[8, -2.3], [8, 2.3], [4.5, -2.3], [4.5, 2.3]]) { circle(c, hx, s * 12 + hy, 1.5); c.fill(); }
         }
@@ -631,7 +715,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
           if (d >= 5) { c.fillRect(R - 6, -4.2, 9, 2); c.fillRect(R - 6, 2.2, 9, 2); }
           c.restore();
         }
-        circle(c, 0, 0, R * 0.55); c.fillStyle = radial(c, 0, 0, R * 0.55, '#8c8a82', '#4a4944'); c.fill();
+        circle(c, 0, 0, R * 0.55); c.fillStyle = radial(c, 0, 0, R * 0.55, paint('#8c8a82', L, 0.7), paint('#4a4944', L, 0.7)); c.fill();
         c.fillStyle = '#1d1f1c'; c.fillRect(-2, -2.5, R * 0.55 + 4, 5);
         if (d >= 5) { flag(c, -4, -2, '#c9483d', t); }
       } else {
@@ -655,26 +739,26 @@ function drawTower(c, tw, t, lights, opts = {}) {
           } else {
             c.fillStyle = '#1d1f1c'; c.fillRect(2 - kick, o - 1.3, 18, 2.6);
             if (a >= 1) { c.fillStyle = a >= 2 ? '#e0e0d4' : '#86b356'; for (let k = 0; k < 3; k++) c.fillRect(8 + k * 4 - kick, o - 1.8, 1.4, 3.6); }
-            c.fillStyle = '#2e312c'; c.fillRect(-1 - kick, o - 2.5, 8, 5);
+            c.fillStyle = paint('#2e312c', L, 1); c.fillRect(-1 - kick, o - 2.5, 8, 5);
           }
           if (b >= 1 && !plasma) { c.fillStyle = b >= 2 ? '#d0703a' : '#b89a4a'; for (let k = 0; k < 4; k++) c.fillRect(1 - k * 1.6 - kick, o + 2.6 + k * 0.6, 1.2, 2.2); }
         }
         if (b >= 3) { // shoulder rocket pods
           const big = b >= 4;
           for (const s of [-1, 1]) {
-            c.fillStyle = '#3a3f36'; rr(c, -7, s * 8 - (big ? 4 : 3), big ? 12 : 9, big ? 8 : 6, 1.5); c.fill();
+            c.fillStyle = paint('#3a3f36', L, 0.7); rr(c, -7, s * 8 - (big ? 4 : 3), big ? 12 : 9, big ? 8 : 6, 1.5); c.fill();
             c.fillStyle = '#0e1011'; for (let k = 0; k < (big ? 3 : 2); k++) { circle(c, (big ? 3 : 1) - k * 3, s * 8, 1.2); c.fill(); }
           }
         }
         if (d >= 2 && !buck) { c.strokeStyle = '#2a2c28'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(4, 0); c.lineTo(-4, -6); c.moveTo(4, 0); c.lineTo(-4, 6); c.stroke(); }
-        soldier(c, d >= 1 ? '#8e2e24' : laser ? '#2a2c30' : '#4d5a3a', laser ? '#3a3e44' : '#56603f');
+        soldier(c, helmet(laser ? '#2a2c30' : '#4d5a3a'), uniform(laser ? '#3a3e44' : '#56603f'));
         if (laser) { c.fillStyle = plasma ? '#7dd8ff' : '#ff6a5a'; c.fillRect(4, -2.5, 2, 5); }
       }
       break;
     }
     case 'sniper': {
       c.fillStyle = SHADOW; c.fillRect(-15, -13, 32, 32);
-      c.fillStyle = linear(c, -16, -16, 16, 16, [[0, '#7a6448'], [1, '#4a3a28']]); c.fillRect(-16, -16, 32, 32);
+      c.fillStyle = linear(c, -16, -16, 16, 16, [[0, paint('#7a6448', L, 0.45)], [1, paint('#4a3a28', L, 0.45)]]); c.fillRect(-16, -16, 32, 32);
       c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 1;
       for (let i = -12; i <= 12; i += 6) { c.beginPath(); c.moveTo(-16, i); c.lineTo(16, i); c.stroke(); }
       if (d >= 3) crate(c, -15, 7, 9, 7, '#3a5530', '#d8b23a');
@@ -695,19 +779,19 @@ function drawTower(c, tw, t, lights, opts = {}) {
         if (b >= 4 && a < 5) { c.fillStyle = '#262826'; rr(c, len - 2 - kick, -2.2, 8, 4.4, 1.5); c.fill(); }
         if (b >= 4) { circle(c, 11, 4.5, 3.4); c.fillStyle = '#22241f'; c.fill(); circle(c, 11, 4.5, 1.4); c.fillStyle = '#3a3c36'; c.fill(); }
         else if (b >= 2) { c.fillStyle = '#22241f'; c.fillRect(8, 1.5, 4, 4); }
-        c.fillStyle = '#2a2d28'; c.fillRect(6, -2.4, 8, 4.8);
+        c.fillStyle = paint('#2a2d28', L, 0.8); c.fillRect(6, -2.4, 8, 4.8);
         const scope = d >= 1 ? 13 : 9;
         c.fillStyle = '#1b1d1a'; c.fillRect(5, -1.2 - 2.6, scope, 2.4);
         if (d >= 2) { circle(c, 5 + scope, -2.6, 1.4); c.fillStyle = '#7dff8a'; c.fill(); if (lights) lights.push({ x: x + Math.cos(ang) * 18, y: y + Math.sin(ang) * 18, r: 10, color: '120,255,140', a: 0.4 }); }
         if (a >= 4 && tw.recoil < 0.5 && !opts.icon) { c.strokeStyle = 'rgba(255,60,50,0.35)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(len + 4, 0); c.lineTo(len + 70, 0); c.stroke(); }
-        ellipse(c, -4, 0, 11, 6); c.fillStyle = radial(c, -4, 0, 11, '#6d7a4c', '#3a4428'); c.fill();
-        circle(c, 4, 0, 4.6); c.fillStyle = radial(c, 4, 0, 4.6, a >= 5 ? '#4c4c44' : '#6a7650', '#33402a'); c.fill();
+        ellipse(c, -4, 0, 11, 6); c.fillStyle = radial(c, -4, 0, 11, uniform('#6d7a4c'), uniform('#3a4428')); c.fill();
+        circle(c, 4, 0, 4.6); c.fillStyle = radial(c, 4, 0, 4.6, helmet(a >= 5 ? '#4c4c44' : '#6a7650'), helmet('#33402a')); c.fill();
         c.restore();
       }
       break;
     }
     case 'mortar': {
-      sandbags(c, 16, 13);
+      sandbags(c, 16, 13, L);
       if (a >= 1) for (let i = 0; i < Math.min(4, a + 1); i++) { c.save(); c.translate(-14 + i * 4, 13); c.fillStyle = '#4a4c40'; rr(c, -1.5, -4, 3, 8, 1.5); c.fill(); if (a >= 3) { c.fillStyle = a >= 4 ? '#d8702a' : '#c9b13a'; c.fillRect(-1.5, -1, 3, 1.5); } c.restore(); }
       if (d >= 1) { c.strokeStyle = '#2a2c28'; c.lineWidth = 1; c.beginPath(); c.moveTo(12, -12); c.lineTo(15, -6); c.moveTo(12, -12); c.lineTo(9, -6); c.stroke(); c.fillStyle = '#1e201c'; c.fillRect(10, -15, 5, 3); }
       if (d >= 3) crate(c, 10, 6, 8, 6, '#4b4a2c', '#9aa0a6');
@@ -715,25 +799,25 @@ function drawTower(c, tw, t, lights, opts = {}) {
       c.rotate(ang);
       const tubes = d >= 5 ? [[0, 0]] : b >= 5 ? [[-3, -5], [-3, 5], [5, -5], [5, 5]] : b >= 3 ? [[1, -5], [1, 5]] : [[0, 0]];
       if (d >= 5) { // Long Tom field gun
-        c.fillStyle = '#2b2d2a'; rr(c, -8, -7, 16, 14, 2); c.fill();
-        c.fillStyle = '#3c3f3a'; c.fillRect(2 - kick, -2.5, 28, 5);
+        c.fillStyle = paint('#2b2d2a', L, 0.7); rr(c, -8, -7, 16, 14, 2); c.fill();
+        c.fillStyle = paint('#3c3f3a', L, 0.9); c.fillRect(2 - kick, -2.5, 28, 5);
         c.fillStyle = '#222420'; c.fillRect(27 - kick, -3.5, 5, 7);
       } else {
         for (const [tx, ty] of tubes) {
           const R = a >= 5 ? 6.5 : tubes.length > 2 ? 4.2 : 5;
-          c.fillStyle = '#2b2d2a'; rr(c, tx - R - 1, ty - R - 1, R * 2 + 2, R * 2 + 2, 2); c.fill();
-          circle(c, tx + 3 - kick * 0.5, ty, R); c.fillStyle = d >= 2 ? '#56606a' : '#3c3f3a'; c.fill();
+          c.fillStyle = paint('#2b2d2a', L, 0.7); rr(c, tx - R - 1, ty - R - 1, R * 2 + 2, R * 2 + 2, 2); c.fill();
+          circle(c, tx + 3 - kick * 0.5, ty, R); c.fillStyle = paint(d >= 2 ? '#56606a' : '#3c3f3a', L, 0.9); c.fill();
           circle(c, tx + 3 - kick * 0.5, ty, R * 0.6); c.fillStyle = '#0c0d0c'; c.fill();
         }
       }
-      c.save(); c.translate(-9, -11); soldier(c); c.restore();
-      if (b >= 2) { c.save(); c.translate(-9, 11); soldier(c); c.restore(); }
-      if (b >= 5) { c.save(); c.translate(-15, 0); soldier(c, '#5a5a3a'); c.restore(); }
+      c.save(); c.translate(-9, -11); soldier(c, helmet(), uniform()); c.restore();
+      if (b >= 2) { c.save(); c.translate(-9, 11); soldier(c, helmet(), uniform()); c.restore(); }
+      if (b >= 5) { c.save(); c.translate(-15, 0); soldier(c, helmet('#5a5a3a'), uniform()); c.restore(); }
       c.fillStyle = '#5a4428'; c.fillRect(8, 9, 6, 5);
       break;
     }
     case 'cryo': {
-      pad(c, 36, d >= 5 ? '#b9d4e2' : '#8f918b', d >= 5 ? '#6f90a4' : '#5a5c57');
+      pad(c, 36, paint(d >= 5 ? '#b9d4e2' : '#8f918b', L, 0.55), paint(d >= 5 ? '#6f90a4' : '#5a5c57', L, 0.55));
       if (a >= 1) for (let i = 0; i < a * 2; i++) { const q = (i / (a * 2)) * TAU + 0.4; ice(c, Math.cos(q) * 18, Math.sin(q) * 18, 3 + a * 0.6, q + Math.PI / 2); }
       if (d >= 2) for (const [vx, vy] of [[-13, -13], [13, -13], [-13, 13], [13, 13]]) {
         circle(c, vx, vy, 2.4); c.fillStyle = '#2f3a42'; c.fill();
@@ -744,45 +828,45 @@ function drawTower(c, tw, t, lights, opts = {}) {
       const n = 1 + (b >= 5 ? 2 : 0), len = 16 + (d >= 1 ? 4 : 0);
       for (let i = 0; i < n; i++) {
         const o = (i - (n - 1) / 2) * 5;
-        c.fillStyle = '#4d5a66'; c.fillRect(4 - kick, o - 3, len, 6);
+        c.fillStyle = paint('#4d5a66', L, 0.9); c.fillRect(4 - kick, o - 3, len, 6);
         c.fillStyle = '#9fc6dc'; c.fillRect(len + 1 - kick, o - 4, 4, 8);
         if (b >= 3) { c.fillStyle = '#d8e6ee'; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(len + 5 - kick, o + s * 4); c.lineTo(len + 8 - kick, o + s * 5.5); c.lineTo(len + 5 - kick, o + s * 2); c.fill(); } }
       }
       const cw = b >= 1 ? 15 : 13, ch = b >= 1 ? 8 : 7;
-      for (const s of [-1, 1]) { rr(c, -12, s * 7 - ch / 2, cw, ch, ch / 2); c.fillStyle = linear(c, 0, s * 7 - ch / 2, 0, s * 7 + ch / 2, [[0, '#e2eef5'], [1, '#8aa6b8']]); c.fill(); }
+      for (const s of [-1, 1]) { rr(c, -12, s * 7 - ch / 2, cw, ch, ch / 2); c.fillStyle = linear(c, 0, s * 7 - ch / 2, 0, s * 7 + ch / 2, [[0, paint('#e2eef5', L, 0.5)], [1, paint('#8aa6b8', L, 0.7)]]); c.fill(); }
       if (b >= 4) { rr(c, -16, -3.5, 7, 7, 3.5); c.fillStyle = linear(c, 0, -3.5, 0, 3.5, [[0, '#e2eef5'], [1, '#8aa6b8']]); c.fill(); }
-      circle(c, 0, 0, 8); c.fillStyle = radial(c, 0, 0, 8, '#c9dbe6', '#5f7888'); c.fill();
+      circle(c, 0, 0, 8); c.fillStyle = radial(c, 0, 0, 8, paint('#c9dbe6', L, 0.7), paint('#5f7888', L, 1)); c.fill();
       c.fillStyle = 'rgba(200,240,255,0.8)'; circle(c, -2, -2, 2); c.fill();
       if (lights && (a >= 4 || d >= 4)) lights.push({ x, y, r: 30, color: '150,210,255', a: 0.35 });
       break;
     }
     case 'flame': {
-      sandbags(c, 15);
+      sandbags(c, 15, 12, L);
       if (d >= 3) { c.fillStyle = '#5c6066'; rr(c, -15, -15, 6, 30, 2); c.fill(); }
       c.rotate(ang);
       const nozzles = b >= 2 ? [-2.5, 2.5] : [0], nl = 15 + (d >= 4 ? 8 : 0) + (b >= 4 ? 2 : 0);
       for (const o of nozzles) {
-        c.fillStyle = '#2a2c28'; c.fillRect(2 - kick, o - 1.6, nl, 3.2);
+        c.fillStyle = paint('#2a2c28', L, 0.6); c.fillRect(2 - kick, o - 1.6, nl, 3.2);
         if (b >= 4) { c.fillStyle = '#3a3c36'; c.beginPath(); c.moveTo(nl - kick, o - 1.6); c.lineTo(nl + 4 - kick, o - 3.5); c.lineTo(nl + 4 - kick, o + 3.5); c.lineTo(nl - kick, o + 1.6); c.fill(); }
       }
       const tankCol = a >= 5 ? '#d8402a' : a >= 3 ? '#d8d4c8' : a >= 2 ? '#4e5a34' : '#c44a32';
       const tanks = a >= 4 ? [-5.5, 0, 5.5] : [-3.5, 3.5], tw2 = a >= 1 ? 10 : 9;
-      for (const s of tanks) { rr(c, -12 - (a >= 1 ? 1 : 0), s - 3, tw2, 6, 3); c.fillStyle = linear(c, 0, s - 3, 0, s + 3, [[0, shade(tankCol, 0.15)], [1, shade(tankCol, -0.45)]]); c.fill(); if (a >= 3) { c.fillStyle = '#d8b23a'; c.fillRect(-9, s - 3, 1.5, 6); } }
-      soldier(c, '#3c3f36', d >= 3 ? '#6a6c70' : '#4b4a3a');
+      for (const s of tanks) { rr(c, -12 - (a >= 1 ? 1 : 0), s - 3, tw2, 6, 3); c.fillStyle = linear(c, 0, s - 3, 0, s + 3, [[0, shade(paint(tankCol, L, 0.6), 0.15)], [1, shade(paint(tankCol, L, 0.6), -0.45)]]); c.fill(); if (a >= 3) { c.fillStyle = '#d8b23a'; c.fillRect(-9, s - 3, 1.5, 6); } }
+      soldier(c, helmet('#3c3f36'), uniform(d >= 3 ? '#6a6c70' : '#4b4a3a'));
       const pilot = d >= 2 ? '#8fd0ff' : d >= 5 ? '#ffffff' : '#ffb347';
       for (const o of nozzles) { c.fillStyle = pilot; circle(c, nl + 3 - kick, o, d >= 5 ? 2.6 : 1.8); c.fill(); }
       if (lights) lights.push({ x: x + Math.cos(ang) * (nl + 3), y: y + Math.sin(ang) * (nl + 3), r: a >= 4 || d >= 5 ? 30 : 18, color: d >= 2 ? '150,200,255' : '255,150,60', a: 0.45 });
       break;
     }
     case 'tesla': {
-      pad(c, 34);
+      pad(c, 34, paint('#8f918b', L, 0.5), paint('#5a5c57', L, 0.5));
       if (d >= 2) for (const [rx, ry] of [[-14, -14], [14, -14], [-14, 14], [14, 14]]) { c.fillStyle = '#b87333'; c.fillRect(rx - 1, ry - 4, 2, 6); circle(c, rx, ry - 4, 1.4); c.fill(); }
       if (b >= 1) for (let i = 0; i < (b >= 2 ? 4 : 2); i++) { const q = (i / (b >= 2 ? 4 : 2)) * TAU + Math.PI / 4; canister(c, Math.cos(q) * 14, Math.sin(q) * 14, 3.2, '#6d7880'); }
       if (b >= 4) { c.strokeStyle = 'rgba(140,220,255,0.6)'; c.lineWidth = 1.5; circle(c, 0, 0, 16 + (tw.pulse || 0) * 8); c.stroke(); }
       const rings = 4 + Math.min(3, a) + (d >= 1 ? 1 : 0), R = b >= 5 ? 15 : 13;
-      for (let i = 0; i < rings; i++) { circle(c, 0, 0, R - (i * R * 0.8) / rings); c.fillStyle = i % 2 ? '#7a4a22' : '#b87333'; c.fill(); }
+      for (let i = 0; i < rings; i++) { circle(c, 0, 0, R - (i * R * 0.8) / rings); c.fillStyle = paint(i % 2 ? '#7a4a22' : '#b87333', L, 0.9); c.fill(); }
       const orb = 3.5 + (tw.recoil || 0) * 2 + (a >= 4 ? 1.5 : 0);
-      circle(c, 0, 0, orb); c.fillStyle = '#e8f7ff'; c.fill();
+      circle(c, 0, 0, orb); c.fillStyle = paint('#e8f7ff', L, 0.4); c.fill();
       if (lights) lights.push({ x, y, r: 26 + (tw.recoil || 0) * 30 + (d >= 5 ? 20 : 0), color: '140,220,255', a: 0.4 + (tw.recoil || 0) * 0.5 });
       if (Math.sin(t * 13 + x) > (d >= 3 ? 0.2 : 0.7)) {
         const q = (t * 7) % TAU;
@@ -811,7 +895,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
       if (a >= 4) for (const [tx, ty] of [[R - 6, -R + 6], [R - 6, -R + 14], [R - 14, -R + 6]]) canopy(c, tx, ty, 4.5, '#2f5a22', '#5a8a3a', mulberry32(tx * 7 + ty), 5);
       if (a >= 5) { canister(c, R - 6, R - 7, 5, '#b8bcc0'); c.fillStyle = '#8a8e92'; c.fillRect(R - 8, R - 13, 4, 6); }
       // fence
-      c.strokeStyle = d >= 5 ? '#6a6a64' : '#a88a5a'; c.lineWidth = d >= 5 ? 2.6 : 1.2;
+      c.strokeStyle = L.n === 5 ? '#f0c858' : paint(d >= 5 ? '#6a6a64' : '#a88a5a', L, 1.1); c.lineWidth = d >= 5 ? 2.6 : 1.2 + L.n * 0.35;
       c.strokeRect(-R + 0.5, -R + 0.5, R * 2 - 1, R * 2 - 1);
       if (d >= 5) { c.fillStyle = '#5a5a54'; for (const [px, py] of [[-R, -R], [R, -R], [-R, R], [R, R]]) { c.fillRect(px - 3, py - 3, 6, 6); } }
       // barn, market and bank
@@ -830,7 +914,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
         for (const [sx, sy] of shooters) {
           c.save(); c.translate(sx, sy); c.rotate(ang);
           c.fillStyle = '#1d1f1c'; c.fillRect(2 - kick, -1, 12, 2);
-          soldier(c, '#a88a4a', '#5a6a8a');
+          soldier(c, helmet('#a88a4a'), uniform('#5a6a8a'));
           c.restore();
         }
       }
@@ -839,7 +923,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
     case 'heli': case 'jet': {
       // landing pad stays on the tile; the aircraft is drawn separately
       circle(c, 2, 3, 17); c.fillStyle = SHADOW; c.fill();
-      circle(c, 0, 0, 17); c.fillStyle = radial(c, 0, 0, 17, '#7d807a', '#4a4c48'); c.fill();
+      circle(c, 0, 0, 17); c.fillStyle = radial(c, 0, 0, 17, paint('#7d807a', L, 0.5), paint('#4a4c48', L, 0.5)); c.fill();
       c.strokeStyle = top >= 3 ? rgba(PATH_COLORS[tiers.indexOf(top)], 0.8) : 'rgba(230,220,180,0.75)'; c.lineWidth = 1.5; circle(c, 0, 0, 13); c.stroke();
       if (type === 'heli') label(c, d >= 4 ? '+' : 'H', 0, 0.5, 14, d >= 4 ? 'rgba(230,80,70,0.9)' : 'rgba(230,220,180,0.85)');
       else { c.strokeStyle = 'rgba(230,220,180,0.75)'; c.beginPath(); c.moveTo(-8, 0); c.lineTo(8, 0); c.moveTo(4, -4); c.lineTo(8, 0); c.lineTo(4, 4); c.stroke(); }
@@ -849,14 +933,12 @@ function drawTower(c, tw, t, lights, opts = {}) {
     }
     case 'gunboat': {
       const bob = Math.sin(t * 2 + x) * 0.8;
-      const k = a >= 5 || b >= 5 ? 1.3 : a >= 4 || b >= 4 ? 1.15 : 1;
       c.translate(0, bob);
       c.rotate(ang);
-      c.scale(k, k);
       ellipse(c, -12, 0, 12, 7); c.fillStyle = 'rgba(255,255,255,0.18)'; c.fill();
       c.beginPath(); c.moveTo(20, 0); c.quadraticCurveTo(12, -10, -16, -9); c.lineTo(-18, 9); c.quadraticCurveTo(12, 10, 20, 0); c.closePath();
       const hull = b >= 4 ? ['#a59a7a', '#5c5440'] : a >= 4 ? ['#7c858b', '#3c4449'] : ['#8e969b', '#4c5459'];
-      c.fillStyle = linear(c, 0, -10, 0, 10, [[0, hull[0]], [1, hull[1]]]); c.fill();
+      c.fillStyle = linear(c, 0, -10, 0, 10, [[0, paint(hull[0], L, 0.75)], [1, paint(hull[1], L, 0.75)]]); c.fill();
       if (b >= 4) { c.strokeStyle = '#d8b23a'; c.lineWidth = 0.8; c.stroke(); }
       // cargo for the trade path
       const boxes = [0, 1, 2, 3, 5, 6][b] || 0;
@@ -882,13 +964,11 @@ function drawTower(c, tw, t, lights, opts = {}) {
     }
     case 'sub': {
       const bob = Math.sin(t * 1.5 + x) * 0.6;
-      const k = a >= 5 || b >= 5 || d >= 5 ? 1.25 : a >= 3 || d >= 3 ? 1.1 : 1;
       c.translate(0, bob);
       c.rotate(ang);
-      c.scale(k, k);
       ellipse(c, 0, 0, 22, 7); c.fillStyle = 'rgba(10,20,25,0.45)'; c.fill();
       const hull = b >= 4 ? ['#4a4e52', '#1e2023'] : ['#3c464c', '#161c20'];
-      ellipse(c, 0, 0, 19, 5.5); c.fillStyle = linear(c, 0, -6, 0, 6, [[0, hull[0]], [1, hull[1]]]); c.fill();
+      ellipse(c, 0, 0, 19, 5.5); c.fillStyle = linear(c, 0, -6, 0, 6, [[0, paint(hull[0], L, 0.8)], [1, paint(hull[1], L, 0.6)]]); c.fill();
       if (b >= 2) { c.fillStyle = 'rgba(200,70,50,0.75)'; c.fillRect(-14, -0.6, 28, 1.2); }
       if (b >= 5) { c.strokeStyle = '#d8b23a'; c.lineWidth = 0.7; ellipse(c, 0, 0, 19, 5.5); c.stroke(); }
       rr(c, -2, -3, 9, 6, 2.5); c.fillStyle = '#2a3237'; c.fill();
@@ -904,7 +984,8 @@ function drawTower(c, tw, t, lights, opts = {}) {
     }
   }
   c.restore();
-  if (!opts.icon) { c.save(); c.translate(x, y); tierMarks(c, tiers, 14, 14); c.restore(); }
+  if (L.n === 5) { c.save(); c.translate(x, y); upgradeSparks(c, L, t, x, lights, y); c.restore(); }
+  if (!opts.icon) { c.save(); c.translate(x, y); tierMarks(c, tiers, 16, 16); c.restore(); }
   if (tw.stun > 0) {
     c.save(); c.globalAlpha = 0.65;
     rr(c, x - 20, y - 20, 40, 40, 6); c.fillStyle = 'rgba(200,235,255,0.75)'; c.fill();
@@ -915,8 +996,10 @@ function drawTower(c, tw, t, lights, opts = {}) {
 
 function drawHeli(c, tw, t, ax, ay) {
   const [a, b, d] = tw.tiers || [0, 0, 0];
-  const k = a >= 5 ? 1.25 : 1;
-  const body = d >= 5 ? ['#4a4e50', '#1c1e20'] : d >= 4 ? ['#d8d8d0', '#8a8a84'] : ['#6b7a52', '#2e3622'];
+  const L = towerLook(tw);
+  const k = (a >= 5 ? 1.15 : 1) * LOOK_SCALE[L.n];
+  const raw = d >= 5 ? ['#4a4e50', '#1c1e20'] : d >= 4 ? ['#d8d8d0', '#8a8a84'] : ['#6b7a52', '#2e3622'];
+  const body = [paint(raw[0], L, 0.85), paint(raw[1], L, 0.6)];
   c.save(); c.translate(ax + 12, ay + 18); c.rotate(tw.angle); c.scale(k, k);
   ellipse(c, 0, 0, 14, 6); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fill();
   c.fillStyle = 'rgba(0,0,0,0.12)'; circle(c, 2, 0, 18); c.fill();
@@ -932,6 +1015,7 @@ function drawHeli(c, tw, t, ax, ay) {
   }
   if (a >= 1) for (const o of [-6.5, 6.5]) { c.fillStyle = '#1a1c18'; c.fillRect(-2, o - 1, a >= 3 ? 13 : 9, 2); }
   ellipse(c, 0, 0, 12, 6.5); c.fillStyle = radial(c, 0, 0, 12, body[0], body[1]); c.fill();
+  if (L.n >= 2) { c.fillStyle = L.col; c.fillRect(-11, -1, 4, 2); c.fillRect(2, -5.5, 3, 1.4); c.fillRect(2, 4.1, 3, 1.4); }
   if (d >= 4) { c.fillStyle = '#c9483d'; c.fillRect(-5, -1, 6, 2); c.fillRect(-3, -3, 2, 6); }
   if (d >= 5) { c.fillStyle = '#e3a83e'; c.fillRect(-9, -0.5, 18, 1); }
   ellipse(c, 6, 0, 5, 4); c.fillStyle = 'rgba(120,170,190,0.85)'; c.fill();
@@ -947,7 +1031,8 @@ function drawHeli(c, tw, t, ax, ay) {
 }
 function drawJet(c, tw, px, py, angle, lights, lead, zoom = 1, sh = 1) {
   const [a, b, d] = tw.tiers || [0, 0, 0];
-  const k = (b >= 5 ? 1.3 : b >= 4 ? 1.12 : 1) * zoom;
+  const L = towerLook(tw);
+  const k = (b >= 5 ? 1.2 : 1) * LOOK_SCALE[L.n] * zoom;
   c.save(); c.translate(px + 22 * sh, py + 30 * sh); c.rotate(angle); c.scale(k, k);
   c.beginPath(); c.moveTo(14, 0); c.lineTo(-10, -11); c.lineTo(-8, 0); c.lineTo(-10, 11); c.closePath(); c.fillStyle = 'rgba(0,0,0,0.2)'; c.fill();
   c.restore();
@@ -959,7 +1044,8 @@ function drawJet(c, tw, px, py, angle, lights, lead, zoom = 1, sh = 1) {
   c.beginPath(); c.moveTo(16, 0); c.lineTo(2, -3); c.lineTo(-6, -13); c.lineTo(-10, -12); c.lineTo(-6, -3); c.lineTo(-12, -3); c.lineTo(-15, -7); c.lineTo(-16, 0);
   c.lineTo(-15, 7); c.lineTo(-12, 3); c.lineTo(-6, 3); c.lineTo(-10, 12); c.lineTo(-6, 13); c.lineTo(2, 3); c.closePath();
   const skin = b >= 5 ? ['#6a6e64', '#4a4e44', '#33362e'] : d >= 5 ? ['#8a8f98', '#5c626c', '#3e434c'] : ['#a3abb1', '#7c858b', '#596267'];
-  c.fillStyle = linear(c, 0, -13, 0, 13, [[0, skin[0]], [0.5, skin[1]], [1, skin[2]]]); c.fill();
+  c.fillStyle = linear(c, 0, -13, 0, 13, [[0, paint(skin[0], L, 0.7)], [0.5, paint(skin[1], L, 0.8)], [1, paint(skin[2], L, 0.8)]]); c.fill();
+  if (L.n >= 2) { c.fillStyle = L.col; c.fillRect(8, -1, 4, 2); c.fillRect(-9, -11, 2, 4); c.fillRect(-9, 7, 2, 4); }
   if (top3(tw.tiers) >= 3) { c.fillStyle = PATH_COLORS[tw.tiers.indexOf(top3(tw.tiers))]; c.fillRect(-14, -6, 2, 3); c.fillRect(-14, 3, 2, 3); }
   ellipse(c, 6, 0, 4, 1.8); c.fillStyle = 'rgba(80,120,150,0.9)'; c.fill();
   if (lead && d >= 3) { circle(c, -3, 0, 4.5); c.fillStyle = '#d8d8d0'; c.fill(); c.fillStyle = '#2a2c28'; c.fillRect(-7.5, -0.6, 9, 1.2); }
@@ -976,14 +1062,25 @@ function drawAircraft(c, tw, t, lights) {
   }
 }
 
+const AIRCRAFT_ICON = { heli: true, jet: true };
 // Static icon of a tower for menus, the shop and the upgrade buttons.
 function drawTowerIcon(c, type, tiers, size) {
   const k = size / 52;
-  c.save(); c.scale(k, k);
   const tw = { type, tiers: tiers || [0, 0, 0], x: 26, y: 26, angle: -Math.PI / 4, recoil: 0, ax: 26, ay: 24 };
+  // zoom out a little for big upgraded towers so their platform fits the icon
+  const fit = [1, 1, 0.96, 0.9, 0.86, 0.82][towerLook(tw).n];
+  c.save(); c.scale(k, k);
+  c.translate(26, 26); c.scale(fit, fit); c.translate(-26, -26);
   if (type === 'gunboat' || type === 'sub') {
     c.fillStyle = '#2f5d6b'; rr(c, 2, 2, 48, 48, 8); c.fill();
     c.fillStyle = 'rgba(255,255,255,0.08)'; rr(c, 2, 2, 48, 24, 8); c.fill();
+  }
+  if (AIRCRAFT_ICON[type]) {
+    const L = towerLook(tw);
+    c.save(); c.translate(26, 26);
+    if (L.n === 5) { c.fillStyle = radial(c, 0, 0, 30, rgba(L.col, 0.4), rgba(L.col, 0), 0, 0); circle(c, 0, 0, 30); c.fill(); }
+    upgradePlinth(c, L, 0.3, type, null, 0, 0);
+    c.restore();
   }
   if (type === 'jet') {
     const n = Math.min(3, towerStats('jet', tw.tiers).planes);
