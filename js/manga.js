@@ -421,12 +421,15 @@ const MANGA = (() => {
       c.lineWidth = lw * 1.0; c.strokeStyle = PAPER; c.beginPath(); c.arc(nx + W * 0.2, s * 0.2, s * 0.019, Math.PI * 0.1, Math.PI * 1.3); c.stroke();
       c.strokeStyle = INK; c.lineWidth = lw * 1.1; c.beginPath(); c.arc(-W * 1.02, s * 0.11, s * 0.028, 0, Math.PI * 1.5); c.stroke();
       // the crown of the head, parted in the middle, and the long waves falling over each shoulder
-      const cap = (sd) => () => { c.beginPath(); c.moveTo(T * 0.5, -s * 0.64); c.bezierCurveTo(sd * W * 0.7, -s * 0.68, sd * W * 1.18, -s * 0.48, sd * W * 1.12, -s * 0.12); c.lineTo(sd * W * 1.05, s * 0.06); c.lineTo(sd * W * 0.97, -s * 0.16); c.bezierCurveTo(sd * W * 0.95, -s * 0.38, sd * W * 0.55, -s * 0.52, T * 0.5, -s * 0.58); c.closePath(); };
+      // the hairline sits low: the part dips to just above the brows and the sides sweep down over the temples
+      const cap = (sd) => () => { c.beginPath(); c.moveTo(T * 0.5, -s * 0.66); c.bezierCurveTo(sd * W * 0.75, -s * 0.7, sd * W * 1.2, -s * 0.48, sd * W * 1.13, -s * 0.1); c.lineTo(sd * W * 1.05, s * 0.06); c.lineTo(sd * W * 0.93, -s * 0.12); c.bezierCurveTo(sd * W * 0.86, -s * 0.26, sd * W * 0.5, -s * 0.3, sd * W * 0.12 + T * 0.5, -s * 0.33); c.quadraticCurveTo(T * 0.5, -s * 0.36, T * 0.5, -s * 0.4); c.closePath(); };
       hairFill(lock(-W * 1.02, -s * 0.36, -W * 1.95, s * 1.42, W * 0.34, W * 0.75, 2.2, W * 0.32), true, 7);
       hairFill(lock(-W * 1.06, -s * 0.2, -W * 1.35, s * 1.25, W * 0.25, W * 0.5, 0.9, W * 0.24), true, 9);
       hairFill(lock(W * 1.03, -s * 0.36, W * 1.9, s * 1.35, W * 0.32, W * 0.7, 0.6, W * 0.32), false, 8);
       hairFill(cap(-1), true, 5); hairFill(cap(1), false, 6);
       shine(-W * 0.5, -s * 0.5, W * 0.45, s * 0.07, -0.6, 2);
+      c.strokeStyle = INK; c.lineWidth = lw * 0.8;
+      for (const [x0, x1, y1] of [[-0.05, -0.55, -0.2], [0.1, 0.5, -0.22], [-0.2, -0.85, -0.05]]) { c.beginPath(); c.moveTo(T * 0.5 + W * x0, -s * 0.36); c.quadraticCurveTo(W * (x0 + x1) * 0.6, -s * 0.36, W * x1, s * y1); c.stroke(); }
       if (o.hat) {
         // the woven straw cowboy hat with a studded leather band and its brim curled up at the sides
         const crown = () => { c.beginPath(); c.moveTo(-W * 1.0, -s * 0.5); c.bezierCurveTo(-W * 1.1, -s * 0.92, -W * 0.75, -s * 1.04, -W * 0.25, -s * 0.98); c.quadraticCurveTo(T * 0.5, -s * 0.9, W * 0.25, -s * 0.98); c.bezierCurveTo(W * 0.75, -s * 1.04, W * 1.1, -s * 0.92, W * 1.0, -s * 0.5); c.closePath(); };
