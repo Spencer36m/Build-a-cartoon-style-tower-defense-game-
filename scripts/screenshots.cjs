@@ -74,7 +74,7 @@ const SCENES = [
         await page.evaluate((type) => { const M = ZombieBash.meta; M.xp = { gunner: 2950, sniper: 1200, mortar: 640, tesla: 300 }; M.armory = { gunner: [5, 2, 3], sniper: [3, 3, 2] }; ZombieBash.showArmory(type); }, sc.armory);
         await page.click('.arm-row:nth-child(2) .arm-tile:nth-of-type(3)');
       } else if (sc.globe) {
-        await page.evaluate(() => { const Z = ZombieBash; for (let i = 0; i < 120; i++) Z.meta.stars[Z.LEVEL_META[i].id] = 3; Z.meta.coins = 2480; Z.showWorlds(2); });
+        await page.evaluate(() => { const Z = ZombieBash; for (let i = 0; i < 120; i++) Z.meta.stars[Z.LEVEL_META[i].id] = 3; Z.meta.coins = 2480; Z.showWorlds(1); });
         await page.waitForTimeout(2500);
       } else {
         await page.evaluate(battle(sc.level, sc.setup), { level: sc.level, setup: sc.setup });

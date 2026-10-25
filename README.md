@@ -59,6 +59,8 @@ Each world has 50 levels. Every level has its own road layout, scenery, time of 
 
 Zombies from earlier worlds keep coming back in later ones.
 
+The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
+
 ### Zombies
 
 | Zombie | What it does |
@@ -157,7 +159,8 @@ The music follows the action: a menu theme, a calm arrangement between waves, dr
 - `js/data.js`: worlds, zombies, towers, store items and difficulty
 - `js/levels.js`: the level generator (roads, water, scenery, waves) for all 200 levels
 - `js/art.js`: realistic top-down drawing of terrain, zombies, towers and effects
-- `js/globe.js`: the floating globe on the world map
+- `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
+- `js/menufx.js`: the animated main menu backdrop
 - `js/audio.js`: synthesized sound effects, music and ambience
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play

@@ -73,10 +73,11 @@
 </div>
 
 <div class="screen menu-screen" id="menu-screen">
+  <canvas class="menu-fx" id="menu-fx" aria-hidden="true"></canvas>
   <div class="menu">
     <div class="brand">
       <p class="brand-kicker">Tower defense</p>
-      <h1>Zombie <span>Bash</span></h1>
+      <h1><span class="t-zombie">Zombie</span> <span class="t-bash">Bash</span></h1>
       <p class="brand-sub">Four worlds. Two hundred levels. Hold the line.</p>
     </div>
     <div class="coin-chip" id="menu-coins"></div>
@@ -102,6 +103,7 @@
     <div class="globe-wrap">
       <canvas id="globe" aria-label="Globe showing the four worlds. Drag to spin, tap a marker to choose."></canvas>
       <div class="globe-shadow" aria-hidden="true"></div>
+      <p class="globe-hint" id="globe-hint"></p>
     </div>
     <div class="world-card" id="world-card"></div>
   </div>
@@ -170,6 +172,7 @@
 <script src="js/art.js"></script>
 <script src="js/zombies.js"></script>
 <script src="js/globe.js"></script>
+<script src="js/menufx.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>
 <script>

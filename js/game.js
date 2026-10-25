@@ -1828,7 +1828,7 @@ function renderPowerbar() {
 // Menus: main, globe, level grid, store
 // ============================================================
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#end-screen'];
-function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); Sound.play('open'); }
+function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
 function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); }
 
@@ -1836,6 +1836,7 @@ function showMenu() {
   leaveGame();
   hideScreens();
   $('#menu-screen').hidden = false;
+  MenuFX.start();
   $('#menu-coins').textContent = coinText();
   const ready = TOWER_KEYS.reduce((n, k) => n + (towerUnlocked(k) ? armoryReady(k) : 0), 0);
   $('#armory-badge').hidden = !ready;
@@ -1861,12 +1862,18 @@ function showWorlds(w = S.worldSel) {
   $('#world-coins').textContent = coinText();
   if (!globeReady) {
     Globe.isOpen = worldUnlocked;
+    Globe.onFind = () => { renderGlobeHint(); Sound.play('xp'); };
     Globe.init($('#globe'), (i) => { Sound.play('click'); selectWorld(i); });
     globeReady = true;
     Globe.select(w, true);
   }
   selectWorld(w);
+  renderGlobeHint();
   Globe.start();
+}
+function renderGlobeHint() {
+  const { found, total } = Globe.wonders();
+  $('#globe-hint').innerHTML = found >= total ? `All <b>${total}</b> wonders found` : `Spin the globe and tap the wonders · <b>${found}</b> / ${total} found`;
 }
 function worldStars(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) s += starsFor(w * LEVELS_PER_WORLD + i); return s; }
 function worldCleared(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) if (starsFor(w * LEVELS_PER_WORLD + i)) s++; return s; }
@@ -2306,6 +2313,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
   $('#st-id').textContent = S.L.id; $('#st-name').textContent = S.L.name;
   initWeather();
 }
+MenuFX.init($('#menu-fx'));
 buildShop(); renderInfo(); renderNextWave(); renderPowerbar();
 resize();
 updateHUD(true);

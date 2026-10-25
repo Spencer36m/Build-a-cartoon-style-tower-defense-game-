@@ -15,7 +15,7 @@ const SOUND_GAP = {
   coin: 60, cash: 90, interest: 200, buy: 100, early: 300, clear: 400, xp: 200,
   upgrade: 100, tier5: 300, unlock: 200, place: 80, sell: 80, select: 60, click: 45, error: 120, open: 120, globe: 250,
   pause: 150, speed: 60, wave: 400, boss: 900, leak: 150, lowlife: 1500, star: 60, win: 800, lose: 800,
-  jet: 600, freezeall: 500, supply: 400, medkit: 400,
+  jet: 600, freezeall: 500, supply: 400, medkit: 400, thunder: 3000,
 };
 
 // Music: four-bar minor progressions per world, as [semitones above the key, chord quality].
@@ -223,6 +223,7 @@ const Sound = {
       case 'jet': this.noise(1.4, 0.18, 400, 0, 'bandpass', o, 0.8, 1800); this.noise(1.2, 0.08, 6000, 0.2, 'highpass', o); break;
       case 'freezeall': for (let i = 0; i < 10; i++) this.tone(r(2000, 5000), 0.3, 'sine', 0.02, null, i * 0.06, this.sfx, 0.005, 0.5); this.noise(0.9, 0.08, 6000, 0, 'highpass'); break;
       case 'supply': for (let i = 0; i < 4; i++) this.noise(0.06, 0.08, 900, i * 0.08, 'bandpass'); this.tone(1046, 0.08, 'triangle', 0.06, null, 0.4); this.tone(1568, 0.12, 'triangle', 0.05, null, 0.46); break;
+      case 'thunder': this.noise(0.15, 0.25, 3000, 0, 'highpass'); this.noise(2.6, 0.32, 160, 0.08, 'lowpass', this.sfx, 0.7, 60); this.noise(1.8, 0.12, 420, 0.3, 'lowpass', this.sfx, 0.7, 120); break;
       case 'medkit': for (const f of [523, 659, 784]) this.tone(f, 0.6, 'sine', 0.04, null, 0, this.sfx, 0.12, 0.4); break;
     }
   },
