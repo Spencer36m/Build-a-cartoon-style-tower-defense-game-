@@ -128,6 +128,14 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 - **Perks** (permanent): extra starting cash, extra lives, cheaper towers, better sell-back, more cash per kill.
 - **Supplies** (one use): Airstrike, Cryo Bomb, Supply Drop, Field Repairs.
 
+### Sound
+
+Every sound is synthesized live with Web Audio, so the game ships no audio files. Weapons, upgrades, menus, the store and the Armory all have their own sounds, and every kind of zombie groans and dies differently (bones rattle, crows caw, wraiths wail, bloaters pop, bosses roar). Effects pan left or right with where they happen on the map.
+
+The music follows the action: a menu theme, a calm arrangement between waves, drums once a wave is on, and a faster boss theme, in a different key for each world. Ambience follows the level's weather and time of day: rain, wind, crickets at night, owls in the cemetery, frogs in the bayou.
+
+**Sound** in the top bar mutes everything; **Music** on the main menu and the pause screen turns off just the music. On iPhone, the ring/silent switch also mutes the game, as with most games.
+
 ### Controls
 
 | Key | Action |
@@ -150,6 +158,7 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 - `js/levels.js`: the level generator (roads, water, scenery, waves) for all 200 levels
 - `js/art.js`: realistic top-down drawing of terrain, zombies, towers and effects
 - `js/globe.js`: the floating globe on the world map
+- `js/audio.js`: synthesized sound effects, music and ambience
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
 - `manifest.webmanifest`, `sw.js`, `icons/`: installable web app and offline support

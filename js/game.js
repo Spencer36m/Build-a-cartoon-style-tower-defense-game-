@@ -30,81 +30,6 @@ const MAP_WIDE = 50; // ranges this big reach the whole map
 const coarse = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
 const buzz = (ms) => { try { if (!Sound.muted && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* no haptics */ } };
 
-// ============================================================
-// Sound: a small synth with gunfire, blasts and groans
-// ============================================================
-const Sound = {
-  ac: null, master: null, noiseBuf: null, muted: false, last: {},
-  init() {
-    if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume(); return; }
-    try {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      this.ac = new AC();
-      this.master = this.ac.createGain(); this.master.gain.value = 0.32; this.master.connect(this.ac.destination);
-      const len = this.ac.sampleRate;
-      this.noiseBuf = this.ac.createBuffer(1, len, this.ac.sampleRate);
-      const d = this.noiseBuf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-    } catch (e) { this.ac = null; }
-  },
-  tone(f, dur, type = 'sine', vol = 0.2, slide = null, delay = 0) {
-    const ac = this.ac, t0 = ac.currentTime + delay;
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.type = type; o.frequency.setValueAtTime(f, t0);
-    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
-    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g); g.connect(this.master); o.start(t0); o.stop(t0 + dur + 0.05);
-  },
-  noise(dur, vol = 0.3, freq = 800, delay = 0, type = 'lowpass') {
-    const ac = this.ac, t0 = ac.currentTime + delay;
-    const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-    src.buffer = this.noiseBuf; src.playbackRate.value = 0.8 + Math.random() * 0.4;
-    f.type = type; f.frequency.value = freq;
-    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(f); f.connect(g); g.connect(this.master); src.start(t0); src.stop(t0 + dur + 0.05);
-  },
-  play(name) {
-    if (!this.ac || this.muted) return;
-    const now = performance.now();
-    const gap = { laser: 60, ray: 110, shotgun: 90, mg: 70, splat: 50, sniper: 90, mortar: 120, boom: 100, cryo: 100, flame: 160, zap: 90, missile: 120, cannon: 110, heli: 70, summon: 400, heal: 400, groan: 900 }[name] || 40;
-    if (this.last[name] && now - this.last[name] < gap) return;
-    this.last[name] = now;
-    switch (name) {
-      case 'mg': this.noise(0.06, 0.14, 2600); this.tone(160, 0.05, 'square', 0.03, 80); break;
-      case 'heli': this.noise(0.05, 0.1, 3000); break;
-      case 'sniper': this.noise(0.25, 0.28, 3500); this.tone(220, 0.18, 'triangle', 0.08, 60); break;
-      case 'mortar': this.tone(140, 0.18, 'sine', 0.2, 60); this.noise(0.1, 0.1, 500); break;
-      case 'boom': this.noise(0.6, 0.35, 420); this.tone(70, 0.5, 'sine', 0.3, 32); break;
-      case 'cryo': this.noise(0.25, 0.08, 6000, 0, 'highpass'); break;
-      case 'flame': this.noise(0.3, 0.08, 900); break;
-      case 'zap': this.noise(0.12, 0.1, 5000, 0, 'highpass'); this.tone(90, 0.12, 'sawtooth', 0.05, 180); break;
-      case 'missile': this.noise(0.35, 0.09, 1800); break;
-      case 'cannon': this.noise(0.18, 0.2, 900); this.tone(110, 0.15, 'sine', 0.15, 50); break;
-      case 'splat': this.noise(0.08, 0.08, 700); break;
-      case 'groan': this.tone(95, 0.9, 'sawtooth', 0.05, 70); this.tone(72, 0.9, 'sine', 0.08, 55, 0.1); break;
-      case 'summon': this.tone(120, 0.5, 'triangle', 0.06, 300); break;
-      case 'heal': this.tone(420, 0.25, 'sine', 0.05, 640); break;
-      case 'stomp': this.noise(0.5, 0.35, 220); this.tone(48, 0.5, 'sine', 0.35, 28); break;
-      case 'dig': this.noise(0.2, 0.12, 400); break;
-      case 'leak': this.tone(180, 0.4, 'sawtooth', 0.08, 70); break;
-      case 'place': this.noise(0.08, 0.15, 1200); this.tone(320, 0.06, 'triangle', 0.08); break;
-      case 'upgrade': [392, 523, 659].forEach((f, i) => this.tone(f, 0.12, 'triangle', 0.1, null, i * 0.07)); break;
-      case 'sell': this.tone(520, 0.12, 'triangle', 0.08, 260); break;
-      case 'wave': this.tone(330, 0.5, 'sawtooth', 0.04, 300); this.tone(220, 0.6, 'sine', 0.06, null, 0.1); break;
-      case 'boss': this.tone(65, 1.2, 'sawtooth', 0.1, 45); this.tone(98, 1.0, 'sawtooth', 0.06, 70, 0.3); break;
-      case 'error': this.tone(140, 0.12, 'square', 0.06); break;
-      case 'click': this.tone(880, 0.03, 'triangle', 0.05); break;
-      case 'coin': this.tone(1046, 0.06, 'triangle', 0.06); this.tone(1568, 0.1, 'triangle', 0.05, null, 0.05); break;
-      case 'lose': [262, 220, 175, 131].forEach((f, i) => this.tone(f, 0.4, 'triangle', 0.1, null, i * 0.25)); break;
-      case 'win': [392, 523, 659, 784].forEach((f, i) => this.tone(f, 0.3, 'triangle', 0.09, null, i * 0.14)); break;
-      case 'jet': this.noise(1.2, 0.18, 900); break;
-      case 'laser': this.tone(1400, 0.08, 'sawtooth', 0.03, 500); break;
-      case 'ray': this.tone(220, 0.12, 'sawtooth', 0.025, 260); this.noise(0.1, 0.04, 5000, 0, 'highpass'); break;
-      case 'shotgun': this.noise(0.14, 0.2, 1400); this.tone(120, 0.08, 'square', 0.04, 60); break;
-    }
-  },
-};
 
 // ============================================================
 // State
@@ -236,6 +161,7 @@ function startGame(index, save) {
   S.time = 0; S.shake = 0; S.houseHit = 0; S.banner = null; S.leakFlash = 0; S.freezeFlash = 0;
   S.state = 'playing';
   setPaused(false);
+  Sound.stopAmbience();
   initWeather();
   hideScreens();
   ZART.prewarm([...new Set([...L.pool.map(([t]) => t), ...(L.boss ? [L.boss] : []), 'imp', 'skeleton', 'runner'])]);
@@ -296,6 +222,7 @@ function startWave() {
     const b = 5 + S.wave;
     S.cash += b;
     floatText(`Early call +$${b}`, W / 2, 96, '#86b356', 18);
+    Sound.play('early');
   }
   const fresh = newTypes(S.L, S.wave);
   const boss = S.L.boss && S.wave === S.L.waves;
@@ -305,7 +232,7 @@ function startWave() {
   else if (S.wave === S.L.waves) sub = 'Final wave';
   showBanner(`Wave ${S.wave}`, sub);
   Sound.play(boss ? 'boss' : 'wave');
-  if (fresh.length || boss) Sound.play('groan');
+  if (fresh.length || boss) Sound.play('groan', W * 0.2);
   renderNextWave(); updateHUD(true);
 }
 
@@ -381,6 +308,8 @@ function showEnd(won, title, text, stars, reward, xp) {
   st.hidden = !won;
   st.innerHTML = [1, 2, 3].map((i) => STAR_SVG.replace('<svg', `<svg class="${i <= stars ? 'on' : ''}"`)).join('');
   st.setAttribute('aria-label', `${stars} of 3 stars`);
+  for (let i = 0; i < stars; i++) setTimeout(() => Sound.play('star', null, { pitch: 1 + i * 0.25 }), 450 + i * 150);
+  if (xp > 0) setTimeout(() => Sound.play('xp'), 450 + stars * 150 + 150);
   $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1];
   $('#btn-retry').textContent = won ? 'Replay' : 'Try again';
   $('#end-screen').hidden = false;
@@ -389,6 +318,7 @@ function showEnd(won, title, text, stars, reward, xp) {
 
 function setPaused(p) {
   if (S.state !== 'playing') p = false;
+  if (p !== S.paused) Sound.play(p ? 'pause' : 'resume');
   S.paused = p;
   $('#pause-screen').hidden = !p;
   $('#btn-pause').textContent = p ? 'Resume' : 'Pause';
@@ -416,6 +346,9 @@ function spawnEnemy(type, wave, route, d = 0) {
   };
   placeOnPath(z);
   S.enemies.push(z);
+  if (def.boss) Sound.play('roar', W * 0.15);
+  else if (def.fly && Math.random() < 0.25) Sound.play(type === 'bats' ? 'bat' : 'crow', W * 0.1);
+  else if (def.lives > 1 && Math.random() < 0.5) Sound.play('brute', W * 0.15);
   return z;
 }
 
@@ -431,7 +364,7 @@ function placeOnPath(e) {
         const a = rand(0, TAU);
         S.fx.push({ kind: 'debris', x: e.x, y: e.y, vx: Math.cos(a) * 70, vy: Math.sin(a) * 70, r: rand(1.5, 3), color: '#5e4a36', life: 0.6, max: 0.6 });
       }
-      Sound.play('dig');
+      Sound.play('dig', e.x);
     }
   }
 }
@@ -462,7 +395,8 @@ function updateEnemy(e, dt) {
     S.houseHit = 0.5; S.leakFlash = 0.4;
     addShake(lost > 2 ? 9 : 3);
     floatText(`-${lost} ${lost === 1 ? 'life' : 'lives'}`, S.M.end.x, S.M.end.y - 40, '#e0675b', 16);
-    Sound.play('leak'); buzz(40); bumpStat('.stat-lives');
+    Sound.play('leak', S.M.end.x); buzz(40); bumpStat('.stat-lives');
+    if (S.lives > 0 && S.lives <= 5) Sound.play('lowlife');
     return;
   }
   placeOnPath(e);
@@ -473,7 +407,7 @@ function updateEnemy(e, dt) {
     if (e.d > 40 && !e.fly) {
       for (let i = 0; i < def.summon.n; i++) spawnEnemy(def.summon.type, e.wave, e.route, Math.max(0, e.d - 10 - i * 12));
       for (let i = 0; i < 6; i++) S.fx.push({ kind: 'smoke', x: e.x + rand(-12, 12), y: e.y + rand(-12, 12), vx: rand(-10, 10), vy: rand(-10, 10), r: rand(6, 10), grow: 14, life: 0.9, max: 0.9, color: '120,150,90' });
-      Sound.play('summon');
+      Sound.play('summon', e.x);
     }
   }
   if (def.heal && (e.healCd -= dt) <= 0) {
@@ -484,7 +418,7 @@ function updateEnemy(e, dt) {
       z.hp = Math.min(z.maxHp, z.hp + z.maxHp * def.heal.pct);
     }
     S.fx.push({ kind: 'ring', x: e.x, y: e.y, r: def.heal.radius * TILE * 0.5, life: 0.6, max: 0.6, color: '134,200,90' });
-    Sound.play('heal');
+    Sound.play('heal', e.x);
   }
   if (def.stomp && (e.stompCd -= dt) <= 0) {
     e.stompCd = def.stomp.every;
@@ -493,13 +427,14 @@ function updateEnemy(e, dt) {
     for (const t of S.towers) if (dist2(t.x, t.y, e.x, e.y) <= r2) { t.stun = def.stomp.dur; hit++; }
     S.fx.push({ kind: 'ring', x: e.x, y: e.y, r: def.stomp.radius * TILE * 0.45, life: 0.7, max: 0.7, color: '200,235,255' });
     if (hit) floatText('Towers frozen', e.x, e.y - e.r * 2.5, '#bfe6ff', 16);
-    addShake(7); Sound.play('stomp');
+    addShake(7); Sound.play('stomp', e.x);
   }
 }
 
 function damage(e, amount, tower, pierce = 0, quiet = false) {
   if (e.dead) return;
   if (e.brittleT > 0) amount *= 1 + e.brittle;
+  if (e.armor > 0 && !quiet && Math.random() < 0.25) Sound.play('armor', e.x);
   const dmg = Math.max(amount * 0.2, amount - e.armor * (1 - Math.min(1, pierce)));
   e.hp -= dmg;
   if (!quiet) e.flash = 0.06;
@@ -529,7 +464,10 @@ function kill(e, tower) {
     addXp(tower.type, def.boss ? (def.mini ? 12 : 40) : def.lives > 1 ? 3 : 1);
     if (tower.st.killBonus) { S.cash += tower.st.killBonus; if (Math.random() < 0.3) floatText(`+$${tower.st.killBonus}`, e.x, e.y - 14, '#86b356', 12); }
   }
-  Sound.play('splat');
+  // every kind of zombie dies with its own sound
+  const deathSound = def.boss ? 'roar' : { skeleton: 'bones', ghost: 'wail', bloater: 'pop', carrion: 'crow', bats: 'bat', brute: 'brute' }[e.type];
+  Sound.play('splat', e.x);
+  if (deathSound) Sound.play(deathSound, e.x);
   if (def.splits) for (let i = 0; i < def.splits.n; i++) spawnEnemy(def.splits.type, e.wave, e.route, Math.max(0, e.d - 4 - i * 12));
   if (def.boss) {
     explosion(e.x, e.y, e.r * 2.4, true);
@@ -569,8 +507,9 @@ function placeTower(type, col, row) {
   S.dirty = true;
   buzz(12);
   for (let i = 0; i < 8; i++) S.fx.push({ kind: 'smoke', x: t.x + rand(-14, 14), y: t.y + rand(-14, 14), vx: rand(-20, 20), vy: rand(-20, 20), r: rand(4, 7), grow: 10, life: 0.6, max: 0.6, color: '170,160,140' });
-  Sound.play('place');
-  if (type === 'jet') Sound.play('jet');
+  Sound.play(TOWERS[type].place === 'water' ? 'splash' : 'place', t.x);
+  if (type === 'jet') Sound.play('jet', t.x);
+  if (type === 'heli') Sound.play('heli', t.x);
   return t;
 }
 
@@ -633,7 +572,7 @@ function upgradeTower(t, p) {
   S.fx.push({ kind: 'ring', x: t.x, y: t.y, r: 26, life: 0.9, max: 0.9, color: rgb });
   S.fx.push({ kind: 'pillar', x: t.x, y: t.y, color: rgb, big: tiers[p] >= 3, life: 0.8, max: 0.8 });
   for (let i = 0; i < 10; i++) { const a = rand(0, TAU), sp = rand(40, 110); S.fx.push({ kind: 'spark', x: t.x, y: t.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4, max: 0.4 }); }
-  Sound.play('upgrade'); buzz(15);
+  Sound.play(tiers[p] >= 5 ? 'tier5' : 'upgrade', t.x, { pitch: 1 + (tiers[p] - 1) * 0.1 }); buzz(15);
   renderInfo(); updateHUD(true);
 }
 
@@ -647,7 +586,7 @@ function sellTower(t) {
   refreshTowers();
   floatText(`+$${sellValue(t)}`, t.x, t.y - 20, '#86b356', 15);
   if (S.selected === t) S.selected = null;
-  Sound.play('sell');
+  Sound.play('sell', t.x);
   renderInfo(); updateHUD(true);
 }
 
@@ -694,6 +633,7 @@ function turnToward(a, target, k) {
 
 function stunZombie(e, dur) {
   if (e.dead || e.stunCd > 0 || !dur) return;
+  Sound.play('freeze', e.x);
   dur *= ZOMBIES[e.type].boss ? 0.3 : 1;
   e.stunT = Math.max(e.stunT, dur);
   e.stunCd = dur + 0.6;
@@ -738,7 +678,7 @@ function updateTower(t, dt) {
       for (const e of hits) { damage(e, st.pulseDmg, t, 1); stunZombie(e, st.pulseStun); }
       S.fx.push({ kind: 'ring', x: t.x, y: t.y, r: st.range * TILE * 0.45, life: 0.5, max: 0.5, color: '150,225,255' });
       S.fx.push({ kind: 'blast', x: t.x, y: t.y, r: 26, life: 0.25, max: 0.25 });
-      Sound.play('zap'); addShake(3);
+      Sound.play('pulse', t.x); addShake(3);
     }
   }
   const air = AIRCRAFT[t.type];
@@ -770,7 +710,7 @@ function updateTower(t, dt) {
         const mx = t.ax + Math.cos(t.angle) * 14 - Math.sin(t.angle) * o, my = t.ay + Math.sin(t.angle) * 14 + Math.cos(t.angle) * o;
         hitscan(t, target, st.dmg, mx, my, st.pierce ? '255,200,120' : '255,220,150', 1.2);
       }
-      Sound.play('heli');
+      Sound.play('heli', t.ax);
     }
     return;
   }
@@ -801,7 +741,7 @@ function updateTower(t, dt) {
         const e = near(pl, r2 * 0.64)[0];
         if (e) { hitscan(t, e, st.gunDmg, pl.x + Math.cos(pl.a) * 12, pl.y + Math.sin(pl.a) * 12, '255,210,140', 1.1); fired = true; }
       }
-      if (fired) { t.cd4 = st.gunRate; Sound.play('heli'); }
+      if (fired) { t.cd4 = st.gunRate; Sound.play('heli', t.ax); }
     }
     if (st.bombDmg && t.cd5 <= 0) {
       let fired = false;
@@ -810,6 +750,7 @@ function updateTower(t, dt) {
         if (!S.enemies.some((e) => targetable(e, false, true) && dist2(e.x, e.y, ex, ey) < rr)) continue;
         S.projectiles.push({ kind: 'bomb', sx: pl.x, sy: pl.y, ex, ey, x: pl.x, y: pl.y, t: 0, dur: 0.45, dmg: st.bombDmg, splash: st.bombSplash * TILE, burn: st.bombBurn || 0, tower: t });
         fired = true;
+        Sound.play('bomb', pl.x);
       }
       if (fired) t.cd5 = st.bombRate;
     }
@@ -870,7 +811,7 @@ function fireBeam(t, target, dmg, width, mx, my, color) {
 
 function launchMissile(t, target, dmg, splash, x, y, speed, pierce = t.st.pierce || 0, angle = t.angle) {
   S.projectiles.push({ kind: 'missile', x, y, vx: Math.cos(angle) * speed * 0.4, vy: Math.sin(angle) * speed * 0.4, speed, target, tx: target.x, ty: target.y, dmg, splash, tower: t, air: target.fly, life: 3, pierce });
-  Sound.play('missile');
+  Sound.play(t.type === 'sub' ? 'torpedo' : 'missile', x);
 }
 
 function splashAt(x, y, radius, air, fn) {
@@ -887,7 +828,7 @@ function explosion(x, y, r, big, quiet) {
   S.decals.push({ kind: 'scorch', x, y, r: r * 0.7, life: 12, max: 12, seed: Math.random() * 1000 });
   if (S.decals.length > 90) S.decals.shift();
   addShake(big ? 10 : quiet ? 1 : 3);
-  Sound.play('boom');
+  Sound.play(quiet ? 'thud' : 'boom', x);
 }
 
 function fire(t, target, st) {
@@ -897,7 +838,7 @@ function fire(t, target, st) {
       if (st.beam) {
         const m = muzzle(t, a >= 5 ? 30 : 24);
         fireBeam(t, target, st.dmg, st.beam, m.x, m.y, a >= 5 ? '120,255,110' : a >= 4 ? '120,200,255' : '255,70,60');
-        Sound.play(a >= 5 ? 'ray' : 'laser');
+        Sound.play(a >= 5 ? 'ray' : 'laser', t.x, { pitch: a >= 4 ? 0.7 : 1 });
         break;
       }
       const picks = st.targets ? pickTargets(t, st.range * TILE, t.x, t.y, 1 + st.targets) : [target];
@@ -915,7 +856,7 @@ function fire(t, target, st) {
           hitscan(t, v, st.dmg, mx, my, color, 1.4, (st.splash || 0) * TILE);
         }
       }
-      Sound.play(st.spread ? 'shotgun' : 'mg');
+      Sound.play(st.spread ? 'shotgun' : 'mg', t.x);
       break;
     }
     case 'farm': {
@@ -923,7 +864,7 @@ function fire(t, target, st) {
         const m = muzzle(t, 14);
         hitscan(t, target, st.dmg, m.x - Math.sin(t.angle) * o, m.y + Math.cos(t.angle) * o, '255,210,150', 1.3, TILE * 0.35);
       }
-      Sound.play('shotgun');
+      Sound.play('shotgun', t.x);
       break;
     }
     case 'sniper': {
@@ -932,13 +873,13 @@ function fire(t, target, st) {
         const crit = st.critChance && Math.random() < st.critChance;
         const m = muzzle(t, 26);
         const o = (i - (picks.length - 1) / 2) * 8;
-        if (crit) floatText('Crit', e.x, e.y - 20, '#ffd28a', 13);
+        if (crit) { floatText('Crit', e.x, e.y - 20, '#ffd28a', 13); Sound.play('crit', e.x); }
         if (st.beam) { fireBeam(t, e, st.dmg * (crit ? st.critMult : 1), st.beam, m.x - Math.sin(t.angle) * o, m.y + Math.cos(t.angle) * o, '150,210,255'); return; }
         hitscan(t, e, st.dmg * (crit ? st.critMult : 1), m.x - Math.sin(t.angle) * o, m.y + Math.cos(t.angle) * o, crit ? '255,200,90' : '255,240,200', crit ? 2.6 : 1.8);
       });
       const m = muzzle(t, 26);
       S.fx.push({ kind: 'smoke', x: m.x, y: m.y, vx: Math.cos(t.angle) * 20, vy: Math.sin(t.angle) * 20, r: 3, grow: 10, life: 0.6, max: 0.6, color: '200,200,200' });
-      Sound.play('sniper');
+      Sound.play(st.beam ? 'rail' : 'sniper', t.x);
       break;
     }
     case 'mortar': {
@@ -952,7 +893,7 @@ function fire(t, target, st) {
       }
       S.fx.push({ kind: 'smoke', x: t.x, y: t.y, vx: 0, vy: 0, r: 6, grow: 16, life: 0.7, max: 0.7, color: '190,185,170' });
       S.fx.push({ kind: 'flash', x: t.x + 3, y: t.y, a: t.angle, size: 9, life: 0.06, max: 0.06 });
-      Sound.play('mortar');
+      Sound.play('mortar', t.x);
       break;
     }
     case 'cryo': {
@@ -962,7 +903,7 @@ function fire(t, target, st) {
         const m = muzzle(t, 20);
         S.projectiles.push({ kind: 'canister', x: m.x, y: m.y, target: e, tx: e.x, ty: e.y, speed: 380 + i * 30, dmg: st.dmg, splash: st.splash * TILE, slow: st.slow, slowDur: st.slowDur, brittle: st.brittle || 0, tower: t, air: !!e.fly });
       }
-      Sound.play('cryo');
+      Sound.play('cryo', t.x);
       break;
     }
     case 'flame': {
@@ -975,7 +916,7 @@ function fire(t, target, st) {
         const tx = target.x + rand(-sp, sp), ty = target.y + rand(-sp, sp);
         S.fx.push({ kind: 'fire', x: m.x, y: m.y, vx: (tx - m.x) / k, vy: (ty - m.y) / k, r: rand(3, 6) * (hot ? 1.3 : 1), grow: 10, life: k, max: k, hue: st.pierce >= 1 ? 'white' : st.dmg >= 30 ? 'blue' : null });
       }
-      Sound.play('flame');
+      Sound.play('flame', t.x);
       break;
     }
     case 'tesla': {
@@ -995,7 +936,7 @@ function fire(t, target, st) {
         strike(next, dmg, t, 1); cur = next;
       }
       S.fx.push({ kind: 'arc', pts, life: 0.16, max: 0.16, seed: Math.random() * 1000 });
-      Sound.play('zap');
+      Sound.play('zap', t.x);
       break;
     }
     case 'gunboat': {
@@ -1005,7 +946,7 @@ function fire(t, target, st) {
         S.projectiles.push({ kind: 'round', x, y, target, tx: target.x, ty: target.y, speed: 620, dmg: st.dmg, splash: st.splash * TILE, tower: t, air: target.fly });
         S.fx.push({ kind: 'flash', x, y, a: t.angle, size: 8, life: 0.06, max: 0.06 });
       }
-      Sound.play('cannon');
+      Sound.play('cannon', t.x);
       break;
     }
     case 'sub': {
@@ -1065,7 +1006,7 @@ function updateProjectile(p, dt) {
       } else {
         if (p.target) strike(p.target, p.dmg, p.tower, p.pierce);
         S.fx.push({ kind: 'blast', x: p.x, y: p.y, r: 12, life: 0.25, max: 0.25 });
-        Sound.play('cannon');
+        Sound.play('cannon', p.x);
       }
     }
     return;
@@ -1111,15 +1052,16 @@ function usePower(kind) {
   const e = effWave(S.L, Math.max(1, S.wave));
   if (kind === 'cryobomb') {
     for (const z of S.enemies) { const boss = ZOMBIES[z.type].boss; z.slowF = boss ? 0.5 : 0.97; z.slowT = 3; }
-    S.freezeFlash = 0.6; Sound.play('cryo');
+    S.freezeFlash = 0.6; Sound.play('freezeall');
     showBanner('Cryo bomb', 'The horde is frozen');
   } else if (kind === 'supply') {
     const amount = Math.round(150 + e * 25);
-    S.cash += amount; Sound.play('coin');
+    S.cash += amount; Sound.play('supply');
     floatText(`Supply drop +$${amount}`, W / 2, H / 2, '#86b356', 22);
   } else if (kind === 'medkit') {
     S.lives = Math.min(S.maxLives, S.lives + 5);
     floatText('+5 lives', S.M.end.x, S.M.end.y - 40, '#86b356', 18);
+    Sound.play('medkit');
   }
   renderPowerbar(); updateHUD(true);
 }
@@ -1130,7 +1072,8 @@ function callAirstrike(x, y) {
   const dmg = 60 * hpScale(e);
   for (let i = 0; i < 7; i++) S.strikes.push({ t: 0.6 + i * 0.12, x: x + rand(-1, 1) * TILE * 1.2, y: y + rand(-1, 1) * TILE * 1.2, dmg });
   S.fx.push({ kind: 'jetpass', x: -60, y: y - 30, tx: W + 60, life: 1.2, max: 1.2 });
-  Sound.play('jet');
+  Sound.play('jet', x);
+  for (let i = 0; i < 3; i++) setTimeout(() => Sound.play('bomb', x), 200 + i * 120);
   renderPowerbar();
 }
 
@@ -1366,7 +1309,7 @@ function update(dt) {
       const v = Math.round(cr.v);
       S.cash += v; cr.done = true;
       floatText(`+$${v}`, cr.x, cr.y - 10, '#86b356', 14);
-      Sound.play('coin'); bumpStat('.stat-cash');
+      Sound.play('cash', cr.x); bumpStat('.stat-cash');
     }
   }
   S.crates = S.crates.filter((cr) => !cr.done);
@@ -1384,14 +1327,20 @@ function update(dt) {
         if (t.type === 'farm') addXp('farm', Math.round((t.st.income || 0) / 6) + 2);
         if (t.st.interest) {
           const g = Math.min(t.st.interestCap, Math.floor(S.cash * t.st.interest));
-          if (g > 0) { S.cash += g; floatText(`Interest +$${g}`, t.x, t.y - 12, '#e3a83e', 13); }
+          if (g > 0) { S.cash += g; floatText(`Interest +$${g}`, t.x, t.y - 12, '#e3a83e', 13); Sound.play('interest', t.x); }
         }
         if (t.st.lifePerWave && S.lives < S.maxLives) { S.lives = Math.min(S.maxLives, S.lives + t.st.lifePerWave); floatText(`+${t.st.lifePerWave} lives`, t.x, t.y - 40, '#86b356', 13); }
       }
-      Sound.play('coin'); bumpStat('.stat-cash');
+      Sound.play('clear'); bumpStat('.stat-cash');
     }
   }
   S.spawners = S.spawners.filter((sp) => !sp.paid);
+  S.groanT = (S.groanT || 3) - dt;
+  if (S.groanT <= 0) {
+    S.groanT = rand(2.2, 5.5);
+    const ground = S.enemies.filter((e) => !e.fly && !e.burrowed && onField(e));
+    if (ground.length) { const e = ground[Math.floor(Math.random() * ground.length)]; Sound.play(ZOMBIES[e.type].look.kind === 'ghost' ? 'wail' : 'groan', e.x, { pitch: e.r < 11 ? 1.3 : e.r > 16 ? 0.7 : 1 }); }
+  }
   updateFx(dt);
   if (S.lives <= 0) { gameOver(); return; }
   const idle = !S.spawners.length && !S.enemies.length;
@@ -1596,6 +1545,18 @@ function render() {
   }
 }
 
+function updateAudioScene() {
+  if (!Sound.ac) return;
+  let mode = 'menu';
+  if (S.state === 'playing' || S.state === 'won' || S.state === 'over') {
+    if (S.state !== 'playing' || S.paused) mode = 'calm';
+    else if (S.enemies.some((e) => ZOMBIES[e.type].boss)) mode = 'boss';
+    else mode = S.spawners.length || S.enemies.length ? 'battle' : 'calm';
+    if (!Sound.amb) Sound.setAmbience(S.L.look.weather, S.L.look.time, S.L.world);
+  }
+  Sound.setScene(mode, S.L ? S.L.world : 0);
+}
+
 let lastFrame = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
@@ -1614,6 +1575,7 @@ function frame(now) {
   }
   if (S.state !== 'menu') render();
   updateHUD();
+  updateAudioScene();
   requestAnimationFrame(frame);
 }
 
@@ -1669,7 +1631,7 @@ function buildShop() {
     b.dataset.type = type;
     b.title = open ? `${def.name}: ${def.desc} (key ${def.key})` : `${def.name} is locked. Clear ${levelName(def.unlock - 1)} or buy it in the store.`;
     b.append(towerIcon(type, [0, 0, 0]));
-    b.insertAdjacentHTML('beforeend', `<span class="t-key">${def.key}</span><span class="t-role">${def.role}</span><span class="t-name">${def.name}</span><span class="t-cost">${open ? '$' + costOf(def.cost) : 'Locked'}</span>`);
+    b.insertAdjacentHTML('beforeend', `<span class="t-key">${def.key}</span><span class="t-role">${def.role}</span><span class="t-name">${def.name}</span><span class="t-cost">${open ? '$' + costOf(def.cost) : `${LOCK_SVG}<span class="t-lock">Locked</span>`}</span>`);
     b.addEventListener('click', () => {
       Sound.init();
       if (!open) { floatText(`Clear ${LEVEL_META[def.unlock - 1].id} or buy in store`, W / 2, H / 2, '#e3a83e', 16); Sound.play('error'); return; }
@@ -1866,9 +1828,9 @@ function renderPowerbar() {
 // Menus: main, globe, level grid, store
 // ============================================================
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#end-screen'];
-function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); }
+function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
-function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); }
+function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); }
 
 function showMenu() {
   leaveGame();
@@ -1909,6 +1871,7 @@ function showWorlds(w = S.worldSel) {
 function worldStars(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) s += starsFor(w * LEVELS_PER_WORLD + i); return s; }
 function worldCleared(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) if (starsFor(w * LEVELS_PER_WORLD + i)) s++; return s; }
 function selectWorld(w) {
+  if (w !== S.worldSel) Sound.play('globe');
   S.worldSel = w;
   Globe.select(w);
   const world = WORLDS[w], open = worldUnlocked(w);
@@ -2023,7 +1986,7 @@ function showStore(tab = storeTab) {
     body.innerHTML = `<span class="meta">${meta2}</span><h3>${title}</h3><p>${desc}</p>${extra}`;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-primary btn-small';
     b.textContent = btnText; b.disabled = !can;
-    b.addEventListener('click', () => { onBuy(); Sound.play('coin'); saveMeta(); showStore(tab); });
+    b.addEventListener('click', () => { onBuy(); Sound.play('buy'); saveMeta(); showStore(tab); });
     body.append(b); el.append(body);
     return el;
   };
@@ -2081,7 +2044,7 @@ function armoryUnlock(type, p, i) {
   caps[p] = i + 1;
   meta.armory[type] = caps;
   saveMeta();
-  Sound.play('upgrade'); buzz(20);
+  Sound.play(i >= 4 ? 'tier5' : 'unlock'); buzz(20);
   const next = i + 1 < 5 ? i + 1 : i;
   armorySel = { p, i: next };
   renderArmory();
@@ -2212,7 +2175,7 @@ canvas.addEventListener('pointerdown', (ev) => {
     }
     return;
   }
-  if (tw) { S.selected = tw === S.selected ? null : tw; Sound.play('click'); } else S.selected = null;
+  if (tw) { S.selected = tw === S.selected ? null : tw; Sound.play('select', tw.x); } else S.selected = null;
   renderInfo();
 });
 
@@ -2239,14 +2202,23 @@ window.addEventListener('keydown', (ev) => {
   else if (S.selected && k === 't' && S.selected.type !== 'jet') cycleTarget(S.selected);
 });
 
-function cycleSpeed() { S.speed = S.speed === 3 ? 1 : S.speed + 1; $('#btn-speed').textContent = `${S.speed}×`; $('#btn-speed').setAttribute('aria-pressed', String(S.speed > 1)); Sound.play('click'); }
+function cycleSpeed() { S.speed = S.speed === 3 ? 1 : S.speed + 1; $('#btn-speed').textContent = `${S.speed}×`; $('#btn-speed').setAttribute('aria-pressed', String(S.speed > 1)); Sound.play('speed', null, { pitch: S.speed }); }
 function toggleAuto() { S.auto = !S.auto; $('#btn-auto').setAttribute('aria-pressed', String(S.auto)); Sound.play('click'); }
 function toggleSound() {
-  Sound.muted = !Sound.muted;
+  Sound.setMuted(!Sound.muted);
   $('#btn-sound').setAttribute('aria-pressed', String(!Sound.muted));
   $('#btn-sound').textContent = Sound.muted ? 'Muted' : 'Sound';
   store.set('zbash.muted', Sound.muted ? '1' : '0');
   Sound.play('click');
+}
+function toggleMusic() {
+  Sound.setMusic(!Sound.musicOn);
+  store.set('zbash.music', Sound.musicOn ? '1' : '0');
+  syncMusicButtons();
+  Sound.play('click');
+}
+function syncMusicButtons() {
+  for (const b of document.querySelectorAll('.btn-music')) { b.textContent = `Music: ${Sound.musicOn ? 'On' : 'Off'}`; b.setAttribute('aria-pressed', String(Sound.musicOn)); }
 }
 
 $('#btn-wave').addEventListener('click', () => { Sound.init(); startWave(); });
@@ -2269,7 +2241,9 @@ $('#btn-world-back').addEventListener('click', showMenu);
 $('#btn-levels-back').addEventListener('click', () => showWorlds(S.worldSel));
 $('#btn-store-back').addEventListener('click', showMenu);
 for (const b of document.querySelectorAll('#store-tabs .tab')) b.addEventListener('click', () => { Sound.play('click'); showStore(b.dataset.tab); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && S.state === 'playing') { checkpoint(); saveMeta(); setPaused(true); } });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (S.state === 'playing') { checkpoint(); saveMeta(); setPaused(true); } Sound.suspend(); }
+});
 
 // ---------- full screen, install, rotate hint ----------
 const standalone = (window.matchMedia && matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) || navigator.standalone === true;
@@ -2316,6 +2290,13 @@ $('#btn-hint-close').addEventListener('click', () => { document.body.classList.a
 // Boot
 // ============================================================
 if (store.get('zbash.muted') === '1') { Sound.muted = true; $('#btn-sound').setAttribute('aria-pressed', 'false'); $('#btn-sound').textContent = 'Muted'; }
+if (store.get('zbash.music') === '0') Sound.musicOn = false;
+syncMusicButtons();
+for (const b of document.querySelectorAll('.btn-music')) b.addEventListener('click', () => { Sound.init(); toggleMusic(); });
+// Browsers only allow audio after a touch, so the first tap anywhere switches it on.
+// Every button clicks; buttons with their own sound simply play over it.
+document.addEventListener('pointerdown', () => Sound.init(), true);
+document.addEventListener('click', (e) => { if (e.target.closest('button')) Sound.play('click'); }, true);
 {
   // show the furthest unlocked level behind the menus
   let furthest = 0;
