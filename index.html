@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blob Bash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="hud">
+    <h1 class="logo">Blob<span>Bash</span></h1>
+    <div class="stats">
+      <div class="stat stat-lives" title="Lives">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.3-9.4C1.4 8 3.6 4.5 7.1 4.5c2 0 3.6 1.1 4.9 2.9 1.3-1.8 2.9-2.9 4.9-2.9 3.5 0 5.7 3.5 4.4 7.1C19.5 16.4 12 21 12 21z"/></svg>
+        <span id="lives">0</span>
+      </div>
+      <div class="stat stat-gold" title="Gold">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path class="coin-mark" d="M12 7v10M9.5 9.5h3.8a1.7 1.7 0 0 1 0 3.4h-2.6a1.7 1.7 0 0 0 0 3.4h3.8"/></svg>
+        <span id="gold">0</span>
+      </div>
+      <div class="stat stat-wave" title="Wave">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3v18"/><path class="flag" d="M5 4h12l-3 4 3 4H5z"/></svg>
+        <span id="wave">0 / 30</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-go" id="btn-wave" type="button">Start wave</button>
+      <button class="btn btn-small" id="btn-auto" type="button" aria-pressed="false" title="Start waves automatically (A)">Auto</button>
+      <button class="btn btn-small" id="btn-speed" type="button" title="Game speed (F)">1×</button>
+      <button class="btn btn-small" id="btn-pause" type="button" title="Pause (P)">Pause</button>
+      <button class="btn btn-small" id="btn-sound" type="button" aria-pressed="true" title="Sound (M)">Sound</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <div class="stage" id="stage">
+      <canvas id="game" aria-label="Tower defense playfield"></canvas>
+      <div class="overlay" id="pause-screen" hidden>
+        <div class="dialog">
+          <h2>Paused</h2>
+          <div class="dialog-actions">
+            <button class="btn btn-go" id="btn-resume" type="button">Resume</button>
+            <button class="btn" id="btn-restart" type="button">Restart map</button>
+            <button class="btn" id="btn-maps" type="button">Change map</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <section class="card">
+        <h2 class="card-title">Towers</h2>
+        <div class="shop" id="shop"></div>
+      </section>
+      <section class="card info" id="info"></section>
+      <section class="card" id="next-wave"></section>
+    </aside>
+  </main>
+</div>
+
+<div class="screen" id="title-screen">
+  <div class="title-box">
+    <h1 class="big-logo">Blob<span>Bash</span></h1>
+    <p class="tagline">The jelly blobs are marching on your castle. Build silly towers, bonk every blob, and survive 30 waves.</p>
+    <h2 class="pick">Pick a map</h2>
+    <div class="maps" id="map-list"></div>
+    <p class="keys"><kbd>1</kbd>–<kbd>5</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>U</kbd> upgrade · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
+  </div>
+</div>
+
+<div class="screen" id="end-screen" hidden>
+  <div class="dialog dialog-end">
+    <h2 id="end-title">Oh no!</h2>
+    <p id="end-text"></p>
+    <div class="dialog-actions">
+      <button class="btn btn-go" id="btn-endless" type="button" hidden>Keep going</button>
+      <button class="btn btn-go" id="btn-retry" type="button">Try again</button>
+      <button class="btn" id="btn-menu" type="button">Change map</button>
+    </div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
