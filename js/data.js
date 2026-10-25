@@ -173,110 +173,359 @@ const GAP = { walker: 0.8, runner: 0.45, cone: 0.95, digger: 1.1, carrion: 0.6, 
 // Towers
 // ============================================================
 // place: 'land' or 'water'. air: can shoot flying zombies. unlock: level id that unlocks it for free, or buy it for coins.
+// Every tower has three upgrade paths of five tiers. Only two paths can be upgraded, and only one past tier 2.
+// fx: a number adds to the stat, '*stat' multiplies it, anything else replaces it. cost overrides the usual price.
 const TOWERS = {
   gunner: {
     name: 'Machine Gunner', role: 'Rapid fire', place: 'land', air: true, cost: 60, key: '1',
-    desc: 'A soldier on a light machine gun. Shreds crowds of weak zombies and shoots down flyers.',
-    levels: [
-      { name: 'Machine Gunner', dmg: 5, rate: 0.3, range: 2.6 },
-      { name: 'Extended Mag', dmg: 7, rate: 0.24, range: 2.8, cost: 70 },
-      { name: 'AP Rounds', dmg: 10, rate: 0.2, range: 3.0, pierce: 0.5, cost: 140 },
-      { name: 'Twin Guns', dmg: 12, rate: 0.14, range: 3.3, pierce: 0.7, cost: 260, twin: true },
+    desc: 'A soldier on a light machine gun. Upgrades turn it into a laser cannon, a walking rocket mech or a gun bunker.',
+    base: { dmg: 5, rate: 0.3, range: 2.6 },
+    paths: [
+      { name: 'Energy', ups: [
+        { name: 'Focused Fire', desc: 'Tighter bursts, fired faster and further.', fx: { '*rate': 0.8, range: 0.2 } },
+        { name: 'Faster Spin', desc: 'The barrels spin up a third faster.', fx: { '*rate': 0.75 } },
+        { name: 'Laser Cannon', desc: 'A fully automatic laser that cuts through every zombie in a line, armor and all.', fx: { dmg: 4, beam: 0.35, pierce: 1 } },
+        { name: 'Plasma Accelerator', desc: 'A plasma beam that melts straight through the horde.', fx: { '*rate': 0.5, dmg: 8, beam: 0.25, range: 0.4 } },
+        { name: 'Doom Ray', desc: 'A colossal ray that fires non-stop across the whole map.', fx: { '*rate': 0.5, dmg: 30, beam: 0.35, range: 99 } },
+      ] },
+      { name: 'Heavy', ups: [
+        { name: 'Power Rounds', desc: 'Heavier bullets hit 60% harder.', fx: { dmg: 3 } },
+        { name: 'Depleted Rounds', desc: 'Dense rounds punch through helmets and riot gear.', fx: { dmg: 2, pierce: 0.6 } },
+        { name: 'Rocket Pods', desc: 'Shoulder pods fire two missiles every second.', fx: { rocket: 25, rocketRate: 1.1, rockets: 2, rocketSplash: 0.6 } },
+        { name: 'Rocket Storm', desc: 'Six missiles a volley, fired faster.', fx: { rocket: 15, rockets: 4, '*rocketRate': 0.7 } },
+        { name: 'Siege Mech', desc: 'The gunner climbs into a walking mech with twin rocket pods and heavy guns.', fx: { dmg: 15, shots: 1, rocket: 80, rockets: 4, rocketSplash: 0.4, range: 0.6 } },
+      ] },
+      { name: 'Spread', ups: [
+        { name: 'Swivel Mount', desc: 'Turns and fires faster, with more range.', fx: { '*rate': 0.85, range: 0.3 } },
+        { name: 'Lock and Load', desc: 'Faster reloads and harder hits.', fx: { '*rate': 0.85, dmg: 1 } },
+        { name: 'Buckshot', desc: 'A shotgun blast hits a whole group and knocks them back.', fx: { dmg: 3, spread: 4, knockChance: 0.25, knock: 10 } },
+        { name: 'Gun Bunker', desc: 'A concrete bunker with guns on every side: four targets at once.', fx: { targets: 3, dmg: 4, range: 0.3 } },
+        { name: 'Fortress', desc: 'A fortress bristling with guns that fires at eight zombies at once.', fx: { targets: 4, dmg: 10, '*rate': 0.6, range: 0.4, detect: true } },
+      ] },
     ],
   },
   sniper: {
     name: 'Sniper', role: 'Long range', place: 'land', air: true, cost: 150, key: '2',
-    desc: 'Huge range and heavy hits that punch through armor. Targets the strongest zombie.',
-    levels: [
-      { name: 'Sniper', dmg: 45, rate: 2.2, range: 5.5, pierce: 0.5 },
-      { name: 'Better Scope', dmg: 80, rate: 2.0, range: 6.0, pierce: 0.6, cost: 140 },
-      { name: 'Hollow Points', dmg: 140, rate: 1.8, range: 6.8, pierce: 0.75, cost: 250 },
-      { name: 'Anti-Materiel Rifle', dmg: 240, rate: 1.5, range: 8.0, pierce: 1, cost: 420 },
+    desc: 'Huge range and heavy hits that punch through armor. Can go fully automatic or become a railgun.',
+    base: { dmg: 45, rate: 2.2, range: 5.5, pierce: 0.5 },
+    paths: [
+      { name: 'Rifle', ups: [
+        { name: 'Heavy Rounds', desc: 'Heavier bullets deal more damage.', fx: { dmg: 25 } },
+        { name: 'Match Grade', desc: 'Precision ammo hits harder and pierces more armor.', fx: { dmg: 35, pierce: 0.2 } },
+        { name: 'Anti-Materiel Rifle', desc: 'A .50 calibre rifle that ignores armor completely.', fx: { dmg: 95, pierce: 0.3 } },
+        { name: 'Deadeye', desc: 'One in four shots is a critical hit for 4× damage.', fx: { dmg: 100, critChance: 0.25, critMult: 4 } },
+        { name: 'Railgun', desc: 'An electromagnetic rail gun. Every shot pierces all zombies in a line and stuns them.', fx: { dmg: 520, beam: 0.3, stunChance: 1, stunDur: 0.4 } },
+      ] },
+      { name: 'Action', ups: [
+        { name: 'Quick Cycle', desc: 'Works the bolt faster.', fx: { '*rate': 0.8 } },
+        { name: 'Semi-Auto', desc: 'A semi-automatic rifle fires much faster.', fx: { '*rate': 0.7 } },
+        { name: 'Battle Rifle', desc: 'Fires twice as fast.', fx: { '*rate': 0.5, dmg: 5 } },
+        { name: 'Full Auto', desc: 'Fully automatic: empties a magazine in seconds. Some shots stun.', fx: { '*rate': 0.45, dmg: 10, stunChance: 0.15, stunDur: 0.5 } },
+        { name: 'Twin Marksmen', desc: 'A second sniper joins and hits a second target.', fx: { '*rate': 0.7, dmg: 40, shots: 1 } },
+      ] },
+      { name: 'Intel', ups: [
+        { name: 'Long Scope', desc: 'Much longer range and better shots.', fx: { range: 1.5, dmg: 12 } },
+        { name: 'Thermal Scope', desc: 'Sees heat underground, so it can hit Tunnelers.', fx: { range: 1, dmg: 15, detect: true } },
+        { name: 'Bounty Contracts', desc: 'Earns $4 extra for every zombie it kills.', fx: { dmg: 15, killBonus: 4 } },
+        { name: 'Supply Runs', desc: 'Earns $90 after every wave.', fx: { income: 90 } },
+        { name: 'Overwatch', desc: 'Every tower on the map hits 15% harder and spots Tunnelers.', fx: { income: 60, dmg: 40, aura: { range: 99, dmg: 1.15, detect: true } } },
+      ] },
     ],
   },
   mortar: {
     name: 'Mortar Team', role: 'Splash', place: 'land', air: false, cost: 90, key: '3',
-    desc: 'Lobs shells that blast whole crowds. Cannot hit flyers.',
-    levels: [
-      { name: 'Mortar Team', dmg: 14, rate: 1.6, range: 2.5, splash: 0.9 },
-      { name: 'Heavy Shells', dmg: 24, rate: 1.5, range: 2.6, splash: 1.0, cost: 90 },
-      { name: 'High Explosive', dmg: 38, rate: 1.35, range: 2.8, splash: 1.15, cost: 170 },
-      { name: 'Artillery', dmg: 60, rate: 1.2, range: 3.0, splash: 1.35, cost: 300 },
+    desc: 'Lobs shells that blast whole crowds. Cannot hit flyers until upgraded.',
+    base: { dmg: 14, rate: 1.6, range: 2.5, splash: 0.9 },
+    paths: [
+      { name: 'Warhead', ups: [
+        { name: 'Heavy Shells', desc: 'Bigger shells hit harder.', fx: { dmg: 8 } },
+        { name: 'High Explosive', desc: 'More damage in a wider blast.', fx: { dmg: 10, splash: 0.15 } },
+        { name: 'Cluster Shells', desc: 'Each shell scatters five bomblets.', fx: { cluster: 5 } },
+        { name: 'Thermobaric', desc: 'A huge fireball that burns everything it touches.', fx: { dmg: 40, splash: 0.2, burn: 15, burnDur: 2.5 } },
+        { name: 'Earthshaker', desc: 'Earth-shaking blasts that stun the whole crowd.', fx: { dmg: 130, splash: 0.3, cluster: 3, stunChance: 1, stunDur: 0.8 } },
+      ] },
+      { name: 'Crew', ups: [
+        { name: 'Quick Load', desc: 'Reloads 25% faster.', fx: { '*rate': 0.8 } },
+        { name: 'Second Crew', desc: 'A loader joins the team.', fx: { '*rate': 0.8 } },
+        { name: 'Twin Tubes', desc: 'Fires two shells at once.', fx: { shots: 1 } },
+        { name: 'Rapid Barrage', desc: 'Shells rain down nearly twice as fast.', fx: { '*rate': 0.55, dmg: 6 } },
+        { name: 'Artillery Battery', desc: 'Four tubes firing non-stop.', fx: { '*rate': 0.6, dmg: 20, shots: 2 } },
+      ] },
+      { name: 'Fire Control', ups: [
+        { name: 'Rangefinder', desc: 'More range and more accurate shells.', fx: { range: 1, dmg: 5 } },
+        { name: 'Flak Shells', desc: 'Airburst shells can hit flying zombies.', fx: { air: true, dmg: 5 } },
+        { name: 'Shrapnel', desc: 'Jagged fragments strip armor.', fx: { pierce: 0.5, shred: 2 } },
+        { name: 'Forward Observer', desc: 'Can shell any zombie on the map, Tunnelers too.', fx: { dmg: 15, range: 99, detect: true } },
+        { name: 'Long Tom', desc: 'A heavy field gun with a giant blast.', fx: { dmg: 80, splash: 0.4, '*rate': 0.7 } },
+      ] },
     ],
   },
   cryo: {
     name: 'Cryo Cannon', role: 'Slow', place: 'land', air: false, cost: 80, key: '4', unlock: 2, price: 120,
-    desc: 'Fires freezing canisters that slow zombies. Wraiths and Frostbites shrug it off.',
-    levels: [
-      { name: 'Cryo Cannon', dmg: 3, rate: 1.1, range: 2.3, splash: 0.7, slow: 0.35, slowDur: 1.4 },
-      { name: 'Deep Freeze', dmg: 5, rate: 1.0, range: 2.5, splash: 0.8, slow: 0.45, slowDur: 1.7, cost: 70 },
-      { name: 'Liquid Nitrogen', dmg: 8, rate: 0.9, range: 2.7, splash: 0.9, slow: 0.55, slowDur: 2.0, cost: 130 },
-      { name: 'Absolute Zero', dmg: 12, rate: 0.75, range: 3.0, splash: 1.05, slow: 0.65, slowDur: 2.4, cost: 220 },
+    desc: 'Fires freezing canisters that slow zombies. Wraiths and Frostbites shrug off the slow.',
+    base: { dmg: 3, rate: 1.1, range: 2.3, splash: 0.7, slow: 0.35, slowDur: 1.4 },
+    paths: [
+      { name: 'Chill', ups: [
+        { name: 'Deep Freeze', desc: 'Slows zombies even more.', fx: { slow: 0.1 } },
+        { name: 'Lasting Cold', desc: 'The slow lasts much longer.', fx: { slowDur: 1.2 } },
+        { name: 'Flash Freeze', desc: 'Sometimes freezes zombies solid for a moment.', fx: { stunChance: 0.35, stunDur: 0.9 } },
+        { name: 'Brittle', desc: 'Chilled zombies take 35% more damage from everything.', fx: { slow: 0.1, brittle: 0.35 } },
+        { name: 'Absolute Zero', desc: 'Freezes every zombie it hits and leaves them shattering.', fx: { dmg: 20, slow: 0.05, brittle: 0.25, stunChance: 0.65, stunDur: 0.3 } },
+      ] },
+      { name: 'Payload', ups: [
+        { name: 'Bigger Canisters', desc: 'A wider freezing blast.', fx: { splash: 0.25 } },
+        { name: 'Ice Shards', desc: 'Razor ice deals real damage.', fx: { dmg: 6 } },
+        { name: 'Frag Canisters', desc: 'Shrapnel ice cuts through armor.', fx: { dmg: 12, pierce: 0.5 } },
+        { name: 'Blizzard', desc: 'Fires faster in a huge cloud.', fx: { '*rate': 0.6, splash: 0.35, dmg: 10 } },
+        { name: 'Cryo Storm', desc: 'Three canisters at once, twice as fast.', fx: { '*rate': 0.5, dmg: 40, shots: 2 } },
+      ] },
+      { name: 'Systems', ups: [
+        { name: 'Extended Tubes', desc: 'More range and colder canisters.', fx: { range: 0.6, dmg: 3, slow: 0.05 } },
+        { name: 'Coolant Mist', desc: 'A chilling mist slows every zombie in range.', fx: { fieldSlow: 0.2 } },
+        { name: 'Anti-Air Mist', desc: 'Can freeze flying zombies.', fx: { air: true } },
+        { name: 'Permafrost', desc: 'The ground freezes over and the mist hurts.', fx: { fieldSlow: 0.15, fieldDps: 8, '*rate': 0.8 } },
+        { name: 'Glacier', desc: 'A field of deadly cold across a wide area.', fx: { fieldSlow: 0.15, fieldDps: 30, range: 0.8 } },
+      ] },
     ],
   },
   gunboat: {
     name: 'Gunboat', role: 'Water only', place: 'water', air: true, cost: 140, key: '5', unlock: 4, price: 150,
     desc: 'A patrol boat with a deck gun. Must be placed on water.',
-    levels: [
-      { name: 'Gunboat', dmg: 10, rate: 0.7, range: 3.0, splash: 0.6 },
-      { name: 'Twin Deck Guns', dmg: 10, rate: 0.5, range: 3.2, splash: 0.6, cost: 120, twin: true },
-      { name: 'Grapeshot', dmg: 16, rate: 0.5, range: 3.3, splash: 0.85, cost: 200, twin: true },
-      { name: 'Destroyer', dmg: 28, rate: 0.4, range: 3.7, splash: 0.95, cost: 380, twin: true },
+    base: { dmg: 10, rate: 0.7, range: 3.0, splash: 0.6 },
+    paths: [
+      { name: 'Deck Guns', ups: [
+        { name: 'Second Turret', desc: 'A second deck gun.', fx: { shots: 1 } },
+        { name: 'Autoloaders', desc: 'Fires a third faster.', fx: { '*rate': 0.75 } },
+        { name: 'Grapeshot', desc: 'Shells spray a wide cloud of shot.', fx: { dmg: 8, splash: 0.25 } },
+        { name: 'Destroyer', desc: 'A destroyer with three heavy turrets.', fx: { dmg: 14, '*rate': 0.7, range: 0.5, shots: 1 } },
+        { name: 'Battleship', desc: 'Four huge naval guns that level the shoreline.', fx: { dmg: 60, splash: 0.5, '*rate': 0.7, range: 1, shots: 1 } },
+      ] },
+      { name: 'Trade', ups: [
+        { name: 'Cargo Runs', desc: 'Earns $20 after every wave.', fx: { income: 20 }, cost: 70 },
+        { name: 'Merchant Fleet', desc: 'Earns $50 after every wave.', fx: { income: 30 }, cost: 130 },
+        { name: 'Smuggler Routes', desc: 'Earns $115 after every wave.', fx: { income: 65 }, cost: 300 },
+        { name: 'Trade Empire', desc: 'Earns $265 a wave. Nearby towers hit 10% harder.', fx: { income: 150, aura: { range: 3, dmg: 1.1 } }, cost: 720 },
+        { name: 'Shipping Magnate', desc: 'Earns $655 after every wave.', fx: { income: 390 }, cost: 1800 },
+      ] },
+      { name: 'Armament', ups: [
+        { name: 'Lookout', desc: 'More range and sharper gunnery.', fx: { range: 0.6, dmg: 4 } },
+        { name: 'Depth Charges', desc: 'Can hit Tunnelers and fires faster.', fx: { detect: true, '*rate': 0.85 } },
+        { name: 'Harpoons', desc: 'Harpoon guns that punch through armor.', fx: { dmg: 6, pierce: 0.6 } },
+        { name: 'AA Battery', desc: 'Adds a missile launcher that fires two missiles.', fx: { rocket: 30, rocketRate: 0.9, rockets: 2, rocketSplash: 0.4 } },
+        { name: 'Cruise Missiles', desc: 'Launches heavy cruise missiles in volleys.', fx: { rocket: 140, '*rocketRate': 0.65, rockets: 1, rocketSplash: 0.5 } },
+      ] },
     ],
   },
   flame: {
     name: 'Flamethrower', role: 'Burn', place: 'land', air: false, cost: 110, key: '6', unlock: 7, price: 220,
     desc: 'Short-range fire that sets crowds alight. Burning ignores armor.',
-    levels: [
-      { name: 'Flamethrower', dmg: 4, rate: 0.32, range: 1.9, splash: 0.75, burn: 6, burnDur: 2 },
-      { name: 'Pressurized Tank', dmg: 6, rate: 0.28, range: 2.0, splash: 0.8, burn: 10, burnDur: 2.2, cost: 90 },
-      { name: 'Napalm', dmg: 9, rate: 0.24, range: 2.2, splash: 0.9, burn: 16, burnDur: 2.5, cost: 160 },
-      { name: 'Inferno', dmg: 14, rate: 0.2, range: 2.4, splash: 1.0, burn: 26, burnDur: 3, cost: 280 },
+    base: { dmg: 4, rate: 0.32, range: 1.9, splash: 0.75, burn: 6, burnDur: 2 },
+    paths: [
+      { name: 'Fuel', ups: [
+        { name: 'Pressurized Tank', desc: 'Fire burns hotter.', fx: { burn: 4 } },
+        { name: 'Napalm', desc: 'Sticky fuel burns hotter and longer.', fx: { burn: 6, burnDur: 0.5 } },
+        { name: 'White Phosphorus', desc: 'Burns through armor and keeps burning.', fx: { burn: 14, pierce: 1 } },
+        { name: 'Inferno', desc: 'A raging fire that melts crowds.', fx: { burn: 30, burnDur: 1, dmg: 6 } },
+        { name: 'Hellfire', desc: 'Flames so hot even bosses melt.', fx: { burn: 120, dmg: 20 } },
+      ] },
+      { name: 'Nozzle', ups: [
+        { name: 'Wide Nozzle', desc: 'A wider jet of flame.', fx: { splash: 0.25 } },
+        { name: 'Twin Nozzles', desc: 'Two nozzles fire faster.', fx: { '*rate': 0.8, splash: 0.1 } },
+        { name: 'Firewall', desc: 'A long wall of fire.', fx: { range: 0.4, splash: 0.3 } },
+        { name: "Dragon's Breath", desc: 'A roaring cone of fire.', fx: { '*rate': 0.6, dmg: 6, splash: 0.3, range: 0.3 } },
+        { name: 'Wildfire', desc: 'The ground around it burns. Zombies in range take fire damage.', fx: { '*rate': 0.6, splash: 0.5, fieldDps: 40 } },
+      ] },
+      { name: 'Heat', ups: [
+        { name: 'Hotter Fuel', desc: 'The flame itself hurts more.', fx: { dmg: 3 } },
+        { name: 'Plasma Torch', desc: 'Cuts into armor.', fx: { dmg: 5, pierce: 0.5 } },
+        { name: 'Meltdown', desc: 'Melts armor away and can torch flyers.', fx: { shred: 2, air: true } },
+        { name: 'Thermal Lance', desc: 'A long white-hot beam.', fx: { dmg: 30, range: 0.8, '*rate': 0.8 } },
+        { name: 'Sunfire', desc: 'A blinding beam hot as the sun.', fx: { dmg: 90, burn: 30, range: 0.6 } },
+      ] },
     ],
   },
   tesla: {
     name: 'Tesla Coil', role: 'Chain', place: 'land', air: true, cost: 130, key: '7', unlock: 12, price: 350,
     desc: 'Lightning arcs between zombies and ignores armor.',
-    levels: [
-      { name: 'Tesla Coil', dmg: 11, rate: 1.25, range: 2.4, chain: 3 },
-      { name: 'Capacitor Bank', dmg: 17, rate: 1.15, range: 2.6, chain: 4, cost: 120 },
-      { name: 'Storm Coil', dmg: 26, rate: 1.0, range: 2.8, chain: 5, cost: 210 },
-      { name: 'Thunderhead', dmg: 40, rate: 0.85, range: 3.1, chain: 7, cost: 340 },
+    base: { dmg: 11, rate: 1.25, range: 2.4, chain: 3 },
+    paths: [
+      { name: 'Arc', ups: [
+        { name: 'Extra Arc', desc: 'Lightning jumps to one more zombie.', fx: { chain: 1 } },
+        { name: 'Branching', desc: 'Jumps to two more zombies and hits harder.', fx: { chain: 2, dmg: 3 } },
+        { name: 'Chain Storm', desc: 'Arcs through ten zombies at a time.', fx: { chain: 4, '*rate': 0.8 } },
+        { name: 'Overload', desc: 'Massive bolts through even more zombies.', fx: { dmg: 25, chain: 4 } },
+        { name: 'Thunderhead', desc: 'A storm cloud that strikes the whole horde.', fx: { dmg: 80, chain: 10, '*rate': 0.6 } },
+      ] },
+      { name: 'Charge', ups: [
+        { name: 'Capacitors', desc: 'Stronger bolts.', fx: { dmg: 5 } },
+        { name: 'Supercharger', desc: 'Fires faster and harder.', fx: { '*rate': 0.8, dmg: 4 } },
+        { name: 'Stun Coil', desc: 'Bolts sometimes stun.', fx: { stunChance: 0.3, stunDur: 0.6 } },
+        { name: 'EMP Pulse', desc: 'Every 4 seconds, a pulse hits everything around it.', fx: { pulseDmg: 60, pulseRate: 4, pulseStun: 1 } },
+        { name: 'Tesla Tower', desc: 'A giant coil with a devastating pulse.', fx: { dmg: 60, '*rate': 0.6, pulseDmg: 220, '*pulseRate': 0.75, pulseStun: 0.5 } },
+      ] },
+      { name: 'Field', ups: [
+        { name: 'Taller Coil', desc: 'More range and stronger bolts.', fx: { range: 0.5, dmg: 4 } },
+        { name: 'Ground Rods', desc: 'Current through the ground hits Tunnelers and one more zombie.', fx: { detect: true, chain: 1 } },
+        { name: 'Static Field', desc: 'Zombies in range take constant shock damage.', fx: { fieldDps: 10 } },
+        { name: 'Power Grid', desc: 'Powers nearby towers: they fire 15% faster.', fx: { fieldDps: 15, aura: { range: 2.5, rate: 0.85 } } },
+        { name: 'Storm Generator', desc: 'A lightning field that slows and fries everything.', fx: { fieldDps: 50, fieldSlow: 0.2, range: 1, aura: { range: 3.4, rate: 0.75 } } },
+      ] },
     ],
   },
   heli: {
     name: 'Gunship', role: 'Flying', place: 'land', air: true, cost: 260, key: '8', unlock: 18, price: 500,
     desc: 'A helicopter that flies to the leading zombie anywhere on the map and hoses it down.',
-    levels: [
-      { name: 'Gunship', dmg: 4, rate: 0.14, range: 2.0, speed: 140 },
-      { name: 'Heavy Rotors', dmg: 5, rate: 0.11, range: 2.2, speed: 180, cost: 200 },
-      { name: 'Rocket Pods', dmg: 6, rate: 0.11, range: 2.3, speed: 190, rocket: 30, rocketRate: 1.5, cost: 320 },
-      { name: 'Apex Gunship', dmg: 9, rate: 0.08, range: 2.5, speed: 220, rocket: 60, rocketRate: 1.1, cost: 520 },
+    base: { dmg: 4, rate: 0.14, range: 2.0, speed: 140 },
+    paths: [
+      { name: 'Guns', ups: [
+        { name: 'Quad Guns', desc: 'A second gun pod.', fx: { shots: 1 } },
+        { name: 'Heavy Rotors', desc: 'Flies faster and fires faster.', fx: { speed: 50, '*rate': 0.85 } },
+        { name: 'Minigun Pods', desc: 'Miniguns fire much faster.', fx: { '*rate': 0.6, dmg: 2 } },
+        { name: 'Chain Gun', desc: 'A 30mm chain gun that pierces armor.', fx: { dmg: 8, pierce: 0.6 } },
+        { name: 'Apex Gunship', desc: 'A flying fortress of guns.', fx: { dmg: 16, '*rate': 0.6, shots: 1, speed: 60 } },
+      ] },
+      { name: 'Rockets', ups: [
+        { name: 'Rocket Pods', desc: 'Fires rockets too.', fx: { rocket: 25, rocketRate: 1.6, rockets: 1, rocketSplash: 0.6 } },
+        { name: 'Hydra Rockets', desc: 'Two rockets per volley, fired faster.', fx: { rockets: 1, '*rocketRate': 0.8 } },
+        { name: 'Hellfire Missiles', desc: 'Heavy anti-tank missiles.', fx: { rocket: 45, rocketSplash: 0.2 } },
+        { name: 'Bunker Busters', desc: 'Missiles that wreck elites.', fx: { rocket: 120, rockets: 1 } },
+        { name: 'Death From Above', desc: 'Unloads a storm of missiles.', fx: { rocket: 300, rockets: 2, '*rocketRate': 0.6 } },
+      ] },
+      { name: 'Avionics', ups: [
+        { name: 'Night Vision', desc: 'Can hit Tunnelers and aims faster.', fx: { detect: true, '*rate': 0.85 } },
+        { name: 'Downdraft', desc: 'Rotor wash sometimes blows zombies back.', fx: { knockChance: 0.08, knock: 22, dmg: 1 } },
+        { name: 'Supply Chopper', desc: 'Flies in $60 of supplies after every wave.', fx: { income: 60 } },
+        { name: 'Medevac', desc: 'Restores 2 lives and brings $40 more after every wave.', fx: { income: 40, lifePerWave: 2 } },
+        { name: 'Air Superiority', desc: 'All aircraft fire 25% faster. Hits harder itself.', fx: { dmg: 10, '*rate': 0.6, aura: { range: 99, rate: 0.75, only: 'air' } } },
+      ] },
     ],
   },
   sub: {
     name: 'Submarine', role: 'Water only', place: 'water', air: true, cost: 180, key: '9', unlock: 30, price: 700,
     desc: 'Fires homing missiles from the water. Its sonar reveals Tunnelers so every tower can hit them.',
-    levels: [
-      { name: 'Submarine', dmg: 24, rate: 1.3, range: 3.2, pierce: 0.6, sonar: true },
-      { name: 'Sonar Array', dmg: 24, rate: 1.2, range: 3.8, pierce: 0.6, sonar: true, cost: 150 },
-      { name: 'Twin Tubes', dmg: 30, rate: 1.1, range: 3.9, pierce: 0.7, sonar: true, missiles: 2, cost: 260 },
-      { name: 'Nuclear Sub', dmg: 60, rate: 1.0, range: 4.2, pierce: 1, sonar: true, missiles: 2, cost: 480 },
+    base: { dmg: 24, rate: 1.3, range: 3.2, pierce: 0.6, missiles: 1, sonar: true },
+    paths: [
+      { name: 'Torpedoes', ups: [
+        { name: 'Long Tubes', desc: 'More range and harder hits.', fx: { range: 0.6, dmg: 6 } },
+        { name: 'Twin Tubes', desc: 'Fires two missiles.', fx: { missiles: 1 } },
+        { name: 'Cruise Missile', desc: 'Three missiles that explode on impact.', fx: { missiles: 1, splash: 0.6 } },
+        { name: 'Hammerhead Strike', desc: 'Heavy warheads, fired faster.', fx: { dmg: 60, splash: 0.3, '*rate': 0.8 } },
+        { name: 'Trident Barrage', desc: 'Seven ballistic missiles per volley.', fx: { missiles: 4, dmg: 100, splash: 0.4 } },
+      ] },
+      { name: 'Warheads', ups: [
+        { name: 'Serrated Warheads', desc: 'More damage.', fx: { dmg: 10 } },
+        { name: 'Thermite Tips', desc: 'Missiles set zombies on fire.', fx: { burn: 10, burnDur: 2 } },
+        { name: 'Proximity Fuses', desc: 'Missiles burst near crowds.', fx: { dmg: 8, splash: 0.5 } },
+        { name: 'Tungsten Cores', desc: 'Huge damage that ignores and strips armor.', fx: { dmg: 45, pierce: 0.4, shred: 2 } },
+        { name: 'Fleet Admiral', desc: 'Every water tower fires 25% faster and hits 30% harder.', fx: { dmg: 80, aura: { range: 99, rate: 0.75, dmg: 1.3, only: 'water' } } },
+      ] },
+      { name: 'Systems', ups: [
+        { name: 'Sonar Array', desc: 'Much bigger sonar range and better aim.', fx: { range: 0.8, dmg: 6 } },
+        { name: 'Silent Running', desc: 'Fires faster.', fx: { '*rate': 0.8 } },
+        { name: 'Reactor Core', desc: 'A nuclear reactor powers faster launches.', fx: { '*rate': 0.7, dmg: 10 } },
+        { name: 'Overclocked Reactor', desc: 'Even faster, with an extra missile.', fx: { '*rate': 0.6, missiles: 1 } },
+        { name: 'Fusion Heart', desc: 'Endless power: missiles fly non-stop.', fx: { '*rate': 0.5, dmg: 60, missiles: 2 } },
+      ] },
     ],
   },
   jet: {
     name: 'Fighter Jet', role: 'Flying', place: 'land', air: true, cost: 300, key: '0', unlock: 40, price: 900,
     desc: 'Circles its airstrip at speed and fires homing missiles at anything below.',
-    levels: [
-      { name: 'Fighter Jet', dmg: 18, rate: 0.9, range: 2.6, missiles: 1, orbit: 2.8 },
-      { name: 'Afterburners', dmg: 18, rate: 0.7, range: 2.8, missiles: 2, orbit: 3.0, cost: 240 },
-      { name: 'Cluster Missiles', dmg: 26, rate: 0.7, range: 3.0, missiles: 2, splash: 0.6, orbit: 3.1, cost: 380 },
-      { name: 'Strike Wing', dmg: 40, rate: 0.55, range: 3.2, missiles: 4, splash: 0.7, orbit: 3.2, cost: 600 },
+    base: { dmg: 18, rate: 0.9, range: 2.6, missiles: 1, orbit: 2.8, planes: 1 },
+    paths: [
+      { name: 'Missiles', ups: [
+        { name: 'Twin Pylons', desc: 'Two missiles per volley.', fx: { missiles: 1 } },
+        { name: 'Rapid Lock', desc: 'Locks on and fires faster.', fx: { '*rate': 0.8 } },
+        { name: 'Cluster Missiles', desc: 'Missiles burst over crowds.', fx: { dmg: 8, splash: 0.6 } },
+        { name: 'Missile Swarm', desc: 'Five missiles per volley.', fx: { missiles: 3, '*rate': 0.8 } },
+        { name: 'Strike Package', desc: 'Eleven heavy missiles per volley.', fx: { missiles: 6, dmg: 40, splash: 0.3 } },
+      ] },
+      { name: 'Airframe', ups: [
+        { name: 'Afterburners', desc: 'Flies and fires faster.', fx: { '*rate': 0.85, orbitSpeed: 0.4 } },
+        { name: 'Strafing Run', desc: 'Adds a cannon that strafes the road.', fx: { gunDmg: 6, gunRate: 0.12 } },
+        { name: 'Napalm Run', desc: 'Drops napalm along its path.', fx: { bombDmg: 20, bombRate: 1.2, bombSplash: 0.8, bombBurn: 20 } },
+        { name: 'Bomb Bay', desc: 'Drops heavy bombs as it flies.', fx: { bombDmg: 50, '*bombRate': 0.6, bombSplash: 0.2, gunDmg: 6 } },
+        { name: 'Carpet Bomber', desc: 'A bomber that blankets the ground in fire.', fx: { bombDmg: 120, '*bombRate': 0.4, bombSplash: 0.3, bombBurn: 40 } },
+      ] },
+      { name: 'Wing', ups: [
+        { name: 'Wingman', desc: 'A second jet joins the patrol.', fx: { planes: 1 } },
+        { name: 'Radar', desc: 'More range and can hit Tunnelers.', fx: { range: 0.6, detect: true } },
+        { name: 'AWACS', desc: 'Every tower on the map gets more range and spots Tunnelers.', fx: { aura: { range: 99, reach: 0.3, detect: true } } },
+        { name: 'Squadron', desc: 'Four jets in the patrol.', fx: { planes: 2 } },
+        { name: 'Air Wing', desc: 'Six jets with heavier missiles.', fx: { planes: 2, dmg: 30, '*rate': 0.7 } },
+      ] },
+    ],
+  },
+  farm: {
+    name: 'Farm', role: 'Income', place: 'land', air: false, cost: 200, key: 'q', unlock: 3, price: 150,
+    desc: 'Survivors grow food and trade it. Drops supply crates full of cash during every wave.',
+    base: { income: 45, dmg: 0, rate: 1, range: 2.2 },
+    paths: [
+      { name: 'Crops', ups: [
+        { name: 'Bigger Harvest', desc: 'More crops: +$20 a wave.', fx: { income: 20 }, cost: 80 },
+        { name: 'Irrigation', desc: 'Watered fields: +$35 a wave.', fx: { income: 35 }, cost: 160 },
+        { name: 'Greenhouses', desc: 'Crops all year: +$90 a wave.', fx: { income: 90 }, cost: 380 },
+        { name: 'Plantation', desc: 'Orchards and fields: +$220 a wave.', fx: { income: 220 }, cost: 900 },
+        { name: 'Breadbasket', desc: 'Feeds the whole region: +$600 a wave.', fx: { income: 600 }, cost: 2400 },
+      ] },
+      { name: 'Market', ups: [
+        { name: 'Root Cellar', desc: 'Stores the surplus: +$10 a wave.', fx: { income: 10 }, cost: 60 },
+        { name: 'Farmers Market', desc: 'Crops sell for 25% more.', fx: { '*income': 1.25 }, cost: 150 },
+        { name: 'Bank', desc: 'Pays 5% interest on your cash after each wave, up to $150.', fx: { interest: 0.05, interestCap: 150 }, cost: 400 },
+        { name: 'Investment Firm', desc: 'Pays 10% interest, up to $500 a wave.', fx: { interest: 0.05, interestCap: 350 }, cost: 950 },
+        { name: 'War Bonds', desc: '15% interest up to $2000, and crops sell for 50% more.', fx: { interest: 0.05, interestCap: 1500, '*income': 1.5 }, cost: 2600 },
+      ] },
+      { name: 'Homestead', ups: [
+        { name: 'Well Water', desc: 'Restores a life after every wave.', fx: { lifePerWave: 1 } },
+        { name: 'Farmhand', desc: 'A farmer with a shotgun guards the crops.', fx: { dmg: 9 } },
+        { name: 'Watchtower', desc: 'The farmer gets a tower: more range, faster shots, spots Tunnelers.', fx: { range: 0.8, '*rate': 0.75, detect: true, air: true } },
+        { name: 'Field Hospital', desc: 'Restores 3 lives a wave, and a second farmer joins.', fx: { lifePerWave: 2, dmg: 10, shots: 1 } },
+        { name: 'Safe Haven', desc: 'A walled haven: nearby towers fight harder and 6 lives return each wave.', fx: { lifePerWave: 3, dmg: 25, aura: { range: 3, dmg: 1.15, rate: 0.9 } } },
+      ] },
     ],
   },
 };
 const TOWER_KEYS = Object.keys(TOWERS);
 const MODES = [['first', 'First'], ['last', 'Last'], ['strong', 'Strongest'], ['close', 'Closest']];
+const PATH_COLORS = ['#e3a83e', '#e0675b', '#8fc7e6'];
+
+// Upgrade prices grow steeply by tier; XP unlocks tiers 3 to 5 for good in the Armory.
+const TIER_MULT = [0.5, 0.85, 1.8, 4.2, 10];
+const TIER_XP = [0, 0, 150, 600, 2000];
+const FREE_TIER = 2;
+function upCost(type, p, i) {
+  const u = TOWERS[type].paths[p].ups[i];
+  return u.cost || Math.round((TOWERS[type].cost * TIER_MULT[i]) / 5) * 5;
+}
+// The crosspath rule: at most two paths upgraded, and only one beyond tier 2.
+function tiersAllowed(tiers) {
+  let used = 0, deep = 0;
+  for (const n of tiers) { if (n > 0) used++; if (n > FREE_TIER) deep++; if (n > 5) return false; }
+  return used <= 2 && deep <= 1;
+}
+// Base stats plus every bought upgrade. Additions apply before multipliers.
+function towerStats(type, tiers) {
+  const def = TOWERS[type];
+  const st = { ...def.base, air: def.air, shots: 1 };
+  const mul = [];
+  def.paths.forEach((path, p) => {
+    for (let i = 0; i < tiers[p]; i++) {
+      for (const [k, v] of Object.entries(path.ups[i].fx)) {
+        if (k[0] === '*') mul.push([k.slice(1), v]);
+        else if (typeof v === 'number') st[k] = (st[k] || 0) + v;
+        else st[k] = v;
+      }
+    }
+  });
+  for (const [k, v] of mul) if (st[k] != null) st[k] *= v;
+  return st;
+}
+// Name shown for a tower: its highest upgrade, like "Minigun".
+function towerTitle(type, tiers) {
+  let best = -1, bp = 0;
+  tiers.forEach((n, p) => { if (n > best) { best = n; bp = p; } });
+  return best > 0 ? TOWERS[type].paths[bp].ups[best - 1].name : TOWERS[type].name;
+}
 
 // ============================================================
 // Store: permanent upgrades and one-use supplies, bought with coins earned from levels.

@@ -24,28 +24,25 @@ It then runs full screen and works offline. Progress saves between waves, so if 
 
 ## Publish it on the App Store
 
-The `ios/` folder holds a ready-made Xcode project. Apple only lets you build and submit from your own account, so these steps need to happen on your side:
+The `ios/` folder holds a ready-made Xcode project, and `.github/workflows/ios-testflight.yml` builds it on a cloud Mac and uploads it to TestFlight, so you don't need a Mac of your own. **[store/APP_STORE.md](store/APP_STORE.md)** walks through every step: the Apple Developer account, the API key, the GitHub secrets, installing it on your phone with TestFlight, and submitting it for review. The store text is in [store/listing.md](store/listing.md), the screenshots are in `store/screenshots/`, and the privacy policy is `privacy.html`.
 
-1. **Join the Apple Developer Program** at [developer.apple.com/programs](https://developer.apple.com/programs/) ($99 per year).
-2. **Get a Mac with Xcode** (free from the Mac App Store). If you don't have a Mac, a cloud build service such as Codemagic or Ionic Appflow can build and upload it for you.
-3. On the Mac, clone this repository and run:
-   ```sh
-   npm install
-   npm run ios:sync    # copies the game into the iOS app
-   npm run ios:open    # opens the project in Xcode
-   ```
-4. In Xcode, select the **App** target, open **Signing & Capabilities** and choose your team. If Xcode says the bundle ID is taken, change `com.spencer36m.zombiebash` to something unique (also update `appId` in `capacitor.config.json`).
-5. Plug in your iPhone and press **Run** to try it on the device.
-6. To submit, choose **Product → Archive**, then **Distribute App → App Store Connect**.
-7. In [App Store Connect](https://appstoreconnect.apple.com), create the app listing: name, description, screenshots (landscape iPhone and iPad), an age rating and a privacy policy URL. The game collects no data, so the privacy questionnaire is short. Then submit it for review.
+If you do have a Mac with Xcode, you can also build it by hand:
 
-The app is landscape-only, hides the status bar, bundles its fonts, and declares that it uses no special encryption, so App Store Connect won't ask about export compliance. Whenever you change the game, run `npm run ios:sync` again before archiving.
+```sh
+npm install
+npm run ios:sync    # copies the game into the iOS app
+npm run ios:open    # opens the project in Xcode
+```
+
+Then choose your team under **Signing & Capabilities**, and use **Product → Archive → Distribute App**.
+
+The app is landscape-only, hides the status bar, bundles its fonts, and declares that it uses no special encryption, so App Store Connect won't ask about export compliance.
 
 ## How to play
 
 - **Build:** pick a tower from the Arsenal and tap an open tile. On touchscreens, tap once to preview the spot and its range, then tap the same tile again to build. Boats only go on water.
 - **Start waves** when you're ready, or turn on **Auto**. Kills pay cash, clearing a wave pays a bonus, and calling a wave early pays a little extra.
-- **Upgrade** a tower three times, from its first rank to its named top upgrade. You can also change what it targets (first, last, strongest or closest) or sell it.
+- **Upgrade:** tap a tower to open its three upgrade paths and buy the next tier of any of them. Every upgrade changes how the tower looks and fights. You can also change what it targets (first, last, strongest or closest) or sell it.
 - **Lives:** every zombie that reaches the base costs lives. Finish with 17 or more lives for 3 stars, 8 or more for 2, or any at all for 1.
 - **Supplies** (bottom left of the battlefield) are one-use: Airstrike, Cryo Bomb, Supply Drop and Field Repairs.
 
@@ -69,7 +66,7 @@ Zombies from earlier worlds keep coming back in later ones.
 | Shambler | Slow and relentless. |
 | Runner | Fast and fragile. |
 | Conehead | Light armor. |
-| Tunneler | Burrows under the first stretch of road. Only a submarine's sonar reveals it. |
+| Tunneler | Burrows under the first stretch of road. A submarine's sonar reveals it, and detection upgrades (Spotter, Thermal Scope, Ground Rods...) let towers hit it. |
 | Carrion Crow, Bat Swarm | **Flying.** They cut across the road's corners and can only be hit by anti-air towers. |
 | Skeleton | Comes in crowds. |
 | Riot Zombie | Heavy armor. Snipers, Tesla Coils and submarines punch through it. |
@@ -97,25 +94,49 @@ Zombies from earlier worlds keep coming back in later ones.
 | 8 | Gunship | Flying helicopter that chases the lead zombie | Yes | Clear 1-18 |
 | 9 | Submarine | Water only, homing missiles, sonar | Yes | Clear 1-30 |
 | 0 | Fighter Jet | Flying, circles its airstrip firing missiles | Yes | Clear 1-40 |
+| Q | Farm | Income: drops cash crates every wave | Upgrade | Clear 1-3 |
 
 Locked towers can also be bought early in the store.
+
+### Upgrades and the Armory
+
+Like Bloons TD, every tower has **three upgrade paths with five tiers each**. A tower can take one path all the way to tier 5 and add up to two tiers of a second path (for example 5-2-0). The third path is then closed.
+
+Some of the transformations:
+
+| Tower | Path 1 | Path 2 | Path 3 |
+| --- | --- | --- | --- |
+| Machine Gunner | **Energy:** laser cannon → plasma beam → Doom Ray across the whole map | **Heavy:** rocket pods → rocket storm → walking Siege Mech | **Spread:** buckshot → gun bunker → Fortress firing at 8 zombies |
+| Sniper | **Rifle:** anti-materiel rifle, critical hits → Railgun that pierces a whole line | **Action:** semi-auto → **Full Auto** → twin marksmen | **Intel:** scopes, Tunneler vision, bounties, income → Overwatch buffs every tower |
+| Mortar Team | **Warhead:** cluster shells → thermobaric → Earthshaker stuns | **Crew:** twin tubes → four-tube Artillery Battery | **Fire Control:** flak (hits flyers) → map-wide Forward Observer → Long Tom |
+| Cryo Cannon | **Chill:** flash freeze → brittle → Absolute Zero | **Payload:** frag canisters → Blizzard → Cryo Storm | **Systems:** coolant mist field → anti-air → Glacier |
+| Gunboat | **Deck Guns:** destroyer → Battleship | **Trade:** cargo income up to $655 a wave | **Armament:** harpoons → AA missiles → cruise missiles |
+| Flamethrower | **Fuel:** napalm → white phosphorus → Hellfire | **Nozzle:** firewall → Wildfire ground fire | **Heat:** plasma torch → meltdown → Sunfire beam |
+| Tesla Coil | **Arc:** chains through 10, then 24 zombies → Thunderhead | **Charge:** stun coil → EMP pulse → Tesla Tower | **Field:** static field → Power Grid buffs towers → Storm Generator |
+| Gunship | **Guns:** minigun pods → Apex Gunship | **Rockets:** Hellfire missiles → Death From Above | **Avionics:** night vision → supply runs → Medevac → Air Superiority |
+| Submarine | **Torpedoes:** cruise missiles → Trident Barrage | **Warheads:** thermite → tungsten → Fleet Admiral buffs every boat | **Systems:** reactor → Fusion Heart |
+| Fighter Jet | **Missiles:** cluster → Missile Swarm → Strike Package | **Airframe:** strafing → napalm → Carpet Bomber | **Wing:** wingman → AWACS → six-jet Air Wing |
+| Farm | **Crops:** greenhouses → plantation → Breadbasket (+$600 a wave) | **Market:** farmers market → Bank interest → War Bonds | **Homestead:** well (lives) → shotgun farmhand → watchtower → Safe Haven |
+
+Tiers 1 and 2 are always available. Tiers 3 to 5 are unlocked in the **Armory** on the main menu with that tower's **XP**. Towers earn XP from their kills, and every tower you used gets a bonus when you clear a level. Unlocking a tier costs 150, 600 or 2,000 XP; after that you buy it in battle with cash like any other upgrade.
 
 ### Store
 
 You earn coins by clearing levels. First clears pay the most, and replays pay a little. Spend them on:
 
 - **Towers:** unlock a tower before you reach its level.
-- **Upgrades** (permanent): extra starting cash, extra lives, cheaper towers, better sell-back, more cash per kill.
+- **Perks** (permanent): extra starting cash, extra lives, cheaper towers, better sell-back, more cash per kill.
 - **Supplies** (one use): Airstrike, Cryo Bomb, Supply Drop, Field Repairs.
 
 ### Controls
 
 | Key | Action |
 | --- | --- |
-| `1`–`9`, `0` | Pick a tower |
+| `1`–`9`, `0`, `Q` | Pick a tower |
 | `Shift` + click | Build several of the same tower |
 | `Space` | Start or call the next wave |
-| `U` / `S` / `T` | Upgrade / sell / change targeting of the selected tower |
+| `,` `.` `/` | Upgrade path 1, 2 or 3 of the selected tower |
+| `S` / `T` | Sell / change targeting of the selected tower |
 | `F` | Game speed (1×, 2×, 3×) |
 | `A` | Auto-start waves |
 | `P` | Pause |
@@ -133,5 +154,7 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
 - `manifest.webmanifest`, `sw.js`, `icons/`: installable web app and offline support
 - `capacitor.config.json`, `package.json`, `scripts/build-web.mjs`, `ios/`: the iOS app
+- `.github/workflows/ios-testflight.yml`, `store/`: cloud build to TestFlight, App Store guide, listing text and screenshots
+- `privacy.html`: the privacy policy (the game collects no data)
 
-Progress (coins, stars, unlocks, upgrades and your current run) is saved on the device in `localStorage`.
+Progress (coins, stars, unlocks, perks, tower XP, Armory unlocks and your current run) is saved on the device in `localStorage`.

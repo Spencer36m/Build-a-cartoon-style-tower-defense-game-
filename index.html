@@ -82,10 +82,11 @@
     <div class="menu-buttons">
       <div class="continue-box" id="continue-box" hidden></div>
       <button class="btn btn-primary btn-lg" id="btn-campaign" type="button">Campaign</button>
+      <button class="btn btn-lg" id="btn-armory" type="button">Armory <span class="badge" id="armory-badge" hidden></span></button>
       <button class="btn btn-lg" id="btn-store" type="button">Store</button>
     </div>
     <div class="install-box" id="install-box" hidden></div>
-    <p class="keys"><kbd>1</kbd>–<kbd>0</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>U</kbd> upgrade · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
+    <p class="keys"><kbd>1</kbd>–<kbd>0</kbd>, <kbd>Q</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd> upgrade paths · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
   </div>
 </div>
 
@@ -124,11 +125,27 @@
   </div>
   <div class="tabs" id="store-tabs" role="tablist" aria-label="Store sections">
     <button class="tab" type="button" role="tab" data-tab="towers">Towers</button>
-    <button class="tab" type="button" role="tab" data-tab="upgrades">Upgrades</button>
+    <button class="tab" type="button" role="tab" data-tab="perks">Perks</button>
     <button class="tab" type="button" role="tab" data-tab="supplies">Supplies</button>
   </div>
   <p class="store-note" id="store-note"></p>
   <div class="store-grid" id="store-grid"></div>
+</div>
+
+<div class="screen armory-screen" id="armory-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-armory-back" type="button">Back</button>
+    <h2 class="screen-title">Armory</h2>
+    <div class="xp-chip" id="armory-xp"></div>
+  </div>
+  <div class="armory-towers" id="armory-towers" role="tablist" aria-label="Towers"></div>
+  <div class="armory-body">
+    <div class="armory-side" id="armory-side"></div>
+    <div class="armory-main">
+      <div class="armory-paths" id="armory-paths"></div>
+      <div class="armory-detail" id="armory-detail"></div>
+    </div>
+  </div>
 </div>
 
 <div class="screen" id="end-screen" hidden>
