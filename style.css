@@ -831,3 +831,45 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ============================================================
+   Story cutscenes and the chapter list
+   ============================================================ */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.story-screen { position: fixed; inset: 0; z-index: 40; background: #08090b; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.story-screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+.story-top {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 1; pointer-events: none;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: max(10px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px));
+}
+.story-tag { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(242, 238, 228, 0.7); animation: story-tag 0.6s ease-out both; }
+.story-tag b { color: #f2eee4; font-weight: 800; margin-right: 8px; padding: 2px 8px; background: #101010; border: 1px solid rgba(242, 238, 228, 0.4); }
+.story-top .btn { pointer-events: auto; }
+@keyframes story-tag { from { opacity: 0; transform: translateY(-6px); } }
+
+#btn-story::before { content: ""; display: inline-block; width: 0.9em; height: 0.9em; margin-right: 8px; vertical-align: -0.1em; background: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h7a3 3 0 0 1 2 1 3 3 0 0 1 2-1h7v15h-7a2 2 0 0 0-2 2 2 2 0 0 0-2-2H3z'/%3E%3C/svg%3E") center / contain no-repeat; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h7a3 3 0 0 1 2 1 3 3 0 0 1 2-1h7v15h-7a2 2 0 0 0-2 2 2 2 0 0 0-2-2H3z'/%3E%3C/svg%3E") center / contain no-repeat; }
+#btn-story.new::after { content: "New"; margin-left: 8px; padding: 1px 6px; font-size: 0.7em; letter-spacing: 0.08em; background: var(--red); color: #fff; border-radius: 3px; vertical-align: 0.15em; }
+
+.chapters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; padding-bottom: 12px; }
+.chapter-card {
+  position: relative; display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; cursor: pointer;
+  background: #f2eee4; color: #101010; border: 3px solid #101010; box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.55);
+  font: inherit; transition: transform 0.15s ease, box-shadow 0.15s ease; animation: chapter-in 0.4s ease-out both;
+}
+.chapter-card:hover:not(:disabled), .chapter-card:focus-visible { transform: translate(-2px, -3px) rotate(-0.4deg); box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.6); }
+.chapter-card canvas { display: block; width: 100%; aspect-ratio: 16 / 9; border-bottom: 3px solid #101010; }
+.chapter-card .cc-text { padding: 8px 12px 10px; }
+.chapter-card .cc-kicker { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: #6d6a63; }
+.chapter-card h3 { font-size: 1.3rem; text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.1; }
+.chapter-card .cc-new { position: absolute; top: 8px; right: 8px; padding: 2px 8px; background: var(--red); color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.chapter-card:disabled { cursor: not-allowed; background: #2a2e32; color: #8a8f93; border-color: #3a3f44; box-shadow: none; }
+.chapter-card:disabled canvas { opacity: 0.12; border-color: #3a3f44; }
+.chapter-card:disabled .cc-kicker { color: #6a6f73; }
+.chapter-card .cc-lock { position: absolute; left: 0; right: 0; top: 0; aspect-ratio: 16 / 9; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.85rem; color: #b9bdc0; text-align: center; padding: 0 16px; }
+@keyframes chapter-in { from { opacity: 0; transform: translateY(10px); } }
+@media (prefers-reduced-motion: reduce) { .chapter-card, .story-tag { animation: none; } }
+.ld-intel { margin: 8px 0 0; padding: 8px 10px; font-size: 0.88rem; line-height: 1.35; color: var(--text); background: rgba(16, 16, 16, 0.55); border-left: 3px solid var(--amber); }
+.ld-intel b { display: block; font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); }
+.story-count::before { display: none; }
+.chapter-card:disabled canvas { opacity: 0.18; filter: blur(3px) grayscale(1); }

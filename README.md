@@ -138,6 +138,18 @@ The music follows the action: a menu theme, a calm arrangement between waves, dr
 
 **Sound** in the top bar mutes everything; **Music** on the main menu and the pause screen turns off just the music. On iPhone, the ring/silent switch also mutes the game, as with most games.
 
+### Story
+
+The campaign is told in manga-style motion-comic cutscenes: inked panels with screentones, lettered speech balloons, sound effects, camera drift and page turns. Tap, click or press `Space` to move on, `Esc` or **Skip** to jump ahead.
+
+- **Prologue, Starfall:** a green meteor lands in Hollow Creek, Kansas. Kessler-Vane Biotech's secret lab turns it into Project Lazarus, the dead get up, and Dr. Mara Okafor escapes with the Lazarus Core. What is left of the army becomes Bastion Company, and you are its Commander.
+- **Chapter 1, Harvest:** the farmland where it started, a broken radio call from Okafor and the fall of Elias Crane, the Harvester.
+- **Chapter 2, The Restless:** Blackwood Cemetery, a rift torn in the sky and the Grave Lord.
+- **Chapter 3, White Silence:** Station Seven on the Frostfall ice, and Lazarus Two.
+- **Chapter 4, The Hive:** Black Bayou, the horde converging and the last stand.
+
+Each world's intro plays when you first deploy there, and new chapters play after your first clear of sectors 25 and 50. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu.
+
 ### Controls
 
 | Key | Action |
@@ -161,6 +173,9 @@ The music follows the action: a menu theme, a calm arrangement between waves, dr
 - `js/art.js`: realistic top-down drawing of terrain, zombies, towers and effects
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
+- `js/wonders.js`: the painted landmarks on the globe
+- `js/manga.js`, `js/scenes.js`: the manga art kit (screentones, speed lines, portraits) and every cutscene panel
+- `js/story.js`: the story script, the cutscene player and mission intel
 - `js/audio.js`: synthesized sound effects, music and ambience
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
@@ -169,4 +184,4 @@ The music follows the action: a menu theme, a calm arrangement between waves, dr
 - `.github/workflows/ios-testflight.yml`, `store/`: cloud build to TestFlight, App Store guide, listing text and screenshots
 - `privacy.html`: the privacy policy (the game collects no data)
 
-Progress (coins, stars, unlocks, perks, tower XP, Armory unlocks and your current run) is saved on the device in `localStorage`.
+Progress (coins, stars, unlocks, perks, tower XP, Armory unlocks, story chapters read and your current run) is saved on the device in `localStorage`.

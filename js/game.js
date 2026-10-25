@@ -274,6 +274,8 @@ function victory() {
   meta.coins += reward;
   const xp = xpBonus(true);
   const unlocked = prev === 0 ? TOWER_KEYS.filter((t) => TOWERS[t].unlock === S.levelIndex + 1 && !meta.owned[t]) : [];
+  const beat = S.L.num === 25 ? 'mid' : S.L.num === LEVELS_PER_WORLD ? 'outro' : null;
+  S.storyNext = beat && !Story.seen(`w${S.L.world}-${beat}`) ? `w${S.L.world}-${beat}` : null;
   saveMeta();
   Sound.play('win');
   const next = LEVEL_META[S.levelIndex + 1];
@@ -282,6 +284,7 @@ function victory() {
   else if (!next) text = 'Every sector is secure. Replay levels to earn all the stars.';
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
   else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id} ${next.name}.`;
+  if (S.storyNext) text += ' A new story chapter is ready.';
   showEnd(true, 'Sector secured', text, stars, reward, xp);
 }
 
@@ -1546,7 +1549,7 @@ function render() {
 }
 
 function updateAudioScene() {
-  if (!Sound.ac) return;
+  if (!Sound.ac || Story.active) return;
   let mode = 'menu';
   if (S.state === 'playing' || S.state === 'won' || S.state === 'over') {
     if (S.state !== 'playing' || S.paused) mode = 'calm';
@@ -1827,7 +1830,7 @@ function renderPowerbar() {
 // ============================================================
 // Menus: main, globe, level grid, store
 // ============================================================
-const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#end-screen'];
+const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
 function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); }
@@ -1841,6 +1844,7 @@ function showMenu() {
   const ready = TOWER_KEYS.reduce((n, k) => n + (towerUnlocked(k) ? armoryReady(k) : 0), 0);
   $('#armory-badge').hidden = !ready;
   $('#armory-badge').textContent = ready;
+  $('#btn-story').classList.toggle('new', STORY_ORDER.some((id) => storyUnlocked(id) && !Story.seen(id)));
   const sv = loadSave();
   const box = $('#continue-box');
   box.hidden = !sv; box.innerHTML = '';
@@ -1852,6 +1856,44 @@ function showMenu() {
     box.append(b);
   }
   renderInstall();
+}
+
+// ---------- story chapters ----------
+// plays a chapter the first time it comes up, with the screens behind it put to sleep
+function storyThen(id, then) {
+  if (Story.seen(id) || !Story.has(id)) return then();
+  for (const q of SCREENS) $(q).hidden = true;
+  Globe.stop(); MenuFX.stop(); LevelFX.stop();
+  Story.play(id, then);
+}
+function storyUnlocked(id) {
+  if (id === 'prologue') return true;
+  const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
+  if (part === 'intro') return worldUnlocked(+w);
+  return starsFor(+w * LEVELS_PER_WORLD + (part === 'mid' ? 24 : LEVELS_PER_WORLD - 1)) > 0;
+}
+function storyLockNote(id) {
+  const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
+  if (part === 'intro') return `Reach ${WORLDS[+w].name}`;
+  return `Clear sector ${LEVEL_META[+w * LEVELS_PER_WORLD + (part === 'mid' ? 24 : LEVELS_PER_WORLD - 1)].id}`;
+}
+function showChapters() {
+  hideScreens();
+  $('#chapters-screen').hidden = false;
+  const grid = $('#chapters-grid'), list = Story.chapters();
+  grid.innerHTML = '';
+  $('#chapters-count').textContent = `${list.filter((ch) => ch.seen).length} / ${list.length} read`;
+  list.forEach((ch, i) => {
+    const open = storyUnlocked(ch.id), b = document.createElement('button');
+    b.type = 'button'; b.className = 'chapter-card'; b.disabled = !open; b.style.animationDelay = `${i * 40}ms`;
+    const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180;
+    b.append(cv);
+    b.insertAdjacentHTML('beforeend', `<span class="cc-text"><span class="cc-kicker">${ch.kicker}</span><h3>${ch.title}</h3></span>${open && !ch.seen ? '<span class="cc-new">New</span>' : ''}${open ? '' : `<span class="cc-lock">${storyLockNote(ch.id)}</span>`}`);
+    b.addEventListener('click', () => { Sound.play('click'); Story.play(ch.id, showChapters); });
+    grid.append(b);
+    // thumbnails are painted one at a time so the list opens instantly
+    setTimeout(() => { if (!cv.isConnected) return; const p = STORY[ch.id].pages[0].panels[0], c = cv.getContext('2d'); c.fillStyle = MANGA.PAPER; c.fillRect(0, 0, 320, 180); SCENES[p.art].base(c, 320, 180, p.o || {}); }, 60 + i * 45);
+  });
 }
 
 let globeReady = false;
@@ -1903,7 +1945,7 @@ function selectWorld(w) {
   chips.append(zombieChip(world.boss, ZOMBIES[world.boss].name));
   $('#w-prev').addEventListener('click', () => { Sound.play('click'); selectWorld((w + WORLDS.length - 1) % WORLDS.length); });
   $('#w-next').addEventListener('click', () => { Sound.play('click'); selectWorld((w + 1) % WORLDS.length); });
-  $('#w-go').addEventListener('click', () => { Sound.play('click'); showLevels(w); });
+  $('#w-go').addEventListener('click', () => { Sound.play('click'); storyThen(`w${w}-intro`, () => showLevels(w)); });
 }
 
 const SKULL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5c0 2.8 1.5 4.6 2.9 5.4V18a1 1 0 0 0 1 1h1.1v-1.8h1.6V19h1.8v-1.8h1.6V19h1.1a1 1 0 0 0 1-1v-2.6c1.4-.8 2.9-2.6 2.9-5.4A7.5 7.5 0 0 0 12 2.5z"/><circle cx="9" cy="10.5" r="1.9" fill="#1a0a08"/><circle cx="15" cy="10.5" r="1.9" fill="#1a0a08"/></svg>';
@@ -2027,6 +2069,7 @@ function selectLevel(i) {
   if (L.boss) seen.push(L.boss);
   for (const type of seen) chips.append(zombieChip(type, ZOMBIES[type].name, FIRST_SEEN[type] === L.index));
   box.append(chips);
+  box.insertAdjacentHTML('beforeend', `<p class="ld-intel"><b>Voss</b>${storyIntel(L)}</p>`);
   box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${Math.round(30 + 45 + L.index * 1.5)} coins.`}</p>`);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary ld-go'; go.textContent = st ? 'Replay mission' : 'Start mission';
   go.addEventListener('click', () => { Sound.init(); startGame(i); });
@@ -2307,10 +2350,14 @@ $('#btn-resume').addEventListener('click', () => setPaused(false));
 $('#btn-restart').addEventListener('click', () => startGame(S.levelIndex));
 $('#btn-to-levels').addEventListener('click', () => showLevels(S.L.world, S.levelIndex));
 $('#btn-to-menu').addEventListener('click', showMenu);
-$('#btn-retry').addEventListener('click', () => startGame(S.levelIndex));
-$('#btn-menu').addEventListener('click', () => showLevels(S.L.world, S.levelIndex + (S.state === 'won' ? 1 : 0)));
-$('#btn-next').addEventListener('click', () => { if (LEVEL_META[S.levelIndex + 1]) startGame(S.levelIndex + 1); });
-$('#btn-campaign').addEventListener('click', () => { Sound.init(); Sound.play('click'); let w = 0; while (w + 1 < WORLDS.length && worldUnlocked(w + 1)) w++; showWorlds(w); });
+// a chapter unlocked by this win plays before whatever the player picked next
+function afterStory(fn) { const id = S.storyNext; S.storyNext = null; if (id) { leaveGame(); storyThen(id, fn); } else fn(); }
+$('#btn-retry').addEventListener('click', () => afterStory(() => startGame(S.levelIndex)));
+$('#btn-menu').addEventListener('click', () => { const w = S.L.world, f = S.levelIndex + (S.state === 'won' ? 1 : 0); afterStory(() => showLevels(w, f)); });
+$('#btn-next').addEventListener('click', () => { const i = S.levelIndex + 1; if (LEVEL_META[i]) afterStory(() => startGame(i)); });
+$('#btn-campaign').addEventListener('click', () => { Sound.init(); Sound.play('click'); let w = 0; while (w + 1 < WORLDS.length && worldUnlocked(w + 1)) w++; storyThen('prologue', () => showWorlds(w)); });
+$('#btn-story').addEventListener('click', () => { Sound.init(); Sound.play('click'); showChapters(); });
+$('#btn-chapters-back').addEventListener('click', () => { Sound.play('click'); showMenu(); });
 $('#btn-store').addEventListener('click', () => { Sound.init(); Sound.play('click'); showStore('towers'); });
 $('#btn-armory').addEventListener('click', () => { Sound.init(); Sound.play('click'); showArmory(); });
 $('#btn-armory-back').addEventListener('click', showMenu);
@@ -2384,6 +2431,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
   initWeather();
 }
 MenuFX.init($('#menu-fx'));
+Story.init();
 LevelFX.init($('#level-fx'));
 new ResizeObserver(() => layoutLevels()).observe($('#level-grid'));
 buildShop(); renderInfo(); renderNextWave(); renderPowerbar();
@@ -2400,4 +2448,4 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { bu
 requestAnimationFrame(frame);
 
 // Small hook for automated tests and tinkering in the console.
-window.ZombieBash = { S, meta, LEVEL_META, getLevel, spawnEnemy, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, upgradeState, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, showArmory, selectLevel, usePower, callAirstrike, saveMeta, upCost, towerStats };
+window.ZombieBash = { S, meta, LEVEL_META, getLevel, spawnEnemy, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, upgradeState, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, showArmory, selectLevel, usePower, callAirstrike, saveMeta, upCost, towerStats, Story, showChapters };
