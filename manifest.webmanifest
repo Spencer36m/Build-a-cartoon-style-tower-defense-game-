@@ -1,14 +1,14 @@
 {
   "name": "Zombie Bash",
   "short_name": "Zombie Bash",
-  "description": "A cartoon zombie tower defense game. Build silly towers and defend the safehouse across four worlds.",
+  "description": "A zombie tower defense game. Hold the line across 200 levels in four worlds with upgradable towers, aircraft and boats.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "landscape",
-  "background_color": "#3f3470",
-  "theme_color": "#3f3470",
+  "background_color": "#0e1114",
+  "theme_color": "#0e1114",
   "categories": ["games"],
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
