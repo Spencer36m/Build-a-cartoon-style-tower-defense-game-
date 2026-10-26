@@ -61,6 +61,18 @@ Zombies from earlier worlds keep coming back in later ones.
 
 The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
 
+### Sandbox
+
+**Sandbox** on the main menu is a free-play mode. Pick any of the 200 maps (or a random one) and set your own rules:
+
+- **Cash** and **lives**: infinite, or a set amount.
+- **Waves**: how many, or endless.
+- **Zombies**: the map's own waves, or your own mix with a count for every zombie and boss (with quick presets: Horde, Armored, Flyers, Bosses, Random), how tough they are (×0.5 to ×5 health) and how much bigger each wave gets.
+- **Sky**: time of day, and either the changing forecast or one fixed weather.
+- **Cold**: on snow maps, whether crews need heaters.
+
+In a sandbox game every tower and every upgrade tier is open, supplies never run out, and the wave card becomes a **Spawn** panel: tap any zombie (×1, ×5 or ×10) to send it down the road right away, or clear the field. Sandbox games earn no coins, XP or stars and are never saved, so they cannot touch your campaign. Your settings are remembered for next time.
+
 ### Weather
 
 The weather changes while you play, and each level runs its own forecast (the mission briefing shows what is coming). A shower builds into a thunderstorm, the storm can spin up a tornado that tears across the map, then it passes and the sky clears. The roads get wet and shine in the rain and dry out again afterwards.
@@ -192,6 +204,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/art.js`: realistic top-down drawing of zombies, towers and effects
 - `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and props (leafy trees, pines, cars, graves, rocks)
 - `js/buildings.js`: buildings in a three-quarter view with textured boards, logs, clapboard, stone, shingles and tin: the red barn, the snowed-in log cabin, the bayou shack on stilts, the stone crypt, and the sandbagged safehouse bunker
+- `js/sandbox.js`: the sandbox setup screen and its rules
 - `js/weather.js`: the weather forecast and its effects: rain, storms and lightning, tornadoes, dust storms, fog, mist and fireflies, snow and blizzards, ash storms, acid rain, wet roads, and chimney smoke that rises now and then from the houses with a fire going
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop

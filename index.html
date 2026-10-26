@@ -85,6 +85,7 @@
       <div class="continue-box" id="continue-box" hidden></div>
       <button class="btn btn-primary btn-lg" id="btn-campaign" type="button">Campaign</button>
       <button class="btn btn-lg" id="btn-story" type="button">Story</button>
+      <button class="btn btn-lg" id="btn-sandbox" type="button">Sandbox</button>
       <button class="btn btn-lg" id="btn-armory" type="button">Armory <span class="badge" id="armory-badge" hidden></span></button>
       <button class="btn btn-lg" id="btn-store" type="button">Store</button>
       <button class="btn btn-small btn-music" type="button" aria-pressed="true">Music: On</button>
@@ -158,6 +159,17 @@
   </div>
 </div>
 
+<div class="screen sandbox-screen" id="sandbox-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-sandbox-back" type="button">Menu</button>
+    <h2 class="screen-title">Sandbox</h2>
+    <button class="btn btn-primary sb-play" id="btn-sandbox-play" type="button">Play</button>
+  </div>
+  <p class="store-note">Pick a map, set the rules and choose which zombies come. Nothing here counts towards the campaign.</p>
+  <div class="sandbox-body" id="sandbox-body"></div>
+  <button class="btn btn-primary btn-lg sb-play-bottom" id="btn-sandbox-play2" type="button">Play sandbox</button>
+</div>
+
 <div class="screen chapters-screen" id="chapters-screen" hidden>
   <div class="screen-top">
     <button class="btn btn-back" id="btn-chapters-back" type="button">Menu</button>
@@ -206,6 +218,7 @@
 <script src="js/story.js"></script>
 <script src="js/missions.js"></script>
 <script src="js/comms.js"></script>
+<script src="js/sandbox.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/game.js"></script>

@@ -108,9 +108,10 @@ const WEATHER = (() => {
     }
     return out;
   }
-  function start(m, l, h) {
+  // fixed: a kind of weather to hold for the whole game instead of running the forecast (sandbox)
+  function start(m, l, h, fixed) {
     M = m; L = l; hooks = h || {}; world = M.world.id;
-    plan = makePlan(L.look.seed + 4041, L.look.weather);
+    plan = fixed && KINDS[fixed] ? [[fixed, 1e9]] : makePlan(L.look.seed + 4041, L.look.weather);
     ep = 0; epT = 0; time = 0; wet = 0; flash = 0; bolt = null; twister = null; toast = null; nextStrike = 4;
     windA = (mulberry32(L.look.seed + 7)() - 0.5) * 1.2 + (L.look.seed % 2 ? 0 : Math.PI);
     for (const k of CHANNELS) cur[k] = tgt[k] = 0;
@@ -525,6 +526,7 @@ const WEATHER = (() => {
 
   return {
     start, update, drawGround, drawSky, drawSmoke, forecast,
+    kindsFor: (worldId) => Object.keys(FORECAST[worldId] || FORECAST.farmland),
     get kind() { return kind(); }, get dark() { return cur.dark || 0; }, get wet() { return wet; },
     // for tests: jump straight to a kind of weather
     force(k) { const i = plan.findIndex(([q]) => q === k); if (i >= 0) { ep = i; epT = 0; } else { plan[ep] = [k, 60]; epT = 0; } setTargets(true); if (k === 'tornado') spawnTwister(); if (hooks.changed) hooks.changed(k); },

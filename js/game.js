@@ -19,14 +19,15 @@ const upg = (k) => meta.upg[k] | 0;
 const starsFor = (i) => meta.stars[LEVEL_META[i].id] | 0;
 const levelUnlocked = (i) => i === 0 || starsFor(i - 1) > 0;
 const worldUnlocked = (w) => levelUnlocked(w * LEVELS_PER_WORLD);
-const towerUnlocked = (type) => { const d = TOWERS[type]; return !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
+const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
 const costOf = (n) => Math.round(n * (1 - 0.04 * upg('discount')));
 const maxLives = () => BASE_LIVES + 3 * upg('walls');
 const xpOf = (type) => Math.floor(meta.xp[type] || 0);
 // Highest tier of a path that can be bought in battle; tiers past FREE_TIER are unlocked with XP in the Armory.
-const tierCap = (type, p) => Math.max(FREE_TIER, (meta.armory[type] || [])[p] | 0);
+const tierCap = (type, p) => (S.sandbox ? 5 : Math.max(FREE_TIER, (meta.armory[type] || [])[p] | 0));
 const AIRCRAFT = { heli: true, jet: true };
-const MAP_WIDE = 50; // ranges this big reach the whole map
+const MAP_WIDE = 50;
+const INF_CASH = 1e7; // a sandbox with infinite cash keeps the purse topped up at this // ranges this big reach the whole map
 const coarse = () => window.matchMedia && matchMedia('(pointer: coarse)').matches;
 const buzz = (ms) => { try { if (!Sound.muted && navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* no haptics */ } };
 
@@ -35,6 +36,7 @@ const buzz = (ms) => { try { if (!Sound.muted && navigator.vibrate) navigator.vi
 // State
 // ============================================================
 const S = {
+  sandbox: null, sbQueue: [], sbTime: 0,
   state: 'menu', L: null, M: null, levelIndex: 0, worldSel: 0, levelSel: 0,
   lives: 0, maxLives: 20, cash: 0, wave: 0,
   towers: [], enemies: [], projectiles: [], fx: [], decals: [], spawners: [], strikes: [], crates: [],
@@ -165,16 +167,21 @@ function buildLevel(L) {
 // Game flow
 // ============================================================
 // a line over the radio, swapped for someone else's if that character cannot speak yet
-function sayLine(who, text, o) { if (speakerOK(S.L, who)) Comms.say(who, text, o); }
+function sayLine(who, text, o) { if (!S.sandbox && speakerOK(S.L, who)) Comms.say(who, text, o); }
 function sayChatter(kind, o) {
+  if (S.sandbox) return;
   const C = CHATTER[S.L.world] || CHATTER[0], list = (C[kind] || []).filter(([w]) => speakerOK(S.L, w));
   if (list.length) { const [w, t] = list[(S.L.num * 7 + S.wave * 3 + kind.length) % list.length]; Comms.say(w, t, o); }
 }
-function startGame(index, save) {
-  const L = getLevel(index);
+// sb: sandbox rules (see sandbox.js); a sandbox game ignores saves and earns nothing
+function startGame(index, save, sb = null) {
+  S.sandbox = sb;
+  const L = sb ? SANDBOX.level(index, sb) : getLevel(index);
+  if (sb) save = null;
   S.levelIndex = index; S.L = L; S.M = buildLevel(L);
-  S.maxLives = maxLives(); S.lives = S.maxLives;
-  S.cash = L.gold + 60 * upg('cash'); S.wave = 0;
+  S.maxLives = sb ? (sb.infLives ? 99 : sb.lives) : maxLives(); S.lives = S.maxLives;
+  S.cash = sb ? (sb.infCash ? INF_CASH : sb.cash) : L.gold + 60 * upg('cash'); S.wave = 0;
+  S.sbQueue = []; S.sbTime = 0;
   S.towers = []; S.enemies = []; S.projectiles = []; S.fx = []; S.decals = []; S.spawners = []; S.strikes = []; S.crates = [];
   S.towerAt = new Map();
   S.runXp = {};
@@ -191,8 +198,10 @@ function startGame(index, save) {
   resize();
   Comms.clear();
   S.mission = missionFor(L); S.saidHurt = false;
-  $('#st-name').textContent = `Op. ${S.mission.op.name} · ${S.mission.objective}`;
+  $('#st-name').textContent = sb ? `Sandbox · ${L.name}` : `Op. ${S.mission.op.name} · ${S.mission.objective}`;
+  for (const id of ['#btn-menu', '#btn-to-levels']) $(id).textContent = sb ? 'Sandbox setup' : 'Level select';
   if (save) applySave(save);
+  else if (sb) showBanner('Sandbox', `${L.id} · ${L.name}`);
   else {
     showBanner(`${L.id} · ${L.name}`, `Operation ${S.mission.op.name} · ${S.mission.objective}`);
     sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: 2.4 });
@@ -204,6 +213,7 @@ function startGame(index, save) {
 }
 
 function checkpoint() {
+  if (S.sandbox) return;
   if (S.state !== 'playing' || S.spawners.length || S.enemies.length) return;
   S.dirty = false;
   saveMeta(); // banks the XP earned so far
@@ -282,7 +292,7 @@ function startWave() {
 function makeSpawner(n) {
   const queue = [];
   let t = 0;
-  for (const grp of makeWave(S.L, n)) {
+  for (const grp of S.sandbox && S.sandbox.mode === 'custom' ? SANDBOX.wave(S.L, n, S.sandbox) : makeWave(S.L, n)) {
     t += grp.delay;
     for (let i = 0; i < grp.count; i++) { queue.push({ t, type: grp.type }); t += grp.gap; }
   }
@@ -294,6 +304,7 @@ function levelReward(stars, first) {
 }
 // Towers earn XP for their kills; clearing a level adds a bonus for every kind of tower that fought in it.
 function addXp(type, n) {
+  if (S.sandbox) return;
   meta.xp[type] = (meta.xp[type] || 0) + n;
   S.runXp[type] = (S.runXp[type] || 0) + n;
 }
@@ -305,7 +316,16 @@ function xpBonus(won) {
   return Math.round(Object.values(S.runXp).reduce((a, b) => a + b, 0));
 }
 
+// a sandbox game just ends: no stars, coins, XP or progress
+function sandboxEnd(won) {
+  S.state = won ? 'won' : 'over';
+  S.placing = null; S.power = null; S.pending = null;
+  Sound.play(won ? 'win' : 'lose');
+  const kills = S.towers.reduce((n, t) => n + (t.kills || 0), 0);
+  showEnd(won, won ? 'Sandbox cleared' : 'Base overrun', won ? `All ${S.L.waves} waves beaten, ${kills} zombies down.` : `The horde broke through on wave ${S.wave}. ${kills} zombies went down first.`, 0, 0, 0);
+}
 function victory() {
+  if (S.sandbox) { sandboxEnd(true); return; }
   S.state = 'won';
   S.placing = null; S.power = null; S.pending = null;
   store.remove(SAVE_KEY);
@@ -336,6 +356,7 @@ function victory() {
 }
 
 function gameOver() {
+  if (S.sandbox) { sandboxEnd(false); return; }
   S.state = 'over';
   S.placing = null; S.power = null; S.pending = null;
   store.remove(SAVE_KEY);
@@ -350,18 +371,19 @@ function gameOver() {
 
 const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>';
 function showEnd(won, title, text, stars, reward, xp) {
-  $('#end-kicker').textContent = `Sector ${S.L.id} · ${S.L.name}`;
+  $('#end-kicker').textContent = S.sandbox ? `Sandbox · ${S.L.id} ${S.L.name}` : `Sector ${S.L.id} · ${S.L.name}`;
+  $('#end-reward').hidden = !!S.sandbox;
   $('#end-title').textContent = title;
   $('#end-text').textContent = text;
   $('#end-reward').textContent = `+${reward} coins · +${xp} tower XP`;
   $('.dialog-end').classList.toggle('lost', !won);
   const st = $('#end-stars');
-  st.hidden = !won;
+  st.hidden = !won || !!S.sandbox;
   st.innerHTML = [1, 2, 3].map((i) => STAR_SVG.replace('<svg', `<svg class="${i <= stars ? 'on' : ''}"`)).join('');
   st.setAttribute('aria-label', `${stars} of 3 stars`);
   for (let i = 0; i < stars; i++) setTimeout(() => Sound.play('star', null, { pitch: 1 + i * 0.25 }), 450 + i * 150);
   if (xp > 0) setTimeout(() => Sound.play('xp'), 450 + stars * 150 + 150);
-  $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1];
+  $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1] || !!S.sandbox;
   $('#btn-retry').textContent = won ? 'Replay' : 'Try again';
   // a character has the last word
   const q = S.endQuote, box = $('#end-quote');
@@ -392,7 +414,7 @@ function setPaused(p) {
 function spawnEnemy(type, wave, route, d = 0) {
   const def = ZOMBIES[type];
   const e = effWave(S.L, wave);
-  const mul = hpScale(e);
+  const mul = hpScale(e) * (S.sandbox ? S.sandbox.hp : 1);
   const z = {
     type, wave, route, fly: !!def.fly,
     hp: def.hp * mul, maxHp: def.hp * mul,
@@ -453,7 +475,7 @@ function updateEnemy(e, dt) {
   if (e.d >= e.route.total) {
     e.dead = true;
     const lost = def.lives || 1;
-    S.lives = Math.max(0, S.lives - lost);
+    if (!(S.sandbox && S.sandbox.infLives)) S.lives = Math.max(0, S.lives - lost);
     S.houseHit = 0.5; S.leakFlash = 0.4;
     addShake(lost > 2 ? 9 : 3);
     floatText(`-${lost} ${lost === 1 ? 'life' : 'lives'}`, S.M.end.x, S.M.end.y - 40, '#e0675b', 16);
@@ -587,7 +609,7 @@ function auraCovers(a, t) {
 // On snow maps crews out in the cold fire slower (a farm earns less) unless a heater's warmth
 // reaches them; the safehouse warms the towers right beside it. A blizzard makes it worse.
 const COLD = { rate: 1.6, blizzard: 1.9, income: 0.6, house: 1.6 };
-const coldMap = () => !!(S.L && S.L.world === 2);
+const coldMap = () => !!(S.L && S.L.world === 2 && !(S.sandbox && S.sandbox.cold === false));
 function warmAt(x, y, heaters) {
   if (S.M && dist2(x, y, S.M.end.x, S.M.end.y) <= (COLD.house * TILE) ** 2) return true;
   return heaters.some((a) => a.raw.aura.range >= MAP_WIDE || dist2(a.x, a.y, x, y) <= (a.raw.aura.range * TILE + 1) ** 2);
@@ -1117,7 +1139,7 @@ const POWER_ICONS = {
   medkit: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V4h6v2M12 10v6M9 13h6"/></svg>',
 };
 function usePower(kind) {
-  if (S.state !== 'playing' || S.paused || (meta.items[kind] | 0) <= 0) { Sound.play('error'); return; }
+  if (S.state !== 'playing' || S.paused || (!S.sandbox && (meta.items[kind] | 0) <= 0)) { Sound.play('error'); return; }
   Sound.init();
   if (kind === 'airstrike') {
     S.power = S.power === 'airstrike' ? null : 'airstrike';
@@ -1125,7 +1147,7 @@ function usePower(kind) {
     renderPowerbar(); renderInfo();
     return;
   }
-  meta.items[kind]--; saveMeta();
+  if (!S.sandbox) { meta.items[kind]--; saveMeta(); }
   const e = effWave(S.L, Math.max(1, S.wave));
   if (kind === 'cryobomb') {
     for (const z of S.enemies) { const boss = ZOMBIES[z.type].boss; z.slowF = boss ? 0.5 : 0.97; z.slowT = 3; }
@@ -1345,12 +1367,13 @@ const TIME_LIGHT = {
 };
 // the sky itself lives in weather.js; the game hands it a way to talk, scorch the ground and shake
 function initWeather() {
+  const fixed = S.sandbox && S.sandbox.weather !== 'forecast' ? S.sandbox.weather : null;
   WEATHER.start(S.M, S.L, {
     say: ([who, text]) => { if (S.state === 'playing' && !Comms.busy) sayLine(who, text, { tag: 'WEATHER' }); },
     strike: (x, y) => { S.decals.push({ kind: 'scorch', x, y, r: 9, life: 14, max: 14, seed: Math.random() * 1000 }); S.shake = Math.max(S.shake, 3); },
     shake: (v) => { S.shake = Math.max(S.shake, v); },
     changed: () => { if (coldMap() && S.towers.length) { refreshTowers(); if (S.selected) renderInfo(); } },
-  });
+  }, fixed);
 }
 
 // a crew left out in the cold: frost over the tower, breath clouds and a snowflake badge
@@ -1378,6 +1401,14 @@ function drawFrost(c, tw, t) {
 // ============================================================
 function update(dt) {
   S.time += dt;
+  if (S.sandbox) {
+    if (S.sandbox.infCash) S.cash = INF_CASH;
+    S.sbTime += dt;
+    while (S.sbQueue.length && S.sbQueue[0].t <= S.sbTime) {
+      const { type } = S.sbQueue.shift(), routes = ZOMBIES[type].fly ? S.M.flights : S.M.paths;
+      spawnEnemy(type, Math.max(1, S.wave), routes[Math.floor(Math.random() * routes.length)]);
+    }
+  }
   for (const sp of S.spawners) {
     if (sp.done) continue;
     sp.time += dt;
@@ -1709,9 +1740,10 @@ function bumpStat(sel) { const el = $(sel); el.classList.remove('bump'); void el
 let lastCashUi = -1;
 function updateHUD(force) {
   if (!S.L) return;
-  setText('#lives', String(S.lives));
-  setText('#cash', String(Math.floor(S.cash)));
-  setText('#wave', `${S.wave}/${S.L.waves}`);
+  const sb = S.sandbox;
+  setText('#lives', sb && sb.infLives ? '∞' : String(S.lives));
+  setText('#cash', sb && sb.infCash ? '∞' : String(Math.floor(S.cash)));
+  setText('#wave', sb && sb.endless ? `${S.wave}` : `${S.wave}/${S.L.waves}`);
   const btn = $('#btn-wave');
   const active = S.spawners.length > 0 || S.enemies.length > 0;
   let label2, disabled = S.state !== 'playing';
@@ -1920,9 +1952,55 @@ function zombieChip(type, labelText, isNew) {
   return chip;
 }
 
+// in a sandbox the wave card becomes a spawner: tap any zombie to send it down the road now
+let sbSpawnN = 1;
+function renderSandboxPanel(box) {
+  box.innerHTML = '';
+  const n = S.wave + 1, sb = S.sandbox, last = !sb.endless && S.wave >= S.L.waves;
+  box.insertAdjacentHTML('beforeend', `<h2 class="card-title">${last ? 'Final wave deployed' : `Next: wave ${n}${sb.endless ? '' : ` of ${S.L.waves}`}`}</h2>`);
+  if (!last) {
+    const chips = document.createElement('div'); chips.className = 'wave-chips';
+    const sum = SANDBOX.summary(S.L, n, sb);
+    for (const [type, count] of Object.entries(sum)) chips.append(zombieChip(type, `×${count}`));
+    if (!Object.keys(sum).length) chips.insertAdjacentHTML('beforeend', '<p class="hint" style="margin:0">No zombies in the waves: spawn them below.</p>');
+    box.append(chips);
+  }
+  const head = document.createElement('div'); head.className = 'sb-spawn-head';
+  head.insertAdjacentHTML('beforeend', '<span class="card-title">Spawn now</span>');
+  for (const k of [1, 5, 10]) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sb-chip'; b.textContent = `×${k}`;
+    b.setAttribute('aria-pressed', String(sbSpawnN === k));
+    b.addEventListener('click', () => { sbSpawnN = k; renderSandboxPanel(box); });
+    head.append(b);
+  }
+  const clear = document.createElement('button'); clear.type = 'button'; clear.className = 'sb-chip sb-clear'; clear.textContent = 'Clear field';
+  clear.title = 'Remove every zombie on the map (no cash for them)';
+  clear.addEventListener('click', () => {
+    for (const e of S.enemies) { e.dead = true; S.fx.push({ kind: 'smoke', x: e.x, y: e.y, vx: 0, vy: -10, r: 6, grow: 10, life: 0.6, max: 0.6, color: '120,120,110' }); }
+    S.sbQueue = []; Sound.play('click');
+  });
+  head.append(clear);
+  box.append(head);
+  const grid = document.createElement('div'); grid.className = 'sb-spawn';
+  for (const type of SANDBOX.ZTYPES) {
+    const z = ZOMBIES[type], b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip sb-spawn-btn' + (z.boss ? ' boss' : '') + (z.fly ? ' air' : '');
+    b.title = `Spawn ${z.name}: ${z.desc}`;
+    b.append(zombieIcon(type));
+    b.addEventListener('click', () => {
+      if (S.state !== 'playing') return;
+      Sound.init(); Sound.play('click');
+      for (let i = 0; i < sbSpawnN; i++) S.sbQueue.push({ t: S.sbTime + i * (z.boss ? 1.5 : 0.35), type });
+      S.sbQueue.sort((a, q) => a.t - q.t);
+    });
+    grid.append(b);
+  }
+  box.append(grid);
+}
 function renderNextWave() {
   const box = $('#next-wave');
   if (!S.L) return;
+  if (S.sandbox) { renderSandboxPanel(box); return; }
   const n = S.wave + 1;
   box.innerHTML = '';
   const done = S.wave >= S.L.waves;
@@ -1939,13 +2017,13 @@ function renderPowerbar() {
   const bar = $('#powerbar');
   bar.innerHTML = '';
   for (const kind of Object.keys(SUPPLIES)) {
-    const n = meta.items[kind] | 0;
+    const n = S.sandbox ? Infinity : meta.items[kind] | 0;
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'power' + (S.power === kind ? ' armed' : '');
     b.disabled = n <= 0 || S.state !== 'playing';
     b.title = `${SUPPLIES[kind].name}: ${SUPPLIES[kind].desc}${n <= 0 ? ' Buy more in the store.' : ''}`;
-    b.innerHTML = `${POWER_ICONS[kind]}<span>${SUPPLIES[kind].name.split(' ')[0]}</span><span class="count">${n}</span>`;
+    b.innerHTML = `${POWER_ICONS[kind]}<span>${SUPPLIES[kind].name.split(' ')[0]}</span><span class="count">${n === Infinity ? '∞' : n}</span>`;
     b.addEventListener('click', () => usePower(kind));
     bar.append(b);
   }
@@ -1954,10 +2032,10 @@ function renderPowerbar() {
 // ============================================================
 // Menus: main, globe, level grid, store
 // ============================================================
-const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen'];
+const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen', '#sandbox-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
-function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
+function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; S.sandbox = null; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
 
 function showMenu() {
   leaveGame();
@@ -2475,16 +2553,19 @@ $('#btn-auto').addEventListener('click', toggleAuto);
 $('#btn-sound').addEventListener('click', () => { Sound.init(); toggleSound(); });
 $('#btn-pause').addEventListener('click', () => setPaused(!S.paused));
 $('#btn-resume').addEventListener('click', () => setPaused(false));
-$('#btn-restart').addEventListener('click', () => startGame(S.levelIndex));
-$('#btn-to-levels').addEventListener('click', () => showLevels(S.L.world, S.levelIndex));
+$('#btn-restart').addEventListener('click', () => startGame(S.levelIndex, null, S.sandbox));
+$('#btn-to-levels').addEventListener('click', () => { if (S.sandbox) { leaveGame(); SANDBOX.show(); } else showLevels(S.L.world, S.levelIndex); });
 $('#btn-to-menu').addEventListener('click', showMenu);
 // a chapter unlocked by this win plays before whatever the player picked next
 function afterStory(fn) { const id = S.storyNext; S.storyNext = null; if (id) { leaveGame(); storyThen(id, fn); } else fn(); }
-$('#btn-retry').addEventListener('click', () => afterStory(() => startGame(S.levelIndex)));
-$('#btn-menu').addEventListener('click', () => { const w = S.L.world, f = S.levelIndex + (S.state === 'won' ? 1 : 0); afterStory(() => showLevels(w, f)); });
+$('#btn-retry').addEventListener('click', () => { const sb = S.sandbox; afterStory(() => startGame(S.levelIndex, null, sb)); });
+$('#btn-menu').addEventListener('click', () => { if (S.sandbox) { leaveGame(); SANDBOX.show(); return; } const w = S.L.world, f = S.levelIndex + (S.state === 'won' ? 1 : 0); afterStory(() => showLevels(w, f)); });
 $('#btn-next').addEventListener('click', () => { const i = S.levelIndex + 1; if (LEVEL_META[i]) afterStory(() => startGame(i)); });
 $('#btn-campaign').addEventListener('click', () => { Sound.init(); Sound.play('click'); let w = 0; while (w + 1 < WORLDS.length && worldUnlocked(w + 1)) w++; storyThen('prologue', () => showWorlds(w)); });
 $('#btn-story').addEventListener('click', () => { Sound.init(); Sound.play('click'); showChapters(); });
+$('#btn-sandbox').addEventListener('click', () => { Sound.init(); Sound.play('click'); SANDBOX.show(); });
+$('#btn-sandbox-back').addEventListener('click', showMenu);
+for (const id of ['#btn-sandbox-play', '#btn-sandbox-play2']) $(id).addEventListener('click', () => SANDBOX.play());
 $('#btn-chapters-back').addEventListener('click', () => { Sound.play('click'); showMenu(); });
 $('#btn-store').addEventListener('click', () => { Sound.init(); Sound.play('click'); showStore('towers'); });
 $('#btn-armory').addEventListener('click', () => { Sound.init(); Sound.play('click'); showArmory(); });
