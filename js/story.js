@@ -66,7 +66,7 @@ return {
       ] },
       { panels: [
         { at: [[14, 14], [560, 14], [540, 548], [14, 548]], art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'lines', sandbags: true, turn: 0.2 }, cam: [1.08, 1],
-          text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 230, t: 'We hold the roads. We keep the safehouses breathing. And we find her before Kessler-Vane does.', tail: [14, 120] },
+          text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 230, t: 'We hold the roads. We keep the safehouses breathing. And we find her before Kessler-Vane does.', tail: [14, 300] },
             { k: 'say', who: 'Sgt. Dax Moreno', x: 330, y: 300, w: 180, t: "Then let's go to work.", tail: [300, 240] }] },
         { at: [[572, 14], [986, 14], [986, 548], [552, 548]], art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.04],
           text: [{ k: 'cap', x: 600, y: 484, w: 360, t: 'Every road. Every safehouse. Every night.' }] },
@@ -125,7 +125,7 @@ return {
       { at: R(14, 14, 986, 330), art: 'bossFall', o: { kind: 'harvester', spot: 'amber' }, fx: 'slam', snd: 'stomp', cam: [1.12, 1.02],
         text: [{ k: 'sfx', x: 640, y: 70, t: 'THOOOM', size: 70, rot: 0.08, col: 'amber', grow: 1 }, { k: 'cap', x: 30, y: 30, w: 300, t: 'Elias Crane. The farmer who found the meteor. The first to turn.' }] },
       { at: R(14, 342, 560, 548), art: 'badge', cam: [1.1, 1],
-        text: [{ k: 'say', who: 'Moreno', x: 30, y: 356, w: 210, t: "Doc was right. He was on Kessler-Vane's payroll.", tail: [14, 460] }, { k: 'say', who: 'Laila', x: 290, y: 466, w: 250, t: 'Mr. Crane fixed our fence every spring. He was kind, once.', tail: [560, 530] }] },
+        text: [{ k: 'say', who: 'Moreno', x: 24, y: 352, w: 200, t: "He was on Kessler-Vane's payroll.", tail: [14, 450] }, { k: 'say', who: 'Laila', x: 300, y: 446, w: 230, t: 'Mr. Crane fixed our fence every spring. He was kind, once.', tail: [560, 530] }] },
       { at: R(572, 342, 986, 548), art: 'worldMap', o: { upto: 1 }, cam: [1.12, 1, -0.05, 0],
         text: [{ k: 'radio', who: 'Voss', x: 690, y: 440, w: 200, t: "Okafor's signal came from Blackwood. Wheels up, Commander.", tail: [986, 420] }] },
     ] }, { music: 'tension', panels: [
@@ -146,7 +146,7 @@ return {
         { at: [[612, 14], [986, 14], [986, 300], [592, 300]], art: 'skeletonHand', fx: 'slam', snd: 'dig', cam: [1.15, 1.02],
           text: [{ k: 'sfx', x: 640, y: 50, t: 'KRAK!', size: 64, rot: -0.15, col: 'purple' }, { k: 'cap', x: 640, y: 240, w: 260, t: 'The strain is waking bodies a century old.' }] },
         { at: R(14, 312, 986, 548), art: 'riftSky', snd: 'thunder', cam: [1, 1.1, 0, 0.03],
-          text: [{ k: 'radio', who: 'Okafor', x: 300, y: 330, w: 240, t: 'The crystal is tearing open the sky.', tail: [280, 316] }, { k: 'radio', x: 700, y: 486, w: 230, t: 'Keep them away from it. Please.', tail: [986, 530] }] },
+          text: [{ k: 'radio', who: 'Okafor', x: 260, y: 322, w: 280, t: 'The crystal is tearing open the sky.', tail: [280, 316] }, { k: 'radio', x: 720, y: 470, w: 240, t: 'Keep them away from it. Please.', tail: [986, 530] }] },
       ] },
       { music: 'tension', panels: [
         { at: R(14, 14, 986, 300), art: 'cleaners', snd: 'static', cam: [1.1, 1, 0.02, 0],
@@ -210,7 +210,7 @@ return {
     title: 'The Source', kicker: 'Chapter 3', world: 2,
     pages: [{ panels: [
       { at: [[14, 14], [600, 14], [580, 548], [14, 548]], art: 'console', cam: [1.1, 1],
-        text: [{ k: 'say', who: 'Okafor', x: 30, y: 300, w: 220, t: 'I built the core, Commander. I owe the world a way back.', tail: [200, 470] }, { k: 'say', x: 290, y: 410, w: 250, t: 'The cure needs a sample from the source. From the hive itself.', tail: [300, 500] }] },
+        text: [{ k: 'say', who: 'Okafor', x: 30, y: 196, w: 220, t: 'I built the core, Commander. I owe the world a way back.', tail: [200, 470] }, { k: 'say', x: 280, y: 366, w: 250, t: 'The cure needs a sample from the source. From the hive itself.', tail: [300, 500] }] },
       { at: [[612, 14], [986, 14], [986, 548], [592, 548]], art: 'worldMap', o: { upto: 3 }, cam: [1.25, 1.05, 0.06, 0.12],
         text: [{ k: 'say', x: 630, y: 30, w: 220, t: "It's in the bayou. Every road leads there.", tail: [600, 120] }] },
     ] }],
@@ -235,7 +235,7 @@ return {
         { at: [[14, 242], [640, 242], [620, 548], [14, 548]], art: 'behemothRise', fx: 'shake', snd: 'roar', cam: [1, 1.1, 0, 0.04],
           text: [{ k: 'radio', who: 'Voss', x: 30, y: 258, w: 230, t: 'That thing is the hive.', tail: [14, 300] }, { k: 'radio', x: 370, y: 470, w: 210, t: 'Every infected on the planet answers to it.', tail: [620, 520] }] },
         { at: [[652, 242], [986, 242], [986, 548], [632, 548]], art: 'trio', cam: [1.1, 1],
-          text: [{ k: 'say', who: 'Okafor', x: 660, y: 256, w: 170, t: 'Bring it down, and the core does the rest.', tail: [810, 400] }, { k: 'say', who: 'Moreno', x: 856, y: 396, w: 110, t: 'Last stand, then.', tail: [880, 380] }, { k: 'say', who: 'Laila', x: 660, y: 492, w: 150, t: "Then let's make it count.", tail: [740, 450] }] },
+          text: [{ k: 'say', who: 'Okafor', x: 662, y: 254, w: 190, t: 'Bring it down. The core does the rest.', tail: [790, 400] }, { k: 'say', who: 'Moreno', x: 856, y: 330, w: 90, t: 'Last stand.', tail: [900, 420] }, { k: 'say', who: 'Laila', x: 664, y: 470, w: 200, t: "Then let's make it count.", tail: [760, 440] }] },
       ] },
     ],
   },
@@ -243,7 +243,7 @@ return {
     title: 'Converging', kicker: 'Chapter 4', world: 3,
     pages: [{ music: 'tension', panels: [
       { at: R(14, 14, 986, 320), art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.05],
-        text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 300, t: 'Commander, the horde is converging on you. All of it.', tail: [14, 120] }, { k: 'radio', who: 'Silas Vane', x: 560, y: 204, w: 300, t: "I'm broadcasting the hive's call, Commander. Every one of them is coming for you.", tail: [986, 300] }] },
+        text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 360, t: 'The horde is converging, Commander. All of it.', tail: [14, 120] }, { k: 'radio', who: 'Silas Vane', x: 550, y: 200, w: 320, t: "I'm sending the hive's call. Every one of them is coming for you.", tail: [986, 300] }] },
       { at: R(14, 332, 500, 548), art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'fire', x: 0.32, turn: 0.25 }, cam: [1.08, 1],
         text: [{ k: 'say', who: 'Moreno', x: 280, y: 360, w: 190, t: 'Good. Saves us the walk.', tail: [230, 430] }] },
       { at: R(512, 332, 986, 548), art: 'portrait', o: { who: 'okafor', mood: 'grim', bg: 'lab', glasses: '#52e07c', x: 0.7 }, cam: [1.08, 1],
@@ -255,7 +255,7 @@ return {
     pages: [
       { music: 'boss', panels: [
         { at: R(14, 14, 986, 290), art: 'tendril', fx: 'shake', snd: 'roar', cam: [1.12, 1],
-          text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'Okafor ran for the heart. The hive saw her coming.' }, { k: 'radio', who: 'Voss', x: 612, y: 196, w: 300, t: "Laila! She's not going to make it!", tail: [986, 240] }] },
+          text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'Okafor ran for the heart. The hive saw her coming.' }, { k: 'radio', who: 'Voss', x: 612, y: 150, w: 320, t: "Laila! She's not going to make it!", tail: [986, 240] }] },
         { at: [[14, 302], [520, 302], [500, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', hat: true, bg: 'lines', x: 0.4, y: 0.52, zoom: 1.15 }, cam: [1.12, 1],
           text: [{ k: 'say', who: 'Laila', x: 330, y: 330, w: 160, t: "I've got her.", tail: [260, 450] }] },
         { at: [[532, 302], [986, 302], [986, 548], [512, 548]], art: 'tattoo', o: { spot: 'green' }, cam: [1.15, 1.02],
@@ -331,9 +331,10 @@ const Story = (() => {
     dpr = Math.min(2.5, window.devicePixelRatio || 1);
     const W = window.innerWidth, H = window.innerHeight;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    guided = H > W * 1.05;
-    scr = { W, H, top: 52, bot: guided ? 30 : 18 };
     const top = 52, bot = 18, s = Math.min((W - 24) / PW, (H - top - bot) / PH);
+    // upright phones, and sideways ones where a whole page would be too small to read, follow panels
+    guided = H > W * 1.05 || s < 0.6;
+    scr = { W, H, top: 52, bot: guided ? 30 : 18 };
     view = { s: s * dpr, x: (W - PW * s) / 2 * dpr, y: (top + (H - top - bot - PH * s) / 2) * dpr };
     if (st) st.cam = null;
     if (st) for (const pg of st.pages) { pg.art = null; for (const p of pg.panels) for (const t of p.text) t.lay = null; }
@@ -344,6 +345,7 @@ const Story = (() => {
   function bbox(pts) { const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]); const x0 = Math.min(...xs), y0 = Math.min(...ys); return [x0, y0, Math.max(...xs) - x0, Math.max(...ys) - y0]; }
   function renderPage(pg) {
     if (pg.art) return;
+    settle(pg.panels.flatMap((p) => p.text));
     pg.art = pg.panels.map((p) => {
       // panels the guided view zooms into are painted at that zoom so they stay sharp
       const [bx, by, bw, bh] = bbox(p.at), zf = Math.min(2.4, zoomFor(p)), w = Math.max(8, Math.round(bw * view.s * zf)), h = Math.max(8, Math.round(bh * view.s * zf));
@@ -422,13 +424,56 @@ const Story = (() => {
       // a caption grows away from the corner of the page it sits nearest
       const w = L.tw + pad * 2, h = L.th + pad * 1.4;
       const ax = t.x + N.w / 2 > PW / 2 ? X(t.x + N.w) - w : X(t.x), ay = t.y + N.h / 2 > PH / 2 ? Y(t.y + N.h) - h : Y(t.y);
-      return { L, pad, x: clamp(ax, X(8), X(PW - 8) - w), y: clamp(ay, Y(8), Y(PH - 8) - h), w, h };
+      const o = t.off || [0, 0];
+      return { L, pad, x: clamp(ax + o[0], X(8), X(PW - 8) - w), y: clamp(ay + o[1], Y(8), Y(PH - 8) - h), w, h };
     }
     // the smallest oval round a text block has semi-axes √2 times its half-width and half-height
     const rx = L.tw / 2 * 1.36 + pad * 0.9, ry = L.th / 2 * 1.36 + pad * 0.75;
     // balloons grow out from their authored centre
-    const cx = clamp(X(t.x + N.w / 2), X(10) + rx, X(PW - 10) - rx), cy = clamp(Y(t.y + N.h / 2), Y(10) + ry, Y(PH - 10) - ry);
+    const o = t.off || [0, 0];
+    const cx = clamp(X(t.x + N.w / 2) + o[0], X(10) + rx, X(PW - 10) - rx), cy = clamp(Y(t.y + N.h / 2) + o[1], Y(10) + ry, Y(PH - 10) - ry);
     return { L, pad, rx, ry, cx, cy, x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 };
+  }
+  // The last word on layout: once every caption and balloon on a page has its size for this
+  // screen, any two that touch are nudged apart (sound effects stay put), so lettering never
+  // overlaps whatever the screen. Tails keep pointing at their speakers.
+  function settle(texts) {
+    for (const t of texts) t.off = null;
+    const items = texts.map((t) => {
+      if (t.k === 'sfx') { const w = t.t.length * (t.size || 56) * 0.52 * view.s, h = (t.size || 56) * 0.9 * view.s; return { t, fixed: true, x: X(t.x), y: Y(t.y) - h / 2, w, h }; }
+      const B = boxOf(t), oval = t.k !== 'cap' && t.k !== 'loc', m = oval ? 0.02 : 0, tag = t.who ? layout(t).fs * 0.75 : 0;
+      return { t, x: B.x + B.w * m, y: B.y + B.h * m - tag, w: B.w * (1 - 2 * m), h: B.h * (1 - 2 * m) + tag, ox: 0, oy: 0 };
+    });
+    const gap = 5 * dpr;
+    // in the guided view each panel fills the screen, so its lettering must stay on its panel
+    for (const it of items) {
+      const b0 = guided && it.t._p ? panelBox(it.t._p) : null, b = b0 ? { x: b0.x - 10, y: b0.y - 10, w: b0.w + 20, h: b0.h + 20 } : { x: 0, y: 0, w: PW, h: PH };
+      it.lo = [X(b.x + 6), Y(b.y + 6)]; it.hi = [Math.max(X(b.x + 6) + it.w, X(b.x + b.w - 6)), Math.max(Y(b.y + 6) + it.h, Y(b.y + b.h - 6))];
+    }
+    const shift = (it, dx, dy) => {
+      const nx = clamp(it.x + dx, it.lo[0], it.hi[0] - it.w), ny = clamp(it.y + dy, it.lo[1], it.hi[1] - it.h);
+      const mx = nx - it.x, my = ny - it.y; it.x = nx; it.y = ny; it.ox += mx; it.oy += my;
+      return Math.abs(mx) + Math.abs(my) > 0.5;
+    };
+    for (let pass = 0; pass < 60; pass++) {
+      let moved = false;
+      for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+        const a = items[i], b = items[j];
+        if (guided && a.t._p !== b.t._p) continue;
+        const px = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) + gap, py = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) + gap;
+        if (px <= 0 || py <= 0) continue;
+        // the later one moves; if it is pinned against the page edge the earlier one gives way
+        const order = b.fixed ? [a, b] : [b, a];
+        for (const [mv, other] of [order, [order[1], order[0]]]) {
+          if (mv.fixed) continue;
+          const dy = Math.sign(mv.y + mv.h / 2 - (other.y + other.h / 2)) || 1, dx = Math.sign(mv.x + mv.w / 2 - (other.x + other.w / 2)) || 1;
+          const tryV = () => shift(mv, 0, dy * py) || shift(mv, 0, -dy * py), tryH = () => shift(mv, dx * px, 0) || shift(mv, -dx * px, 0);
+          if (py <= px * 1.4 ? tryV() || tryH() : tryH() || tryV()) { moved = true; break; }
+        }
+      }
+      if (!moved) break;
+    }
+    for (const it of items) if (!it.fixed) it.t.off = [it.ox, it.oy];
   }
   // a tail whose tip would sit inside its own balloon is lengthened along the same heading
   function tailOf(t, B) {
@@ -661,16 +706,17 @@ const Story = (() => {
     const keep = { cv, ctx, dpr, view, guided, scr }, issues = [];
     cv = document.createElement('canvas'); ctx = cv.getContext('2d'); dpr = pr;
     const top = 52, bot = 18, sc = Math.min((vw - 24) / PW, (vh - top - bot) / PH);
-    view = { s: sc * dpr, x: 0, y: 0 }; guided = vh > vw * 1.05; scr = { W: vw, H: vh, top: 52, bot: guided ? 30 : 18 };
+    view = { s: sc * dpr, x: 0, y: 0 }; guided = vh > vw * 1.05 || sc < 0.6; scr = { W: vw, H: vh, top: 52, bot: guided ? 30 : 18 };
     const U = (v) => v / view.s;
     for (const id of STORY_ORDER) STORY[id].pages.forEach((pg, pi) => {
-      const boxes = [];
+      const boxes = [], copies = pg.panels.map((p) => (p.text || []).map((t0) => ({ ...t0, _p: p })));
+      settle(copies.flat());
       pg.panels.forEach((p, bi) => (p.text || []).forEach((t0, ti) => {
-        const t = { ...t0, _p: p }, where = `${id} p${pi + 1} panel ${bi + 1} "${t.t.slice(0, 28)}"`;
+        const t = copies[bi][ti], where = `${id} p${pi + 1} panel ${bi + 1} "${t.t.slice(0, 28)}"`;
         if (t.k === 'sfx') { const w = t.t.length * (t.size || 56) * 0.52, h = (t.size || 56) * 0.9; boxes.push({ where, x: t.x, y: t.y - h / 2, w, h, sfx: 1 }); if (t.x + w > PW + 10 || t.x < -10) issues.push(`${where}: sound effect runs off the page`); return; }
         const B = boxOf(t), bx = U(B.x), by = U(B.y), bw = U(B.w), bh = U(B.h);
         const N = nominal(t), mv = Math.hypot(bx + bw / 2 - (t.x + N.w / 2), by + bh / 2 - (t.y + N.h / 2)) - Math.max(0, Math.hypot(bw - N.w, bh - N.h) / 2);
-        if (mv > 30) issues.push(`${where}: ${t.k === 'cap' || t.k === 'loc' ? 'caption' : 'balloon'} pushed ${Math.round(mv)} units to stay on the page`);
+        if (mv > (guided ? 90 : 30)) issues.push(`${where}: ${t.k === 'cap' || t.k === 'loc' ? 'caption' : 'balloon'} pushed ${Math.round(mv)} units to stay on the page`);
         if (t.k === 'cap' || t.k === 'loc') { /* corner-anchored */ }
         else {
           // every line's corners must sit inside the oval
@@ -706,26 +752,3 @@ const Story = (() => {
     once(id, then) { if (STORY[id] && !seen[id]) start(id, then); else if (then) then(); },
   };
 })();
-
-// ---------- mission intel ----------
-// Major Voss briefs each sector: special lines on the story beats, a boss warning, otherwise a rotation.
-const STORY_INTEL = [
-  { 1: 'First contact. Keep them off the farm road and the survivors stay breathing.', 25: 'That transmission came from somewhere near here. Hold the valley and we can trace it.', 50: "Crane's place. Whatever is left of him is waiting at the end of the road.",
-    boss: 'Something big is moving through the corn. Concentrate your fire.',
-    lines: ['The corn hides them until the last second. Cover the bends.', 'Survivors spotted near the silos. Buy them time.', 'Fuel is short. Make every shot count.', 'They are drawn to the noise of the guns. Use that.', 'The farm roads meet here. Expect company from more than one side.', 'Laila knows these fields better than anyone. Trust her sight lines.', 'Kessler-Vane trucks used this road before the outbreak. Someone is still paying to keep it quiet.', 'Hold here and the next town gets another night.'] },
-  { 1: 'Blackwood. Stay on the paths. The ground here is not solid.', 25: "Okafor's last transmission came from the chapel tower. Keep it standing.", 50: 'The Grave Lord holds the old crypt. End it, and the rift should close.',
-    boss: 'The crypt doors are open. Whatever came out of them is heading your way.',
-    lines: ['The fog hides the crawlers. Watch the low ground.', 'Every grave you pass is a grave that might open.', 'The rift pulses when they mass. Hit them before it does.', 'Bats in the bell tower. Something spooked them.', 'Mausoleum doors have been forced from the inside.', 'The dead here are older and slower, but there are so many more of them.', 'Keep the lanterns lit. They hate the light.', 'Kessler-Vane cleaners were spotted on the cemetery road. Stay sharp.'] },
-  { 1: 'Station Seven is close. The cold slows them, but not enough.', 25: 'Okafor needs more time at the console. Hold the perimeter.', 50: 'The ice around Lazarus Two is cracking. Be ready when it walks.',
-    boss: 'Thermal scopes show something huge in the whiteout. Get ready.',
-    lines: ['Whiteout incoming. Trust your sight lines, not your eyes.', 'The frozen ones thaw as they walk. They speed up the closer they get.', 'Generators are failing. Keep the heaters on and the guns warm.', 'Something under the ice is moving with them.', 'Vane has eyes on this station. Every move we make, he is watching.', 'The cold keeps the strain sluggish. Use the time.', 'The supply drop is delayed by the storm. Spend wisely.', "Station Seven's antenna is our only link home. Defend it."] },
-  { 1: 'Black Bayou. Every infected on the planet is heading here.', 25: 'The horde is converging. This is the line.', 50: 'The hive is awake. Okafor goes in with the core on your signal. Hold the line.',
-    boss: 'The water is boiling. Something is coming up out of the bayou.',
-    lines: ['The water carries them faster than the roads. Watch the channels.', 'Bloaters in the reeds. Pop them early.', "The hive's pulse is getting louder. They are answering it.", 'Spores in the air. Masks on.', 'The shacks hide nests. Burn them out.', 'Laila has eyes on the treeline. Nothing gets close without her knowing.', "Okafor's core is charging. Buy her minutes.", 'Vane is broadcasting the hive call. They are not attacking anymore, they are being sent.'] },
-];
-function storyIntel(L) {
-  const I = STORY_INTEL[L.world] || STORY_INTEL[0], n = L.num;
-  if (I[n]) return I[n];
-  if (L.boss) return I.boss;
-  return I.lines[(n * 7 + L.world * 3) % I.lines.length];
-}

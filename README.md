@@ -148,6 +148,8 @@ The campaign is told in manga-style motion-comic cutscenes: inked panels with sc
 - **Chapter 3, White Silence:** Station Seven on the Frostfall ice, and Lazarus Two.
 - **Chapter 4, The Hive:** Black Bayou, the horde converging and the last stand, where Laila's one shot saves Okafor and opens the hive's heart.
 
+Every sector is part of the story. The 200 sectors form 40 operations of five missions each, and each operation has a purpose: rescue the Miller family, refill the safehouse's water, trace Okafor's signal, beat Vane's cleaners to the crypt files, keep Lazarus Two frozen, cut the hive's feeding channels. When a mission starts, the character in charge radios in with the reason for it. During the fight the squad calls out new zombie types, bosses, the final wave and a failing line, and Silas Vane cuts in on stolen channels. A win or loss ends with a word from the cast, and the level briefing shows the operation, the objective and who gave the order.
+
 Each world's intro plays when you first deploy there, and new chapters play after your first clear of sectors 25 and 50. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu. On a phone held upright, the camera follows one panel at a time so the lettering stays large.
 
 ### Controls
@@ -175,7 +177,8 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/menufx.js`: the animated main menu backdrop
 - `js/wonders.js`: the painted landmarks on the globe
 - `js/manga.js`, `js/scenes.js`: the manga art kit (screentones, speed lines, portraits) and every cutscene panel
-- `js/story.js`: the story script, the cutscene player and mission intel
+- `js/story.js`: the story script and the cutscene player
+- `js/missions.js`, `js/comms.js`: the 40 operations, the cast's radio lines, and the comms card that shows them in a mission
 - `js/audio.js`: synthesized sound effects, music and ambience
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play

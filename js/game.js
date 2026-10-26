@@ -149,6 +149,12 @@ function buildLevel(L) {
 // ============================================================
 // Game flow
 // ============================================================
+// a line over the radio, swapped for someone else's if that character cannot speak yet
+function sayLine(who, text, o) { if (speakerOK(S.L, who)) Comms.say(who, text, o); }
+function sayChatter(kind, o) {
+  const C = CHATTER[S.L.world] || CHATTER[0], list = (C[kind] || []).filter(([w]) => speakerOK(S.L, w));
+  if (list.length) { const [w, t] = list[(S.L.num * 7 + S.wave * 3 + kind.length) % list.length]; Comms.say(w, t, o); }
+}
 function startGame(index, save) {
   const L = getLevel(index);
   S.levelIndex = index; S.L = L; S.M = buildLevel(L);
@@ -168,8 +174,14 @@ function startGame(index, save) {
   $('#st-id').textContent = L.id;
   $('#st-name').textContent = L.name;
   resize();
+  Comms.clear();
+  S.mission = missionFor(L); S.saidHurt = false;
+  $('#st-name').textContent = `Op. ${S.mission.op.name} · ${S.mission.objective}`;
   if (save) applySave(save);
-  else showBanner(`${L.id} · ${L.name}`, `${WORLDS[L.world].name} · ${L.waves} waves${L.boss ? ' · Boss' : ''}`);
+  else {
+    showBanner(`${L.id} · ${L.name}`, `Operation ${S.mission.op.name} · ${S.mission.objective}`);
+    sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: 2.4 });
+  }
   checkpoint();
   buildShop(); renderInfo(); renderNextWave(); renderPowerbar(); updateHUD(true);
 }
@@ -233,6 +245,11 @@ function startWave() {
   showBanner(`Wave ${S.wave}`, sub);
   Sound.play(boss ? 'boss' : 'wave');
   if (fresh.length || boss) Sound.play('groan', W * 0.2);
+  // the squad calls out what is coming
+  if (boss) sayLine(...(BOSS_LINES[S.L.boss] || BOSS_LINES.juggernaut), { delay: 0.6 });
+  else if (fresh.length && THREAT_LINES[fresh[0]]) sayLine(...THREAT_LINES[fresh[0]], { delay: 0.8 });
+  else if (S.wave === S.L.waves) sayChatter('last', { delay: 0.8 });
+  else if (S.wave === Math.ceil(S.L.waves / 2)) sayChatter('mid', { delay: 1.2 });
   renderNextWave(); updateHUD(true);
 }
 
@@ -283,8 +300,12 @@ function victory() {
   if (unlocked.length) text = `New tower unlocked: ${unlocked.map((t) => TOWERS[t].name).join(', ')}.`;
   else if (!next) text = 'Every sector is secure. Replay levels to earn all the stars.';
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
-  else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id} ${next.name}.`;
+  else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id}, ${missionFor(next).objective.toLowerCase()}.`;
   if (S.storyNext) text += ' A new story chapter is ready.';
+  const m = S.mission;
+  const okWin = (C) => (C || []).filter(([w]) => speakerOK(S.L, w));
+  const pool = okWin((CHATTER[S.L.world] || CHATTER[0]).winAny);
+  S.endQuote = m && m.last && speakerOK(S.L, m.op.win[0]) ? m.op.win : pool[S.L.num % pool.length];
   showEnd(true, 'Sector secured', text, stars, reward, xp);
 }
 
@@ -297,6 +318,7 @@ function gameOver() {
   const xp = xpBonus(false);
   saveMeta();
   Sound.play('lose'); buzz([80, 60, 160]);
+  { const pool = ((CHATTER[S.L.world] || CHATTER[0]).lose || []).filter(([w]) => speakerOK(S.L, w)); S.endQuote = pool[S.L.num % pool.length]; }
   showEnd(false, 'Base overrun', `The horde broke through on wave ${S.wave} of ${S.L.waves}. Try a different mix of towers, unlock upgrades in the Armory, or pick up perks in the store.`, 0, reward, xp);
 }
 
@@ -315,6 +337,17 @@ function showEnd(won, title, text, stars, reward, xp) {
   if (xp > 0) setTimeout(() => Sound.play('xp'), 450 + stars * 150 + 150);
   $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1];
   $('#btn-retry').textContent = won ? 'Replay' : 'Try again';
+  // a character has the last word
+  const q = S.endQuote, box = $('#end-quote');
+  box.hidden = !q;
+  if (q) {
+    const cv = box.querySelector('canvas'), g = cv.getContext('2d');
+    g.clearRect(0, 0, cv.width, cv.height); g.drawImage(Comms.portrait(q[0]), 0, 0, cv.width, cv.height);
+    box.querySelector('b').textContent = (CAST[q[0]] || CAST.voss).name;
+    box.querySelector('span').textContent = q[1];
+  }
+  S.endQuote = null;
+  Comms.clear();
   $('#end-screen').hidden = false;
   renderInfo();
 }
@@ -400,6 +433,7 @@ function updateEnemy(e, dt) {
     floatText(`-${lost} ${lost === 1 ? 'life' : 'lives'}`, S.M.end.x, S.M.end.y - 40, '#e0675b', 16);
     Sound.play('leak', S.M.end.x); buzz(40); bumpStat('.stat-lives');
     if (S.lives > 0 && S.lives <= 5) Sound.play('lowlife');
+    if (!S.saidHurt && S.lives > 0 && S.lives <= S.maxLives * 0.4) { S.saidHurt = true; sayChatter('hurt'); }
     return;
   }
   placeOnPath(e);
@@ -1861,7 +1895,7 @@ function renderPowerbar() {
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
-function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); }
+function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
 
 function showMenu() {
   leaveGame();
@@ -2097,7 +2131,11 @@ function selectLevel(i) {
   if (L.boss) seen.push(L.boss);
   for (const type of seen) chips.append(zombieChip(type, ZOMBIES[type].name, FIRST_SEEN[type] === L.index));
   box.append(chips);
-  box.insertAdjacentHTML('beforeend', `<p class="ld-intel"><b>Voss</b>${storyIntel(L)}</p>`);
+  const m = missionFor(L), spk = speakerOK(L, m.who) ? m.who : 'voss';
+  const op = document.createElement('div'); op.className = 'ld-op';
+  op.innerHTML = `<span class="ld-op-name">Operation ${m.op.name} <i>${m.step + 1} / 5</i></span><span class="ld-op-goal">${m.objective}</span><div class="ld-op-quote"><canvas width="160" height="160" aria-hidden="true"></canvas><p><b>${(CAST[spk] || CAST.voss).name}</b>${m.line}</p></div>`;
+  op.querySelector('canvas').getContext('2d').drawImage(Comms.portrait(spk), 0, 0);
+  box.append(op);
   box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${Math.round(30 + 45 + L.index * 1.5)} coins.`}</p>`);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary ld-go'; go.textContent = st ? 'Replay mission' : 'Start mission';
   go.addEventListener('click', () => { Sound.init(); startGame(i); });
@@ -2459,6 +2497,8 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
   initWeather();
 }
 MenuFX.init($('#menu-fx'));
+Comms.init($('#stage'));
+Comms.setHold(() => S.paused || S.state !== 'playing' || Story.active);
 Story.init();
 LevelFX.init($('#level-fx'));
 new ResizeObserver(() => layoutLevels()).observe($('#level-grid'));

@@ -869,7 +869,46 @@ kbd {
 .chapter-card .cc-lock { position: absolute; left: 0; right: 0; top: 0; aspect-ratio: 16 / 9; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.85rem; color: #b9bdc0; text-align: center; padding: 0 16px; }
 @keyframes chapter-in { from { opacity: 0; transform: translateY(10px); } }
 @media (prefers-reduced-motion: reduce) { .chapter-card, .story-tag { animation: none; } }
-.ld-intel { margin: 8px 0 0; padding: 8px 10px; font-size: 0.88rem; line-height: 1.35; color: var(--text); background: rgba(16, 16, 16, 0.55); border-left: 3px solid var(--amber); }
-.ld-intel b { display: block; font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); }
 .story-count::before { display: none; }
 .chapter-card:disabled canvas { opacity: 0.18; filter: blur(3px) grayscale(1); }
+
+/* ---------- mission comms ---------- */
+.comms {
+  position: absolute; left: 10px; top: 10px; z-index: 4; display: flex; align-items: stretch; gap: 0;
+  width: min(380px, calc(100% - 20px)); background: #f2eee4; color: #101010; border: 3px solid #101010;
+  box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.55); cursor: pointer; overflow: hidden;
+  transform: translateX(calc(-100% - 20px)) rotate(-1.5deg); transition: transform 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+.comms.in { transform: translateX(0) rotate(-0.6deg); }
+.comms-face { width: 74px; height: 74px; flex: none; display: block; border-right: 3px solid #101010; background: #f2eee4; }
+.comms-body { padding: 6px 10px 8px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.comms-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.comms-name { font-family: var(--font-display); font-weight: 800; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; background: #101010; color: var(--amber); padding: 0 6px; }
+.comms-tag { font-family: var(--font-display); font-weight: 600; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6d6a63; }
+.comms-text { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1rem; line-height: 1.15; text-transform: uppercase; min-height: 2.3em; }
+.comms.radio { background: #e6efe7; }
+.comms.villain { background: #1a1212; color: #f2eee4; border-color: #e0453a; }
+.comms.villain .comms-face { border-color: #e0453a; }
+.comms.villain .comms-name { background: #e0453a; color: #101010; }
+.comms.villain .comms-tag { color: #c9a19a; }
+@media (max-width: 720px), (max-height: 520px) {
+  .comms { width: min(300px, calc(100% - 16px)); left: 8px; top: 8px; border-width: 2px; }
+  .comms-face { width: 56px; height: 56px; border-right-width: 2px; }
+  .comms-text { font-size: 0.85rem; }
+}
+@media (prefers-reduced-motion: reduce) { .comms { transition: none; } }
+
+.end-quote { display: flex; align-items: center; gap: 10px; margin: 4px auto 10px; max-width: 440px; text-align: left; background: #f2eee4; color: #101010; border: 3px solid #101010; box-shadow: 4px 5px 0 rgba(0,0,0,0.5); }
+.end-quote canvas { width: 64px; height: 64px; flex: none; border-right: 3px solid #101010; }
+.end-quote p { margin: 0; padding: 6px 10px 6px 0; font-family: var(--font-display); font-weight: 700; text-transform: uppercase; line-height: 1.15; }
+.end-quote b { display: block; font-size: 0.75rem; letter-spacing: 0.1em; color: #8a5a1a; }
+
+.ld-op { margin: 8px 0 0; padding: 8px 10px; background: rgba(16, 16, 16, 0.6); border-left: 3px solid var(--amber); display: flex; flex-direction: column; gap: 4px; }
+.ld-op-name { font-family: var(--font-display); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); }
+.ld-op-name i { font-style: normal; color: var(--muted); margin-left: 6px; }
+.ld-op-goal { font-family: var(--font-display); font-weight: 800; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text); }
+.ld-op-quote { display: flex; gap: 8px; align-items: flex-start; }
+.ld-op-quote canvas { width: 44px; height: 44px; flex: none; border: 2px solid #101010; background: #f2eee4; }
+.ld-op-quote p { margin: 0; font-size: 0.86rem; line-height: 1.3; color: var(--text); }
+.ld-op-quote b { display: block; font-family: var(--font-display); font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); }
+.end-quote span { color: #101010; font-size: 1rem; }
