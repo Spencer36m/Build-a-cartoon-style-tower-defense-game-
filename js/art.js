@@ -160,6 +160,7 @@ function tracePts(c, pts) { c.beginPath(); pts.forEach((q, i) => (i ? c.lineTo(q
 // Background
 // ============================================================
 function renderBackground(c, M, s) {
+  if (typeof TERRAIN !== 'undefined') return TERRAIN.render(c, M, s);
   const world = M.world, L = M.L;
   c.setTransform(s, 0, 0, s, 0, 0);
   c.imageSmoothingEnabled = true;
@@ -436,6 +437,7 @@ function drawDecor(c, d, world) {
 }
 
 function drawSafehouse(c, x, y, t, hit, night) {
+  if (typeof TERRAIN !== 'undefined') return TERRAIN.safehouse(c, x, y, t, hit);
   c.save();
   c.translate(x, y);
   if (hit > 0) c.translate(Math.sin(hit * 60) * 2 * (hit / 0.5), 0);

@@ -172,7 +172,8 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `index.html`, `style.css`: menus, HUD and the tactical interface
 - `js/data.js`: worlds, zombies, towers, store items and difficulty
 - `js/levels.js`: the level generator (roads, water, scenery, waves) for all 200 levels
-- `js/art.js`: realistic top-down drawing of terrain, zombies, towers and effects
+- `js/art.js`: realistic top-down drawing of zombies, towers and effects
+- `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and detailed props (leafy trees, pines, barns, cabins with snow and icicles, cars, graves, crypts) plus the safehouse bunker
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
 - `js/wonders.js`: the painted landmarks on the globe
