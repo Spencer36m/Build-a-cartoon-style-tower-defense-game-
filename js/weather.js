@@ -345,14 +345,34 @@ const WEATHER = (() => {
       }
     }
   }
-  // chimneys smoke, and the smoke leans with the wind
+  // chimney smoke: only some houses have a fire going, and each fire is lit now and then rather than
+  // all game, so smoke starts up from one chimney, trails away, and later rises from another
+  function fireFor(s) {
+    if (s.fire !== undefined) return s.fire;
+    const r = mulberry32(L.look.seed * 31 + Math.round(s.x) * 977 + Math.round(s.y) * 131);
+    const anyFires = mulberry32(L.look.seed + 555)() < 0.7;
+    s.fire = anyFires && r() < 0.55 ? { period: 55 + r() * 50, on: 0.3 + r() * 0.3, phase: r() } : null;
+    return s.fire;
+  }
+  // how strongly a fire is smoking at a given moment, easing in and out over a few seconds
+  function burning(f, at) {
+    const p = (((at / f.period + f.phase) % 1) + 1) % 1, fade = 5 / f.period;
+    return p > f.on ? 0 : Math.min(1, p / fade, (f.on - p) / fade);
+  }
+  // the smoke leans with the wind; each puff keeps the strength of the moment it left the chimney,
+  // so when a fire dies down the last of its smoke still drifts away
   function drawSmoke(c, t) {
     if (!M || !M.smoke || !M.smoke.length) return;
     const wa = windA + Math.sin(time * 0.05) * 0.3, wx = Math.cos(wa) * (0.3 + wind), puff = dot('wxPuff', 'rgba(200,200,205,0.55)', 'rgba(200,200,205,0)');
-    for (const s of M.smoke) for (let i = 0; i < 7; i++) {
-      const k = ((t * 0.22 + i / 7) % 1), r = 3 + k * 11;
-      c.globalAlpha = (k < 0.12 ? k / 0.12 : 1) * (1 - k) * 0.75;
-      c.drawImage(puff, s.x + wx * k * 40 + Math.sin(t + i) * 2 - r, s.y - k * 34 - r, r * 2, r * 2);
+    for (const s of M.smoke) {
+      const f = fireFor(s);
+      if (!f) continue;
+      for (let i = 0; i < 7; i++) {
+        const k = (t * 0.22 + i / 7) % 1, r = 3 + k * 11, b = burning(f, t - k / 0.22);
+        if (b < 0.02) continue;
+        c.globalAlpha = (k < 0.12 ? k / 0.12 : 1) * (1 - k) * 0.75 * b;
+        c.drawImage(puff, s.x + wx * k * 40 + Math.sin(t + i) * 2 - r, s.y - k * 34 - r, r * 2, r * 2);
+      }
     }
     c.globalAlpha = 1;
   }

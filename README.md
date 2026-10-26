@@ -186,7 +186,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/art.js`: realistic top-down drawing of zombies, towers and effects
 - `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and props (leafy trees, pines, cars, graves, rocks)
 - `js/buildings.js`: buildings in a three-quarter view with textured boards, logs, clapboard, stone, shingles and tin: the red barn, the snowed-in log cabin, the bayou shack on stilts, the stone crypt, and the sandbagged safehouse bunker
-- `js/weather.js`: the weather forecast and its effects: rain, storms and lightning, tornadoes, dust storms, fog, mist and fireflies, snow and blizzards, ash storms, acid rain, wet roads, chimney smoke
+- `js/weather.js`: the weather forecast and its effects: rain, storms and lightning, tornadoes, dust storms, fog, mist and fireflies, snow and blizzards, ash storms, acid rain, wet roads, and chimney smoke that rises now and then from the houses with a fire going
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
 - `js/wonders.js`: the painted landmarks on the globe
