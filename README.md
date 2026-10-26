@@ -48,7 +48,7 @@ The app is landscape-only, hides the status bar, bundles its fonts, and declares
 
 ### Worlds
 
-Each world has 50 levels. Every level has its own road layout, scenery, time of day and weather. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and level 50 is the world boss. Beating a level unlocks the next, and clearing level 50 unlocks the next world.
+Each world has 50 levels. Every level has its own road layout, scenery and time of day. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and level 50 is the world boss. Beating a level unlocks the next, and clearing level 50 unlocks the next world.
 
 | World | New zombies | Boss |
 | --- | --- | --- |
@@ -60,6 +60,17 @@ Each world has 50 levels. Every level has its own road layout, scenery, time of 
 Zombies from earlier worlds keep coming back in later ones.
 
 The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
+
+### Weather
+
+The weather changes while you play, and each level runs its own forecast (the mission briefing shows what is coming). A shower builds into a thunderstorm, the storm can spin up a tornado that tears across the map, then it passes and the sky clears. The roads get wet and shine in the rain and dry out again afterwards.
+
+- **Farmland:** rain, thunderstorms with lightning, tornadoes, dust storms with tumbleweeds, fog.
+- **Cemetery:** fog, rain, thunderstorms, and ash storms with embers and a burning horizon.
+- **Tundra:** snow, blizzards and whiteouts, freezing fog.
+- **Bayou:** swamp mist with fireflies, rain, thunderstorms, acid rain.
+
+A notice slides in when the weather turns, the squad comments on the big ones over the radio, and the ambience follows the sky (rain, wind, a tornado's roar, thunder after each strike). Weather is for looks and atmosphere; it does not change how towers or zombies behave.
 
 ### Zombies
 
@@ -134,7 +145,7 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 
 Every sound is synthesized live with Web Audio, so the game ships no audio files. Weapons, upgrades, menus, the store and the Armory all have their own sounds, and every kind of zombie groans and dies differently (bones rattle, crows caw, wraiths wail, bloaters pop, bosses roar). Effects pan left or right with where they happen on the map.
 
-The music follows the action: a menu theme, a calm arrangement between waves, drums once a wave is on, and a faster boss theme, in a different key for each world. Ambience follows the level's weather and time of day: rain, wind, crickets at night, owls in the cemetery, frogs in the bayou.
+The music follows the action: a menu theme, a calm arrangement between waves, drums once a wave is on, and a faster boss theme, in a different key for each world. Ambience follows the weather as it changes and the time of day: rain, wind, thunder, a tornado's roar, crickets at night, owls in the cemetery, frogs in the bayou.
 
 **Sound** in the top bar mutes everything; **Music** on the main menu and the pause screen turns off just the music. On iPhone, the ring/silent switch also mutes the game, as with most games.
 
@@ -173,7 +184,9 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/data.js`: worlds, zombies, towers, store items and difficulty
 - `js/levels.js`: the level generator (roads, water, scenery, waves) for all 200 levels
 - `js/art.js`: realistic top-down drawing of zombies, towers and effects
-- `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and detailed props (leafy trees, pines, barns, cabins with snow and icicles, cars, graves, crypts) plus the safehouse bunker
+- `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and props (leafy trees, pines, cars, graves, rocks)
+- `js/buildings.js`: buildings in a three-quarter view with textured boards, logs, clapboard, stone, shingles and tin: the red barn, the snowed-in log cabin, the bayou shack on stilts, the stone crypt, and the sandbagged safehouse bunker
+- `js/weather.js`: the weather forecast and its effects: rain, storms and lightning, tornadoes, dust storms, fog, mist and fireflies, snow and blizzards, ash storms, acid rain, wet roads, chimney smoke
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
 - `js/wonders.js`: the painted landmarks on the globe

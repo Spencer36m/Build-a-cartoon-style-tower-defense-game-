@@ -436,8 +436,8 @@ function drawDecor(c, d, world) {
   c.restore();
 }
 
-function drawSafehouse(c, x, y, t, hit, night) {
-  if (typeof TERRAIN !== 'undefined') return TERRAIN.safehouse(c, x, y, t, hit);
+function drawSafehouse(c, x, y, t, hit, night, gap) {
+  if (typeof BUILDINGS !== 'undefined') return BUILDINGS.safehouse(c, x, y, t, hit, gap);
   c.save();
   c.translate(x, y);
   if (hit > 0) c.translate(Math.sin(hit * 60) * 2 * (hit / 0.5), 0);

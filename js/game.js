@@ -112,6 +112,8 @@ function completePath(main, points) {
 }
 const tileCenter = ([c, r]) => ({ x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 });
 
+// the direction the road arrives at the safehouse from, so its ring of sandbags opens that way
+function houseGap(M) { const sg = M.paths[0].segs, s = sg[sg.length - 1]; return Math.atan2(-s.dy, -s.dx); }
 function buildLevel(L) {
   const world = WORLDS[L.world];
   const main = L.paths[0];
@@ -132,6 +134,19 @@ function buildLevel(L) {
   }
   for (const d of L.decor) grid[d.r * COLS + d.c] = 2;
   const end = paths[0].pts[paths[0].pts.length - 1];
+  // buildings spread over a free tile beside them when there is one, so they can be drawn full size
+  const endC = Math.floor(end.x / TILE), endR = Math.floor(end.y / TILE);
+  const decor = L.decor.map((d) => {
+    if (!BUILDING_KINDS.has(d.kind)) return d;
+    for (const dc of d.seed % 2 ? [1, -1] : [-1, 1]) {
+      const c2 = d.c + dc;
+      if (c2 < 0 || c2 >= COLS || grid[d.r * COLS + c2] !== 0) continue;
+      if (Math.abs(c2 - endC) <= 1 && Math.abs(d.r - endR) <= 1) continue;
+      grid[d.r * COLS + c2] = 2;
+      return { ...d, wide: true, x: (Math.min(d.c, c2) + 1) * TILE, y: d.r * TILE + TILE / 2 };
+    }
+    return { ...d, y: d.r * TILE + TILE / 2, x: d.c * TILE + TILE / 2 };
+  });
   // Flyers shadow the road but cut its corners, so they are quick yet still pass the defences.
   const flights = [];
   for (const p of paths) {
@@ -143,7 +158,7 @@ function buildLevel(L) {
       flights.push(pathFromPx(pts));
     }
   }
-  return { L, world, grid, paths, flights, decor: L.decor, end, groundTex: null };
+  return { L, world, grid, paths, flights, decor, end, groundTex: null, smoke: [], glows: [] };
 }
 
 // ============================================================
@@ -206,7 +221,12 @@ function applySave(sv) {
   const num = (v, d) => (Number.isFinite(v) ? v : d);
   S.lives = num(sv.lives, S.lives); S.cash = num(sv.cash, S.cash); S.wave = clamp(num(sv.wave, 0), 0, S.L.waves - 1);
   for (const t of sv.towers) {
-    if (!TOWERS[t.type] || !canPlaceAt(t.type, t.col, t.row)) continue;
+    if (!TOWERS[t.type]) continue;
+    if (!canPlaceAt(t.type, t.col, t.row)) {
+      // a building has since spread onto this tile: hand the tower's cost back rather than lose it
+      if (S.M.grid[t.row * COLS + t.col] === 2) S.cash += num(t.spent, TOWERS[t.type].cost);
+      continue;
+    }
     const tw = makeTower(t.type, t.col, t.row);
     // older saves stored a single upgrade level
     const tiers = Array.isArray(t.tiers) ? t.tiers.map((n) => clamp(n | 0, 0, 5)) : [Math.min(FREE_TIER, t.level | 0), 0, 0];
@@ -1303,41 +1323,13 @@ const TIME_LIGHT = {
   dusk:  { tint: 'rgba(130,60,40,0.22)', dark: 0.25, glow: 0.75 },
   night: { tint: 'rgba(10,18,40,0.4)', dark: 0.32, glow: 1 },
 };
+// the sky itself lives in weather.js; the game hands it a way to talk, scorch the ground and shake
 function initWeather() {
-  S.weather = [];
-  const w = S.L.look.weather;
-  const n = w === 'rain' ? 140 : w === 'snow' ? 110 : w === 'fog' || w === 'mist' ? 7 : 0;
-  for (let i = 0; i < n; i++) S.weather.push({ x: rand(0, W), y: rand(0, H), s: rand(0.6, 1.4), p: rand(0, TAU) });
-}
-function updateWeather(dt) {
-  const w = S.L.look.weather;
-  for (const q of S.weather) {
-    if (w === 'rain') { q.x -= 120 * dt * q.s; q.y += 620 * dt * q.s; }
-    else if (w === 'snow') { q.x += Math.sin(S.anim + q.p) * 20 * dt; q.y += 40 * dt * q.s; }
-    else { q.x += 12 * dt * q.s; }
-    if (q.y > H + 10) { q.y = -10; q.x = rand(0, W + 100); }
-    if (q.x < -120) q.x = W + 100;
-    if (q.x > W + 160) q.x = -150;
-  }
-}
-function drawWeather(c) {
-  const w = S.L.look.weather;
-  if (w === 'rain') {
-    c.strokeStyle = 'rgba(190,205,220,0.35)'; c.lineWidth = 1;
-    c.beginPath();
-    for (const q of S.weather) { c.moveTo(q.x, q.y); c.lineTo(q.x + 3 * q.s, q.y - 14 * q.s); }
-    c.stroke();
-  } else if (w === 'snow') {
-    c.fillStyle = 'rgba(255,255,255,0.8)';
-    for (const q of S.weather) { c.beginPath(); c.arc(q.x, q.y, 1.2 * q.s, 0, TAU); c.fill(); }
-  } else if (w === 'fog' || w === 'mist') {
-    const col = w === 'mist' ? '170,190,120' : '200,205,210';
-    for (const q of S.weather) {
-      const r = 160 * q.s;
-      c.fillStyle = radial(c, q.x, q.y, r, `rgba(${col},0.22)`, `rgba(${col},0)`, 0, 0);
-      c.fillRect(q.x - r, q.y - r, r * 2, r * 2);
-    }
-  }
+  WEATHER.start(S.M, S.L, {
+    say: ([who, text]) => { if (S.state === 'playing' && !Comms.busy) sayLine(who, text, { tag: 'WEATHER' }); },
+    strike: (x, y) => { S.decals.push({ kind: 'scorch', x, y, r: 9, life: 14, max: 14, seed: Math.random() * 1000 }); S.shake = Math.max(S.shake, 3); },
+    shake: (v) => { S.shake = Math.max(S.shake, v); },
+  });
 }
 
 // ============================================================
@@ -1464,6 +1456,7 @@ function render() {
     for (let i = 0; i < 6; i++) { const a = rng() * TAU, dd = d.r * (0.9 + rng() * 0.6); circle(c, d.x + Math.cos(a) * dd, d.y + Math.sin(a) * dd, d.r * (0.1 + rng() * 0.15)); c.fill(); }
     c.restore();
   }
+  WEATHER.drawGround(c);
   // hazard chevrons where the horde comes in
   for (const p of S.M.paths) {
     const s = p.segs[0], ang = Math.atan2(s.dy, s.dx);
@@ -1534,12 +1527,14 @@ function render() {
       if (u.tw === S.selected) { c.save(); c.strokeStyle = `rgba(227,168,62,${0.6 + Math.sin(t * 6) * 0.3})`; c.lineWidth = 1.5; c.strokeRect(u.tw.x - 22, u.tw.y - 22, 44, 44); c.restore(); }
     } else if (u.e) drawZombie(c, u.e, t, lights);
     else {
-      drawSafehouse(c, S.M.end.x, S.M.end.y, t, S.houseHit);
+      drawSafehouse(c, S.M.end.x, S.M.end.y, t, S.houseHit, false, houseGap(S.M));
       lights.push({ x: S.M.end.x, y: S.M.end.y, r: 70, color: '255,210,140', a: 0.3 });
     }
   }
   for (const p of S.projectiles) drawProjectile(c, p, lights);
   for (const cr of S.crates) drawCrate(c, cr);
+  WEATHER.drawSmoke(c, t);
+  for (const g of S.M.glows) lights.push(g);
   // air layer
   for (const e of S.enemies) if (e.fly) drawZombie(c, e, t, lights);
   for (const tw of S.towers) if (AIRCRAFT[tw.type]) drawAircraft(c, tw, t, lights);
@@ -1555,13 +1550,13 @@ function render() {
   c.save();
   c.globalCompositeOperation = 'lighter';
   for (const l of lights) {
-    const a = l.a * look.glow;
+    const a = l.a * Math.min(1.25, look.glow + WEATHER.dark * 1.6);
     if (a < 0.02) continue;
     c.fillStyle = radial(c, l.x, l.y, l.r, `rgba(${l.color},${a})`, `rgba(${l.color},0)`, 0, 0);
     c.fillRect(l.x - l.r, l.y - l.r, l.r * 2, l.r * 2);
   }
   c.restore();
-  drawWeather(c);
+  WEATHER.drawSky(c, look.glow);
   if (S.freezeFlash > 0) { c.fillStyle = `rgba(190,230,255,${S.freezeFlash * 0.5})`; c.fillRect(-20, -20, W + 40, H + 40); }
   if (S.leakFlash > 0) {
     c.save(); c.globalAlpha = S.leakFlash;
@@ -1636,7 +1631,7 @@ function frame(now) {
     S.leakFlash = Math.max(0, S.leakFlash - dt);
     S.freezeFlash = Math.max(0, S.freezeFlash - dt);
     if (S.banner) { S.banner.t += dt; if (S.banner.t >= S.banner.dur) S.banner = null; }
-    if (S.L) updateWeather(dt);
+    if (S.L) WEATHER.update(dt, S.state === 'playing');
   }
   if (S.state !== 'menu') render();
   updateHUD();
@@ -2113,7 +2108,7 @@ function selectLevel(i) {
   const c = cv.getContext('2d');
   renderBackground(c, M, 480 / W);
   c.setTransform(480 / W, 0, 0, 480 / W, 0, 0);
-  drawSafehouse(c, M.end.x, M.end.y, 0, 0);
+  drawSafehouse(c, M.end.x, M.end.y, 0, 0, false, houseGap(M));
   const light = TIME_LIGHT[L.look.time];
   if (light.tint) { c.fillStyle = light.tint; c.fillRect(0, 0, W, H); }
   const mapBox = document.createElement('div'); mapBox.className = 'ld-map';
@@ -2121,7 +2116,7 @@ function selectLevel(i) {
   const stamp = L.boss ? (L.boss === 'juggernaut' ? 'Elite' : 'Boss') : st ? 'Cleared' : 'Active';
   mapBox.insertAdjacentHTML('beforeend', `<span class="ld-stamp ${stamp.toLowerCase()}">${stamp}</span>`);
   box.append(mapBox);
-  const tags = [`${L.waves} waves`, L.look.time, L.look.weather === 'clear' ? 'clear skies' : L.look.weather];
+  const tags = [`${L.waves} waves`, L.look.time, WEATHER.forecast(L)];
   if (L.paths.length > 1) tags.push('2 entrances');
   if (L.water.some((v) => v)) tags.push('water');
   if (L.boss) tags.push(L.boss === 'juggernaut' ? 'elite' : 'boss');

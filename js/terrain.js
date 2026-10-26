@@ -518,77 +518,6 @@ const TERRAIN = (() => {
     if (mossy || (!snow && rng() < 0.6)) { c.fillStyle = 'rgba(110,130,60,0.6)'; for (let i = 0; i < 8; i++) { const p = pts[Math.floor(rng() * n)]; circle(c, p[0] * (0.5 + rng() * 0.4), p[1] * (0.5 + rng() * 0.4), 0.8 + rng() * 1.4); c.fill(); } }
     if (snow) { c.fillStyle = 'rgba(248,251,255,0.95)'; polyPath(c, [top, pts[Math.floor(n * 0.55)], pts[Math.floor(n * 0.7)], pts[Math.floor(n * 0.85)]]); c.fill(); c.fillStyle = 'rgba(200,215,230,0.6)'; ellipse(c, top[0] + 2, top[1] + 2, 3, 1.5); c.fill(); }
   }
-  // a pitched roof seen from above: two slopes split at the ridge, covered in shingles or tin
-  function roof(c, w, h, o, rng) {
-    const { col, kind = 'shingle', snow = false, holes = 0, moss = 0 } = o;
-    softShadow(c, () => { c.beginPath(); c.rect(-w / 2, -h / 2, w, h); }, 5, 7, 6, 'rgba(0,0,0,0.55)');
-    // walls just showing under the eaves
-    c.fillStyle = shade(col, -0.55); c.fillRect(-w / 2 - 1, -h / 2 - 1, w + 2, h + 2);
-    for (const sd of [-1, 1]) {
-      const y0 = sd < 0 ? -h / 2 : 0, lit = sd < 0;
-      c.save(); c.beginPath(); c.rect(-w / 2, y0, w, h / 2); c.clip();
-      c.fillStyle = linear(c, 0, y0, 0, y0 + h / 2, lit ? [[0, shade(col, 0.1)], [1, shade(col, 0.3)]] : [[0, shade(col, -0.42)], [1, shade(col, -0.28)]]);
-      c.fillRect(-w / 2, y0, w, h / 2);
-      if (kind === 'shingle') {
-        for (let yy = y0 + 1; yy < y0 + h / 2; yy += 2.6) {
-          const row = Math.round(yy / 2.6);
-          for (let xx = -w / 2 + (row % 2 ? 1.6 : 0); xx < w / 2; xx += 3.2) { c.fillStyle = shade(col, (lit ? 0.1 : -0.25) + (rng() - 0.5) * 0.22); c.fillRect(xx, yy, 3, 2.2); }
-          c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(-w / 2, yy + 2.2, w, 0.4);
-        }
-      } else if (kind === 'tin') {
-        for (let xx = -w / 2; xx < w / 2; xx += 2.2) { c.fillStyle = (Math.round(xx / 2.2) % 2) ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.18)'; c.fillRect(xx, y0, 1.1, h / 2); }
-        // rust blooms from the nail lines and runs down the corrugations
-        for (let i = 0; i < 5; i++) {
-          const sx = -w / 2 + rng() * w, sy = y0 + rng() * h / 2, sr = 2 + rng() * 4;
-          c.fillStyle = radial(c, sx, sy, sr * 1.6, rgba('#8a4a22', 0.45), rgba('#8a4a22', 0), 0, 0); ellipse(c, sx, sy, sr * 1.6, sr, 0); c.fill();
-          c.fillStyle = rgba('#6a3418', 0.25); c.fillRect(sx - 0.5, sy, 1, h * 0.18);
-        }
-        c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 0.4; for (let xx = -w / 2 + 8; xx < w / 2; xx += 9) { c.beginPath(); c.moveTo(xx, y0); c.lineTo(xx + 0.4, y0 + h / 2); c.stroke(); }
-      } else if (kind === 'slab') {
-        for (let yy = y0; yy < y0 + h / 2; yy += 5) for (let xx = -w / 2 + ((yy / 5) % 2 ? 3 : 0); xx < w / 2; xx += 7) { c.fillStyle = shade(col, (lit ? 0.08 : -0.22) + (rng() - 0.5) * 0.15); c.fillRect(xx + 0.3, yy + 0.3, 6.4, 4.4); }
-      }
-      // weathering streaks running down the slope
-      c.fillStyle = 'rgba(0,0,0,0.12)'; for (let i = 0; i < 6; i++) { const sx = -w / 2 + rng() * w; c.fillRect(sx, y0, 1 + rng() * 2, h / 2); }
-      if (moss) { c.fillStyle = 'rgba(90,110,50,0.5)'; for (let i = 0; i < moss * 8; i++) { ellipse(c, -w / 2 + rng() * w, y0 + rng() * h / 2, 1.5 + rng() * 3, 1 + rng() * 2); c.fill(); } }
-      if (snow) {
-        // the cover thins towards the eaves, where the roof shows through in a ragged line
-        const eave = sd < 0 ? y0 : y0 + h / 2, inner = sd < 0 ? y0 + h / 2 : y0;
-        c.beginPath(); c.moveTo(-w / 2 + 1.5, inner);
-        for (let xx = -w / 2 + 1.5; xx <= w / 2 - 1.5; xx += 2.5) c.lineTo(xx, eave - sd * (1.6 + rng() * 2.2));
-        c.lineTo(w / 2 - 1.5, inner); c.closePath();
-        c.fillStyle = linear(c, 0, inner, 0, eave, lit ? [[0, '#fbfdff'], [1, '#e6eef6']] : [[0, '#cfdae6'], [1, '#b4c3d4']]); c.fill();
-        c.fillStyle = lit ? 'rgba(200,214,230,0.5)' : 'rgba(150,170,195,0.45)';
-        for (let i = 0; i < 5; i++) { ellipse(c, -w / 2 + 3 + rng() * (w - 6), y0 + h / 4 + (rng() - 0.5) * h * 0.2, 2 + rng() * 4, 0.6 + rng() * 0.6, 0); c.fill(); }
-        // icicles hanging off the shaded eave
-        if (!lit) { c.fillStyle = 'rgba(225,238,250,0.9)'; for (let xx = -w / 2 + 2; xx < w / 2 - 2; xx += 2.5 + rng() * 2) c.fillRect(xx, y0 + h / 2 - 1.4, 0.8, 1.4); }
-      }
-      c.restore();
-    }
-    // the ridge cap, the eave lines and a few dark holes where the roof has fallen in
-    c.fillStyle = shade(col, -0.45); c.fillRect(-w / 2, -1, w, 2); c.fillStyle = 'rgba(255,255,255,0.2)'; c.fillRect(-w / 2, -1, w, 0.6);
-    c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.8; c.strokeRect(-w / 2, -h / 2, w, h);
-    for (let i = 0; i < holes; i++) {
-      const hx = (rng() - 0.5) * w * 0.6, hy = (rng() < 0.5 ? -1 : 1) * h * (0.15 + rng() * 0.2), hr = 2.5 + rng() * 3.5;
-      polyPath(c, Array.from({ length: 7 }, (_, j) => { const a = j / 7 * TAU; return [hx + Math.cos(a) * hr * (0.7 + rng() * 0.5), hy + Math.sin(a) * hr * 0.7 * (0.7 + rng() * 0.5)]; }));
-      c.fillStyle = '#1a140e'; c.fill();
-      c.save(); c.clip();
-      c.fillStyle = 'rgba(120,96,64,0.5)'; for (let k = 0; k < 4; k++) { ellipse(c, hx + (rng() - 0.5) * hr, hy + (rng() - 0.5) * hr * 0.6, 1 + rng() * 1.5, 0.6 + rng(), rng() * 3); c.fill(); }
-      c.fillStyle = '#6a5034'; for (let k = -1; k <= 1; k++) c.fillRect(hx + k * hr * 0.6 - 0.6, hy - hr, 1.2, hr * 2);
-      c.restore();
-      // the torn edge of the sheeting curls up and catches the light
-      c.strokeStyle = 'rgba(255,240,220,0.35)'; c.lineWidth = 0.6; c.stroke();
-    }
-  }
-  function yard(c, w, h, rng, snow) {
-    const g = c;
-    for (let i = 0; i < 9; i++) { ellipse(g, (rng() - 0.5) * w * 0.9, (rng() - 0.5) * h * 0.9, w * (0.3 + rng() * 0.25), h * (0.3 + rng() * 0.25), rng() * 3); g.fillStyle = snow ? 'rgba(150,160,170,0.1)' : 'rgba(90,70,44,0.13)'; g.fill(); }
-  }
-  function chimney(c, x, y, snow) {
-    softShadow(c, () => { c.beginPath(); c.rect(x - 2.5, y - 2.5, 5, 5); }, 3, 4, 2, 'rgba(0,0,0,0.55)');
-    c.fillStyle = linear(c, x - 2.5, y - 2.5, x + 2.5, y + 2.5, [[0, '#8a5040'], [1, '#4a2a20']]); c.fillRect(x - 2.5, y - 2.5, 5, 5);
-    c.fillStyle = '#140e0a'; c.fillRect(x - 1.4, y - 1.4, 2.8, 2.8);
-    if (snow) { c.fillStyle = 'rgba(250,252,255,0.9)'; c.fillRect(x - 2.5, y - 2.5, 5, 1.2); }
-  }
   function car(c, rng) {
     const kinds = [['#6d2a24', 'sedan'], ['#3f4f5f', 'sedan'], ['#7d7462', 'pickup'], ['#2f3a2a', 'pickup'], ['#8a8a86', 'sedan'], ['#c8b070', 'sedan']];
     const [col, kind] = kinds[Math.floor(rng() * kinds.length)];
@@ -679,17 +608,6 @@ const TERRAIN = (() => {
     }
     if (rng() < 0.3) { c.fillStyle = ['#a83a40', '#e8e0e0', '#8a4aa0'][Math.floor(rng() * 3)]; for (let i = 0; i < 3; i++) { circle(c, -3 + i * 2.5, -3, 0.9); c.fill(); } }
   }
-  function crypt(c, rng) {
-    const w = 30, h = 26;
-    softShadow(c, () => { c.beginPath(); c.rect(-w / 2, -h / 2, w, h + 6); }, 6, 9, 6, 'rgba(0,0,0,0.6)');
-    // steps and the doorway at the front
-    c.fillStyle = '#5a5854'; c.fillRect(-7, h / 2, 14, 6); c.fillStyle = '#6e6c66'; c.fillRect(-6, h / 2, 12, 2.5); c.fillStyle = '#4a4844'; c.fillRect(-6, h / 2 + 3.3, 12, 2.5);
-    roof(c, w, h, { col: '#7a786f', kind: 'slab', moss: 2 }, rng);
-    // a carved cross on the ridge and stone urns at the corners
-    c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(-1.4, -9, 2.8, 18); c.fillRect(-5, -1.4, 10, 2.8);
-    c.fillStyle = '#a8a69c'; c.fillRect(-1, -9.4, 2, 18); c.fillRect(-4.6, -1.8, 9.2, 2);
-    for (const [ux, uy] of [[-w / 2, -h / 2], [w / 2, -h / 2], [-w / 2, h / 2], [w / 2, h / 2]]) { circle(c, ux, uy, 2.6); c.fillStyle = radial(c, ux, uy, 2.6, '#a8a69c', '#4a4844'); c.fill(); }
-  }
   function log(c, rng, snow) {
     softShadow(c, () => { c.beginPath(); c.roundRect(-16, -5, 32, 10, 5); }, 3, 5, 3, 'rgba(0,0,0,0.5)');
     c.beginPath(); c.roundRect(-16, -5, 32, 10, 5); c.fillStyle = linear(c, 0, -5, 0, 5, [[0, '#8a6a4a'], [0.5, '#5e4630'], [1, '#33261a']]); c.fill();
@@ -721,34 +639,17 @@ const TERRAIN = (() => {
     }
   }
 
-  // ============================================================ the safehouse
-  function safehouse(c, x, y, t, hit) {
-    c.save(); c.translate(x, y);
-    if (hit > 0) c.translate(Math.sin(hit * 60) * 2 * (hit / 0.5), 0);
-    softShadow(c, () => { c.beginPath(); c.ellipse(0, 0, 30, 26, 0, 0, TAU); }, 4, 6, 8, 'rgba(0,0,0,0.5)');
-    // packed dirt yard inside the ring
-    c.fillStyle = radial(c, 0, 0, 28, '#6e5a40', '#4a3a28', 0, 0); c.beginPath(); c.ellipse(0, 0, 27, 23, 0, 0, TAU); c.fill();
-    c.save(); c.scale(1, 0.86); sandbags(c, 27, 16); c.restore();
-    // the bunker: a poured concrete block with a corrugated roof, vents and a hatch
-    softShadow(c, () => { c.beginPath(); c.rect(-15, -12, 30, 24); }, 4, 6, 4, 'rgba(0,0,0,0.6)');
-    c.fillStyle = linear(c, -15, -12, 15, 12, [[0, '#9a9c96'], [1, '#55574f']]); c.fillRect(-15, -12, 30, 24);
-    c.fillStyle = 'rgba(0,0,0,0.18)'; for (let i = -15; i < 15; i += 2.4) c.fillRect(i, -12, 1.2, 24);
-    c.fillStyle = 'rgba(60,40,20,0.35)'; ellipse(c, 6, 6, 7, 4, 0.3); c.fill(); ellipse(c, -8, -6, 4, 3); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.8; c.strokeRect(-15, -12, 30, 24);
-    c.fillStyle = '#2a2c28'; c.fillRect(-11, -8, 7, 5); c.fillStyle = 'rgba(255,255,255,0.15)'; for (let i = 0; i < 3; i++) c.fillRect(-10.5, -7.4 + i * 1.6, 6, 0.6);
-    circle(c, 6, -5, 3.6); c.fillStyle = radial(c, 5, -6, 4, '#7a7e78', '#2e302c', 0, 0); c.fill(); c.strokeStyle = '#1c1e1a'; c.lineWidth = 0.6; c.stroke();
-    // lit doorway glow, antenna and flag
-    c.fillStyle = 'rgba(255,200,110,0.9)'; c.fillRect(-3, 11.2, 6, 1.4);
-    c.strokeStyle = '#1e201c'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(10, 8); c.lineTo(14, -14); c.stroke();
-    if (Math.sin(t * 4) > 0) { circle(c, 14, -14, 1.2); c.fillStyle = '#ff5a4a'; c.fill(); }
-    c.strokeStyle = '#222'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-13, 10); c.lineTo(-13, -4); c.stroke();
-    const wv = Math.sin(t * 5) * 1.5;
-    c.beginPath(); c.moveTo(-13, -4); c.quadraticCurveTo(-8, -4 + wv, -3, -2.5 + wv); c.lineTo(-3, 1.5 + wv); c.quadraticCurveTo(-8, 0 - wv, -13, 1); c.closePath(); c.fillStyle = '#b8402f'; c.fill();
-    c.restore();
-  }
 
-  function decor(c, d, world) {
+  function decor(c, d, world, M) {
     const rng = mulberry32(d.seed), snow = world.id === 'tundra';
+    if (BUILDING_KINDS.has(d.kind)) {
+      // buildings keep their size and face the viewer; their chimneys and lamps are handed back
+      // in map coordinates so the game can animate smoke and light them at night
+      const out = { smoke: [], glows: [] };
+      c.save(); c.translate(d.x, d.y); BUILDINGS.draw(d.kind, c, d, rng, out); c.restore();
+      if (M) { for (const q of out.smoke) M.smoke.push({ x: q.x + d.x, y: q.y + d.y }); for (const q of out.glows) M.glows.push({ ...q, x: q.x + d.x, y: q.y + d.y }); }
+      return;
+    }
     c.save(); c.translate(d.x, d.y); c.scale(d.s, d.s);
     const quarter = Math.floor(d.rot * 2) * Math.PI / 2;
     switch (d.kind) {
@@ -763,10 +664,6 @@ const TERRAIN = (() => {
       case 'crops': c.rotate(d.rot % (Math.PI / 2)); crops(c, rng); break;
       case 'fence': c.rotate(d.rot); fence(c, rng); break;
       case 'car': c.rotate(d.rot); car(c, rng); break;
-      case 'barn': c.rotate(quarter); yard(c, 60, 46, rng, snow); roof(c, 42, 30, { col: '#8a2f24', kind: 'tin', holes: rng() < 0.6 ? 1 : 0 }, rng); chimney(c, 12, -8); c.fillStyle = '#d8d0c0'; c.fillRect(-21, -1.2, 3, 2.4); break;
-      case 'cabin': c.rotate(quarter); yard(c, 50, 40, rng, snow); roof(c, 34, 26, { col: '#5a4636', kind: 'shingle', snow: true }, rng); chimney(c, -9, 6, true); break;
-      case 'shack': c.rotate(quarter); yard(c, 48, 38, rng, snow); roof(c, 32, 24, { col: '#6a6a5a', kind: 'tin', holes: rng() < 0.5 ? 1 : 0, moss: 1 }, rng); break;
-      case 'crypt': c.rotate(quarter); crypt(c, rng); break;
       case 'tomb': c.rotate((rng() - 0.5) * 0.25); grave(c, rng, 'stone'); break;
       case 'cross': c.rotate((rng() - 0.5) * 0.3); grave(c, rng, 'cross'); break;
       case 'log': c.rotate(d.rot); log(c, rng, snow); break;
@@ -789,12 +686,13 @@ const TERRAIN = (() => {
     roads(c, M);
     bridges(c, M);
     const ds = [...M.decor].sort((a, b) => a.y - b.y);
-    for (const d of ds) decor(c, d, world);
+    M.smoke = []; M.glows = [];
+    for (const d of ds) decor(c, d, world, M);
 
     // a soft vignette and a breath of atmosphere over the whole field
     c.fillStyle = radial(c, W / 2, H / 2, Math.hypot(W, H) * 0.6, 'rgba(0,0,0,0)', world.id === 'tundra' ? 'rgba(40,60,90,0.18)' : 'rgba(0,0,0,0.28)', 0, 0);
     c.fillRect(0, 0, W, H);
   }
 
-  return { render, safehouse, decor };
+  return { render, decor };
 })();

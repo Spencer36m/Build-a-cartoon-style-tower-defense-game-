@@ -337,20 +337,34 @@ const Sound = {
     this.stopAmbience();
     if (!this.ac) return;
     const ac = this.ac, nodes = [];
-    const loop = (type, freq, q, vol, lfoRate = 0, lfoDepth = 0) => {
+    const gains = {};
+    const loop = (type, freq, q, vol, lfoRate = 0, lfoDepth = 0, name = null) => {
       const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
       src.buffer = this.noiseBuf; src.loop = true;
       f.type = type; f.frequency.value = freq; f.Q.value = q;
       g.gain.value = vol;
       src.connect(f); f.connect(g); g.connect(this.ambBus);
+      if (name) gains[name] = g;
       if (lfoRate) { const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = lfoRate; lg.gain.value = lfoDepth; lfo.connect(lg); lg.connect(f.frequency); lfo.start(); nodes.push(lfo); }
       src.start(); nodes.push(src);
     };
-    if (weather === 'rain') { loop('lowpass', 2600, 0.5, 0.28); loop('highpass', 5000, 0.5, 0.07); }
-    else if (weather === 'snow') loop('bandpass', 500, 0.8, 0.45, 0.13, 260);
-    else if (weather === 'fog' || weather === 'mist') loop('bandpass', 300, 0.7, 0.3, 0.08, 120);
-    else loop('bandpass', 380, 0.6, 0.16, 0.1, 150);
-    this.amb = { nodes, weather, time, world };
+    // separate layers the weather can turn up and down: rainfall, wind, a tornado's roar
+    const rain = weather === 'rain' ? 1 : 0;
+    loop('bandpass', weather === 'fog' || weather === 'mist' ? 300 : 380, 0.6, 0.15, 0.1, 150, 'base');
+    loop('lowpass', 2600, 0.5, rain * 0.25, 0, 0, 'rainA');
+    loop('highpass', 5000, 0.5, rain * 0.07, 0, 0, 'rainB');
+    loop('bandpass', 520, 0.8, weather === 'snow' ? 0.3 : 0.05, 0.13, 260, 'wind');
+    loop('lowpass', 170, 0.8, 0, 0.3, 60, 'roar');
+    this.amb = { nodes, gains, weather, time, world };
+  },
+  // the weather mixes the ambience as it changes
+  weatherMix(m) {
+    const a = this.amb;
+    if (!a || !this.ac) return;
+    const t = this.ac.currentTime, set = (k, v) => { if (a.gains[k]) a.gains[k].gain.setTargetAtTime(v, t, 0.6); };
+    set('rainA', m.rain * 0.25); set('rainB', m.rain * 0.07);
+    set('wind', Math.min(1.6, m.wind) * 0.28); set('roar', m.roar * 0.55);
+    a.weather = m.rain > 0.3 ? 'rain' : m.kind;
   },
   stopAmbience() {
     if (!this.amb) return;
