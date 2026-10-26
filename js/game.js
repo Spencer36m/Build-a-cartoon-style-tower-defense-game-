@@ -1367,6 +1367,7 @@ const TIME_LIGHT = {
 };
 // the sky itself lives in weather.js; the game hands it a way to talk, scorch the ground and shake
 function initWeather() {
+  ANIMALS.start(S.M, S.L);
   const fixed = S.sandbox && S.sandbox.weather !== 'forecast' ? S.sandbox.weather : null;
   WEATHER.start(S.M, S.L, {
     say: ([who, text]) => { if (S.state === 'playing' && !Comms.busy) sayLine(who, text, { tag: 'WEATHER' }); },
@@ -1606,6 +1607,7 @@ function render() {
   for (const tw of S.towers) units.push({ y: tw.y, tw });
   for (const e of S.enemies) if (!e.fly) units.push({ y: e.y, e });
   units.push({ y: S.M.end.y, house: true });
+  for (const a of ANIMALS.units()) units.push({ y: a.y, an: a });
   units.sort((a, b) => a.y - b.y);
   for (const u of units) {
     if (u.tw) {
@@ -1613,6 +1615,7 @@ function render() {
       if (u.tw.cold) drawFrost(c, u.tw, t);
       if (u.tw === S.selected) { c.save(); c.strokeStyle = `rgba(227,168,62,${0.6 + Math.sin(t * 6) * 0.3})`; c.lineWidth = 1.5; c.strokeRect(u.tw.x - 22, u.tw.y - 22, 44, 44); c.restore(); }
     } else if (u.e) drawZombie(c, u.e, t, lights);
+    else if (u.an) ANIMALS.draw(c, u.an, t);
     else {
       drawSafehouse(c, S.M.end.x, S.M.end.y, t, S.houseHit, false, houseGap(S.M));
       lights.push({ x: S.M.end.x, y: S.M.end.y, r: 70, color: '255,210,140', a: 0.3 });
@@ -1621,6 +1624,7 @@ function render() {
   for (const p of S.projectiles) drawProjectile(c, p, lights);
   for (const cr of S.crates) drawCrate(c, cr);
   WEATHER.drawSmoke(c, t);
+  ANIMALS.drawAir(c, t);
   for (const g of S.M.glows) lights.push(g);
   // air layer
   for (const e of S.enemies) if (e.fly) drawZombie(c, e, t, lights);
@@ -1723,6 +1727,7 @@ function frame(now) {
     S.freezeFlash = Math.max(0, S.freezeFlash - dt);
     if (S.banner) { S.banner.t += dt; if (S.banner.t >= S.banner.dur) S.banner = null; }
     if (S.L) WEATHER.update(dt, S.state === 'playing');
+    if (S.L && S.state !== 'menu') ANIMALS.update(dt, S.enemies, S.towerAt);
   }
   if (S.state !== 'menu') render();
   updateHUD();

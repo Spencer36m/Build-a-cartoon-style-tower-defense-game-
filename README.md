@@ -73,6 +73,17 @@ The globe is alive: 20 **wonders** are scattered across the planet, including er
 
 In a sandbox game every tower and every upgrade tier is open, supplies never run out, and the wave card becomes a **Spawn** panel: tap any zombie (×1, ×5 or ×10) to send it down the road right away, or clear the field. Sandbox games earn no coins, XP or stars and are never saved, so they cannot touch your campaign. Your settings are remembered for next time.
 
+### Wildlife
+
+Every map has animals that fit its world, going about their lives while the battle goes on:
+
+- **Farmland:** a herd of cows grazing, chewing, swishing their tails and lying down at night; a flock of sheep; chickens pecking and scratching around the barn; butterflies.
+- **Cemetery:** owls perched on headstones and dead trees, turning their heads and blinking; ravens hopping, pecking and flying between graves; a black cat; rats scurrying and sniffing.
+- **Tundra:** a caribou herd; arctic foxes listening for mice and pouncing; snow hares hopping, ears up.
+- **Bayou:** alligators basking, gaping and lurking low in the water; herons wading and spearing fish; frogs croaking on lily pads; turtles; dragonflies.
+
+Flocks of geese, egrets or circling ravens cross the sky now and then. Animals keep off the roads and away from your towers (they move when you build on their spot), herds stay together, and everything runs, flies or dives when zombies get close.
+
 ### Weather
 
 The weather changes while you play, and each level runs its own forecast (the mission briefing shows what is coming). A shower builds into a thunderstorm, the storm can spin up a tornado that tears across the map, then it passes and the sky clears. The roads get wet and shine in the rain and dry out again afterwards.
@@ -205,6 +216,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/terrain.js`: the painted battlefields: lit ground with relief, worn dirt and cobbled roads with ruts and puddles, ponds with depth and shorelines, plank bridges, and props (leafy trees, pines, cars, graves, rocks)
 - `js/buildings.js`: buildings in a three-quarter view with textured boards, logs, clapboard, stone, shingles and tin: the red barn, the snowed-in log cabin, the bayou shack on stilts, the stone crypt, and the sandbagged safehouse bunker
 - `js/sandbox.js`: the sandbox setup screen and its rules
+- `js/animals.js`: the wildlife: every species drawn and animated from above, and how they roam, graze, flock and flee
 - `js/weather.js`: the weather forecast and its effects: rain, storms and lightning, tornadoes, dust storms, fog, mist and fireflies, snow and blizzards, ash storms, acid rain, wet roads, and chimney smoke that rises now and then from the houses with a fire going
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
