@@ -18,7 +18,7 @@ return {
     pages: [
       { panels: [
         { at: [[14, 14], [640, 14], [610, 300], [14, 300]], art: 'meteorSky', cam: [1.12, 1, -0.04, 0.02], snd: 'missile',
-          text: [{ k: 'loc', x: 30, y: 30, w: 330, t: 'Hollow Creek, Kansas. Eleven months ago.' }, { k: 'sfx', x: 300, y: 120, t: 'SHHRRRAAAA', size: 46, rot: -0.36, col: 'green', grow: 1 }] },
+          text: [{ k: 'loc', x: 30, y: 30, w: 330, t: 'Hollow Creek, Kansas. Eleven months ago.' }, { k: 'sfx', x: 330, y: 215, t: 'SHHRRRAAAA', size: 44, rot: -0.36, col: 'green', grow: 1 }] },
         { at: [[652, 14], [986, 14], [986, 300], [622, 300]], art: 'impact', fx: 'slam', snd: 'impact', cam: [1.15, 1.02],
           text: [{ k: 'sfx', x: 690, y: 240, t: 'KRA-KOOM!', size: 66, rot: -0.12, col: 'paper' }] },
         { at: R(14, 312, 986, 548), art: 'crystalCrater', cam: [1, 1.1, 0, -0.03],
@@ -144,7 +144,7 @@ return {
         { at: [[14, 14], [600, 14], [580, 300], [14, 300]], art: 'cemeteryGates', snd: 'crow', cam: [1.12, 1],
           text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'Blackwood. Forty thousand graves, and not one of them quiet.' }] },
         { at: [[612, 14], [986, 14], [986, 300], [592, 300]], art: 'skeletonHand', fx: 'slam', snd: 'dig', cam: [1.15, 1.02],
-          text: [{ k: 'sfx', x: 640, y: 50, t: 'KRAK!', size: 64, rot: -0.15, col: 'purple' }, { k: 'cap', x: 640, y: 240, w: 260, t: 'The strain is waking bodies a century old.' }] },
+          text: [{ k: 'sfx', x: 640, y: 90, t: 'KRAK!', size: 60, rot: -0.15, col: 'purple' }, { k: 'cap', x: 640, y: 240, w: 260, t: 'The strain is waking bodies a century old.' }] },
         { at: R(14, 312, 986, 548), art: 'riftSky', snd: 'thunder', cam: [1, 1.1, 0, 0.03],
           text: [{ k: 'radio', who: 'Okafor', x: 260, y: 322, w: 280, t: 'The crystal is tearing open the sky.', tail: [280, 316] }, { k: 'radio', x: 720, y: 470, w: 240, t: 'Keep them away from it. Please.', tail: [986, 530] }] },
       ] },
@@ -219,7 +219,7 @@ return {
     title: 'Thaw', kicker: 'Chapter 3', world: 2,
     pages: [{ panels: [
       { at: [[14, 14], [620, 14], [600, 548], [14, 548]], art: 'frozenGiant', o: { broken: true }, fx: 'slam', snd: 'shatter', cam: [1.15, 1.02],
-        text: [{ k: 'sfx', x: 60, y: 80, t: 'SHHKRAAAK', size: 58, rot: -0.2, col: 'ice', grow: 1 }, { k: 'cap', x: 30, y: 480, w: 280, t: 'Lazarus Two came apart like river ice.' }] },
+        text: [{ k: 'sfx', x: 60, y: 130, t: 'SHHKRAAAK', size: 56, rot: -0.2, col: 'ice', grow: 1 }, { k: 'cap', x: 30, y: 480, w: 280, t: 'Lazarus Two came apart like river ice.' }] },
       { at: [[632, 14], [986, 14], [986, 548], [612, 548]], art: 'vial', snd: 'heal', cam: [1.1, 1],
         text: [{ k: 'say', who: 'Okafor', x: 650, y: 40, w: 170, t: 'The core is stable.', tail: [800, 180] }, { k: 'say', x: 780, y: 440, w: 180, t: 'Now we need the hive.', tail: [820, 380] }] },
     ] }],
@@ -265,7 +265,7 @@ return {
         { at: [[14, 14], [470, 14], [440, 548], [14, 548]], art: 'scope', o: { target: 'hive' }, fx: 'slam', snd: 'sniper', cam: [1.2, 1.02],
           text: [{ k: 'sfx', x: 60, y: 420, t: 'BLAM!', size: 80, rot: -0.12, col: 'green' }] },
         { at: [[482, 14], [986, 14], [986, 548], [452, 548]], art: 'explosion', o: { spot: 'green' }, fx: 'flash', snd: 'boom', cam: [1.15, 1.02],
-          text: [{ k: 'sfx', x: 520, y: 60, t: 'KRA-THOOOM!', size: 64, rot: -0.08, col: 'green', grow: 1 }, { k: 'cap', x: 500, y: 470, w: 330, t: "The shot split the hive's eye wide open." }] },
+          text: [{ k: 'sfx', x: 520, y: 100, t: 'KRA-THOOOM!', size: 60, rot: -0.08, col: 'green', grow: 1 }, { k: 'cap', x: 500, y: 470, w: 330, t: "The shot split the hive's eye wide open." }] },
       ] },
       { panels: [
         { at: R(14, 14, 500, 548), art: 'injection', snd: 'pulse', cam: [1.1, 1],
@@ -437,12 +437,28 @@ const Story = (() => {
   // The last word on layout: once every caption and balloon on a page has its size for this
   // screen, any two that touch are nudged apart (sound effects stay put), so lettering never
   // overlaps whatever the screen. Tails keep pointing at their speakers.
+  // a sound effect is laid out letter by letter exactly as drawSfx sets it (growing, slanted,
+  // outlined), so each letter gets its own box in device pixels
+  function sfxBoxes(t) {
+    const size = (t.size || 56) * view.s, rot = t.rot || 0, n = t.t.length, ca = Math.cos(rot), sa = Math.sin(rot), out = [];
+    let x = 0;
+    for (let i = 0; i < n; i++) {
+      const k = t.grow ? 0.75 + 0.5 * (i / Math.max(1, n - 1)) : 1;
+      ctx.font = `800 ${size * k}px "Barlow Condensed", sans-serif`;
+      const w = ctx.measureText(t.t[i]).width, hh = size * k * 0.62 + size * k * 0.15, x0 = x - size * k * 0.12, x1 = x + w + size * k * 0.12;
+      const pts = [[x0, -hh], [x1, -hh], [x1, hh], [x0, hh]].map(([px, py]) => { const sx = px - 0.18 * py; return [X(t.x) + sx * ca - py * sa, Y(t.y) + sx * sa + py * ca]; });
+      const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+      out.push({ x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) });
+      x += w * 0.94;
+    }
+    return out;
+  }
   function settle(texts) {
     for (const t of texts) t.off = null;
-    const items = texts.map((t) => {
-      if (t.k === 'sfx') { const w = t.t.length * (t.size || 56) * 0.52 * view.s, h = (t.size || 56) * 0.9 * view.s; return { t, fixed: true, x: X(t.x), y: Y(t.y) - h / 2, w, h }; }
+    const items = texts.flatMap((t) => {
+      if (t.k === 'sfx') return sfxBoxes(t).map((b) => ({ t, fixed: true, ...b }));
       const B = boxOf(t), oval = t.k !== 'cap' && t.k !== 'loc', m = oval ? 0.02 : 0, tag = t.who ? layout(t).fs * 0.75 : 0;
-      return { t, x: B.x + B.w * m, y: B.y + B.h * m - tag, w: B.w * (1 - 2 * m), h: B.h * (1 - 2 * m) + tag, ox: 0, oy: 0 };
+      return [{ t, x: B.x + B.w * m, y: B.y + B.h * m - tag, w: B.w * (1 - 2 * m), h: B.h * (1 - 2 * m) + tag, ox: 0, oy: 0 }];
     });
     const gap = 5 * dpr;
     // in the guided view each panel fills the screen, so its lettering must stay on its panel
@@ -713,7 +729,12 @@ const Story = (() => {
       settle(copies.flat());
       pg.panels.forEach((p, bi) => (p.text || []).forEach((t0, ti) => {
         const t = copies[bi][ti], where = `${id} p${pi + 1} panel ${bi + 1} "${t.t.slice(0, 28)}"`;
-        if (t.k === 'sfx') { const w = t.t.length * (t.size || 56) * 0.52, h = (t.size || 56) * 0.9; boxes.push({ where, x: t.x, y: t.y - h / 2, w, h, sfx: 1 }); if (t.x + w > PW + 10 || t.x < -10) issues.push(`${where}: sound effect runs off the page`); return; }
+        if (t.k === 'sfx') {
+          const bs = sfxBoxes(t).map((b) => ({ where, src: t, x: U(b.x), y: U(b.y), w: U(b.w), h: U(b.h) }));
+          boxes.push(...bs);
+          if (bs.some((b) => b.x < -6 || b.x + b.w > PW + 6 || b.y < -6 || b.y + b.h > PH + 6)) issues.push(`${where}: sound effect runs off the page`);
+          return;
+        }
         const B = boxOf(t), bx = U(B.x), by = U(B.y), bw = U(B.w), bh = U(B.h);
         const N = nominal(t), mv = Math.hypot(bx + bw / 2 - (t.x + N.w / 2), by + bh / 2 - (t.y + N.h / 2)) - Math.max(0, Math.hypot(bw - N.w, bh - N.h) / 2);
         if (mv > (guided ? 90 : 30)) issues.push(`${where}: ${t.k === 'cap' || t.k === 'loc' ? 'caption' : 'balloon'} pushed ${Math.round(mv)} units to stay on the page`);
@@ -732,6 +753,7 @@ const Story = (() => {
       const samples = (o) => { const pts = []; for (let i = 0; i < 40; i++) { const q = i / 40 * TAU; if (o.oval) pts.push([o.x + o.w / 2 + Math.cos(q) * o.w / 2, o.y + o.h / 2 + Math.sin(q) * o.h / 2]); } if (!o.oval) for (let i = 0; i <= 8; i++) pts.push([o.x + o.w * i / 8, o.y], [o.x + o.w * i / 8, o.y + o.h], [o.x, o.y + o.h * i / 8], [o.x + o.w, o.y + o.h * i / 8]); return pts; };
       for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
         const a = boxes[i], b = boxes[j];
+        if (a.src && a.src === b.src) continue;
         if ((a.tag && b.where.startsWith(a.where.replace(' (name tag)', ''))) || (b.tag && a.where.startsWith(b.where.replace(' (name tag)', '')))) continue;
         if (guided && a.where.split(' "')[0] !== b.where.split(' "')[0]) continue;
         if (samples(a).some(([x, y]) => inside(b, x, y, 3)) || samples(b).some(([x, y]) => inside(a, x, y, 3))) issues.push(`${a.where} overlaps ${b.where}`);
