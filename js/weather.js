@@ -162,6 +162,7 @@ const WEATHER = (() => {
         if (LINES[k] && hooks.say) hooks.say(LINES[k][Math.floor(Math.random() * LINES[k].length)]);
       }
       if (k === 'tornado') spawnTwister();
+      if (hooks.changed) hooks.changed(k);
     }
     const ease = 1 - Math.exp(-dt * 0.22);
     for (const c of CHANNELS) cur[c] += (tgt[c] - cur[c]) * ease;
@@ -526,7 +527,7 @@ const WEATHER = (() => {
     start, update, drawGround, drawSky, drawSmoke, forecast,
     get kind() { return kind(); }, get dark() { return cur.dark || 0; }, get wet() { return wet; },
     // for tests: jump straight to a kind of weather
-    force(k) { const i = plan.findIndex(([q]) => q === k); if (i >= 0) { ep = i; epT = 0; } else { plan[ep] = [k, 60]; epT = 0; } setTargets(true); if (k === 'tornado') spawnTwister(); },
+    force(k) { const i = plan.findIndex(([q]) => q === k); if (i >= 0) { ep = i; epT = 0; } else { plan[ep] = [k, 60]; epT = 0; } setTargets(true); if (k === 'tornado') spawnTwister(); if (hooks.changed) hooks.changed(k); },
     KINDS,
   };
 })();

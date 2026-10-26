@@ -489,6 +489,7 @@ const PAINT = {
   cryo: ['#4fc8ff', '#eef4fa', '#5a62e0'], gunboat: ['#2f4f78', '#d0a030', '#a8302a'], flame: ['#e8401a', '#e8a81e', '#3f8aff'],
   tesla: ['#8a5cff', '#ffc62e', '#22d0aa'], heli: ['#262b30', '#a8502a', '#e4e4dc'], sub: ['#2a4a8a', '#a02a2a', '#2a9a5a'],
   jet: ['#3a6a9a', '#3c3c2e', '#b03a3a'], farm: ['#e0b830', '#c9483d', '#4a7aa8'],
+  heater: ['#c8742a', '#a85a3a', '#e0401a'],
 };
 const LOOK_K = [0, 0.34, 0.48, 0.62, 0.74, 0.84];
 const LOOK_SCALE = [1, 1.04, 1.08, 1.13, 1.18, 1.25];
@@ -526,7 +527,7 @@ function upgradePlinth(c, L, t, type, lights, x, y) {
     if (n === 5) { c.setLineDash([5, 5]); c.lineDashOffset = -t * 18; circle(c, 0, 0, 28); c.strokeStyle = 'rgba(240,200,100,0.7)'; c.lineWidth = 1.5; c.stroke(); c.setLineDash([]); }
     return;
   }
-  if (type === 'farm') return;
+  if (type === 'farm' || type === 'heater') return;
   if (n === 2) { circle(c, 0, 0, 21); c.strokeStyle = `rgba(${rgb},0.6)`; c.lineWidth = 2.2; c.stroke(); return; }
   const R = n >= 4 ? 24 : 22;
   octagon(c, R, 3, 4); c.fillStyle = SHADOW; c.fill();
@@ -695,6 +696,218 @@ function ice(c, x, y, s, rot) {
   c.restore();
 }
 
+// ---------- the heater ----------
+// Its centrepiece follows the highest path: a fire drum, a brick furnace or boiler house (Fuel),
+// a geothermal wellhead (Fuel 5), an inferno stove (Burner 5) or a big bonfire (Comfort 5).
+function heaterCore(tiers) {
+  const [a, b, d] = tiers;
+  return a >= 5 ? 'geo' : a >= 4 ? 'boiler' : a >= 3 ? 'furnace' : d >= 5 ? 'inferno' : b >= 5 ? 'bonfire' : 'drum';
+}
+function heaterBase(c, tiers, L) {
+  const [a, b, d] = tiers, core = heaterCore(tiers), rng = mulberry32(17 + a * 7 + b * 31 + d * 53);
+  // melted, trampled snow round the fire: wet dark earth near it, slush further out
+  c.fillStyle = radial(c, 0, 0, 22, 'rgba(70,56,40,0.75)', 'rgba(150,160,170,0)', 0, 0); circle(c, 0, 0, 22); c.fill();
+  c.fillStyle = 'rgba(46,34,24,0.55)'; circle(c, 0, 0, 12); c.fill();
+  for (let i = 0; i < 9; i++) { const q = rng() * TAU, r = 10 + rng() * 9; c.fillStyle = 'rgba(230,238,246,0.35)'; ellipse(c, Math.cos(q) * r, Math.sin(q) * r, 2 + rng() * 2, 1 + rng(), q); c.fill(); }
+  // Comfort: a bunk tent, then benches round the fire
+  if (b >= 3) {
+    c.save(); c.translate(-11, -12); c.rotate(-0.35);
+    c.fillStyle = SHADOW; c.fillRect(-6.5 + 1.5, -5 + 2, 13, 10);
+    c.fillStyle = linear(c, 0, -5, 0, 0, [[0, '#9a9a6a'], [1, '#7a7a52']]); c.fillRect(-6.5, -5, 13, 5);
+    c.fillStyle = linear(c, 0, 0, 0, 5, [[0, '#5e5e3e'], [1, '#4a4a30']]); c.fillRect(-6.5, 0, 13, 5);
+    c.fillStyle = '#3a3a26'; c.fillRect(-6.5, -0.4, 13, 0.8);
+    c.strokeStyle = 'rgba(30,30,20,0.6)'; c.lineWidth = 0.4; c.strokeRect(-6.5, -5, 13, 10);
+    c.strokeStyle = 'rgba(200,190,150,0.6)'; for (const [x0, y0, x1, y1] of [[-6.5, -5, -9, -8], [6.5, -5, 9, -8], [-6.5, 5, -9, 8], [6.5, 5, 9, 8]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+    c.fillStyle = 'rgba(245,250,255,0.85)'; c.fillRect(-6.5, -5, 13, 1.2);
+    c.restore();
+  }
+  if (b >= 4) for (const [bx, by, ang] of [[-13, 4, 0.2], [12, 6, -0.3]]) {
+    c.save(); c.translate(bx, by); c.rotate(Math.PI / 2 + ang);
+    c.fillStyle = SHADOW; c.fillRect(-6 + 1, -1.6 + 1.5, 12, 3.2);
+    c.fillStyle = linear(c, 0, -1.6, 0, 1.6, [[0, '#9a7a52'], [1, '#5a4228']]); c.fillRect(-6, -1.6, 12, 3.2);
+    c.fillStyle = '#c8a878'; ellipse(c, -6, 0, 0.8, 1.6, 0); c.fill(); ellipse(c, 6, 0, 0.8, 1.6, 0); c.fill();
+    c.restore();
+    // a soldier sitting on it, turned to the fire
+    c.save(); c.translate(bx * 0.82, by * 0.82); c.rotate(Math.atan2(-by, -bx)); c.scale(0.85, 0.85);
+    soldier(c, '#4d5a3a', '#56603f');
+    c.restore();
+  }
+  // Burner: a bed of coals, a ring of stones, more barrels, then a ring of gas jets
+  if (d >= 1) for (let i = 0; i < 22; i++) { const q = (i / 22) * TAU + rng() * 0.2, r = 12 + rng() * 2.5; circle(c, Math.cos(q) * r, Math.sin(q) * r, 1 + rng() * 0.8); c.fillStyle = ['#3a1a10', '#8a2a10', '#c8501a'][Math.floor(rng() * 3)]; c.fill(); }
+  if ((d >= 2 || core === 'bonfire') && (core === 'drum' || core === 'bonfire' || core === 'inferno')) {
+    const R = core === 'bonfire' ? 13 : 11;
+    for (let i = 0; i < 12; i++) {
+      const q = (i / 12) * TAU, sx = Math.cos(q) * R, sy = Math.sin(q) * R, sr = 2 + rng() * 0.8;
+      c.fillStyle = SHADOW; circle(c, sx + 0.8, sy + 1, sr); c.fill();
+      c.fillStyle = radial(c, sx - sr * 0.3, sy - sr * 0.3, sr * 1.3, '#a8a49a', '#4e4a44', 0, 0); circle(c, sx, sy, sr); c.fill();
+    }
+  }
+  if (d >= 3) for (const [bx, by] of [[-14, 12], [14, -12]]) { fireDrum(c, bx, by, 4.6); }
+  if (d >= 4) for (let i = 0; i < 8; i++) {
+    const q = (i / 8) * TAU, nx = Math.cos(q) * 17, ny = Math.sin(q) * 17;
+    circle(c, nx, ny, 1.9); c.fillStyle = '#2a2a28'; c.fill(); circle(c, nx, ny, 1.2); c.fillStyle = '#7a7c78'; c.fill(); circle(c, nx, ny, 0.6); c.fillStyle = '#141414'; c.fill();
+  }
+  if (d >= 4) { c.strokeStyle = 'rgba(30,30,28,0.8)'; c.lineWidth = 0.7; circle(c, 0, 0, 17); c.stroke(); }
+  // Fuel: a propane tank and its hose, then insulated ducts running out across the snow
+  if (a >= 2 && core !== 'geo') for (const q of [-0.6, 2.1, 3.7]) {
+    c.save(); c.rotate(q);
+    c.fillStyle = SHADOW; c.fillRect(6, -1.4 + 1, 16, 3);
+    c.fillStyle = linear(c, 0, -1.6, 0, 1.6, [[0, '#e0e2e4'], [0.5, '#a8acb0'], [1, '#6a6e72']]); c.fillRect(6, -1.6, 16, 3.2);
+    c.fillStyle = 'rgba(40,44,48,0.35)'; for (let k = 7; k < 22; k += 1.3) c.fillRect(k, -1.6, 0.4, 3.2);
+    c.fillStyle = '#5a5e62'; c.fillRect(21, -2, 1.5, 4);
+    c.restore();
+  }
+  if (a >= 1 && core !== 'geo') {
+    c.strokeStyle = '#1a1a18'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(11, 8); c.quadraticCurveTo(7, 3, 3, 3); c.stroke();
+    c.fillStyle = SHADOW; c.beginPath(); c.roundRect(9.5 + 1, 5 + 1.5, 7, 11, 3.5); c.fill();
+    c.fillStyle = linear(c, 9.5, 0, 16.5, 0, [[0, '#f2f2ee'], [0.5, '#d0d0ca'], [1, '#8a8a84']]); c.beginPath(); c.roundRect(9.5, 5, 7, 11, 3.5); c.fill();
+    c.fillStyle = '#c8402e'; c.fillRect(11.5, 5.2, 3, 1.4); c.fillStyle = '#3a3a38'; c.fillRect(12.4, 4, 1.2, 1.6);
+    c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(10.6, 7, 0.8, 7);
+  }
+  // Comfort: coffee on a grate, then a cooking pot
+  if (b >= 1) {
+    c.fillStyle = '#2a2826'; c.fillRect(7, -14, 7, 5);
+    c.strokeStyle = '#5a5854'; c.lineWidth = 0.4; for (let k = 7.5; k < 14; k += 1.2) { c.beginPath(); c.moveTo(k, -14); c.lineTo(k, -9); c.stroke(); }
+    c.fillStyle = radial(c, 9.8, -12, 2, '#6a6e72', '#2a2c2e', 0, 0); circle(c, 10, -11.6, 1.9); c.fill();
+    for (const [mx, my] of [[15.5, -12], [16, -9.4]]) { circle(c, mx, my, 1.1); c.fillStyle = '#ece6d6'; c.fill(); circle(c, mx, my, 0.65); c.fillStyle = '#3a2214'; c.fill(); }
+  }
+  if (b >= 2) {
+    c.strokeStyle = '#2a2826'; c.lineWidth = 0.8;
+    for (const q of [0.4, 2.5, 4.6]) { c.beginPath(); c.moveTo(-12 + Math.cos(q) * 5, -1 + Math.sin(q) * 5); c.lineTo(-12, -1); c.stroke(); }
+    c.fillStyle = SHADOW; circle(c, -11, 0, 4); c.fill();
+    c.fillStyle = radial(c, -13, -2, 5, '#5a5c5e', '#1e2022', 0, 0); circle(c, -12, -1, 3.8); c.fill();
+    c.fillStyle = '#6a4a2a'; circle(c, -12, -1, 2.6); c.fill(); c.fillStyle = 'rgba(255,230,180,0.35)'; circle(c, -12.8, -1.8, 1); c.fill();
+  }
+  // the firewood pile
+  if (core !== 'geo' && core !== 'boiler') {
+    c.save(); c.translate(-9, 13); c.rotate(-0.2);
+    for (let i = 0; i < 4; i++) {
+      const y0 = -3 + i * 1.8, l = 9 - (i % 2) * 1.5;
+      c.fillStyle = linear(c, 0, y0 - 0.9, 0, y0 + 0.9, [[0, '#8a6a46'], [1, '#4a3420']]); c.beginPath(); c.roundRect(-l / 2, y0 - 0.9, l, 1.8, 0.9); c.fill();
+      c.fillStyle = '#c8a878'; ellipse(c, l / 2, y0, 0.5, 0.9, 0); c.fill();
+    }
+    c.fillStyle = 'rgba(245,250,255,0.85)'; c.fillRect(-4.5, -4.2, 9, 0.9);
+    c.restore();
+  }
+  // the centrepiece
+  if (core === 'drum') fireDrum(c, 0, 0, 7.5);
+  else if (core === 'bonfire') {
+    for (let i = 0; i < 9; i++) {
+      const q = (i / 9) * TAU + 0.2;
+      c.save(); c.rotate(q);
+      c.fillStyle = linear(c, 0, -1.2, 0, 1.2, [[0, '#7a5a38'], [1, '#2e2016']]); c.beginPath(); c.roundRect(1, -1.2, 10, 2.4, 1.2); c.fill();
+      c.fillStyle = '#1a120c'; c.fillRect(1, -1.2, 3, 2.4);
+      c.restore();
+    }
+    c.fillStyle = radial(c, 0, 0, 7, '#ffd890', '#a0300c', 0, 0); circle(c, 0, 0, 6); c.fill();
+  } else if (core === 'inferno') {
+    octagon(c, 11, 1.5, 2); c.fillStyle = SHADOW; c.fill();
+    octagon(c, 11); c.fillStyle = radial(c, -3, -3, 15, '#5a5c5e', '#1a1c1e', 0, 0); c.fill();
+    c.strokeStyle = '#0e0f10'; c.lineWidth = 0.8; c.stroke();
+    for (let i = 0; i < 8; i++) { const q = (i / 8) * TAU + Math.PI / 8; c.save(); c.rotate(q); c.fillStyle = '#ff7a20'; c.fillRect(6.5, -1.2, 3, 0.6); c.fillRect(6.5, 0.6, 3, 0.6); c.restore(); }
+    circle(c, 0, 0, 6); c.fillStyle = radial(c, 0, 0, 6, '#fff0b0', '#d0400c', 0, 0); c.fill();
+  } else if (core === 'furnace' || core === 'boiler') {
+    const w = core === 'boiler' ? 22 : 17, h = core === 'boiler' ? 18 : 14;
+    c.fillStyle = SHADOW; c.fillRect(-w / 2 + 2, -h / 2 + 3, w, h);
+    c.fillStyle = '#5a2e22'; c.fillRect(-w / 2, -h / 2, w, h);
+    for (let y = -h / 2, row = 0; y < h / 2; y += 2, row++) for (let x = -w / 2 + (row % 2 ? 1.6 : 0); x < w / 2; x += 3.2) {
+      c.fillStyle = shade(['#9a4a34', '#8a3e2a', '#a85a3e'][(((row + Math.round(x)) % 3) + 3) % 3], (rng() - 0.5) * 0.15); c.fillRect(x + 0.15, y + 0.15, Math.min(3, w / 2 - x) - 0.3, 1.7);
+    }
+    c.fillStyle = linear(c, -w / 2, -h / 2, w / 2, h / 2, [[0, 'rgba(255,240,220,0.18)'], [1, 'rgba(0,0,0,0.3)']]); c.fillRect(-w / 2, -h / 2, w, h);
+    c.strokeStyle = 'rgba(20,10,6,0.7)'; c.lineWidth = 0.7; c.strokeRect(-w / 2, -h / 2, w, h);
+    c.fillStyle = 'rgba(245,250,255,0.8)'; c.fillRect(-w / 2, -h / 2, w, 1.4);
+    // the iron firebox door on the front
+    c.fillStyle = '#1c1a18'; c.fillRect(-4, h / 2 - 5.5, 8, 5.5);
+    // the chimney
+    const cx2 = core === 'boiler' ? 6 : 4, cy2 = -3;
+    circle(c, cx2 + 1, cy2 + 1.5, core === 'boiler' ? 3.8 : 3); c.fillStyle = SHADOW; c.fill();
+    circle(c, cx2, cy2, core === 'boiler' ? 3.8 : 3); c.fillStyle = radial(c, cx2 - 1, cy2 - 1, 4, '#8a8c88', '#3a3c38', 0, 0); c.fill();
+    circle(c, cx2, cy2, core === 'boiler' ? 2.2 : 1.7); c.fillStyle = '#0c0c0c'; c.fill();
+    if (core === 'boiler') {
+      // pressure gauge and the steam pipes leaving it
+      circle(c, -6, -3, 2.4); c.fillStyle = '#e8e2d0'; c.fill(); c.strokeStyle = '#2a2826'; c.lineWidth = 0.5; c.stroke();
+      c.beginPath(); c.moveTo(-6, -3); c.lineTo(-4.8, -4.4); c.strokeStyle = '#c8402e'; c.stroke();
+      for (const [px, py, ex, ey] of [[w / 2, 2, 22, 6], [-w / 2, 4, -22, 8], [0, -h / 2, -4, -22]]) {
+        c.strokeStyle = '#3a3c3e'; c.lineWidth = 3.4; c.beginPath(); c.moveTo(px, py); c.lineTo(ex, ey); c.stroke();
+        c.strokeStyle = '#9a9ea2'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(px, py); c.lineTo(ex, ey); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(px, py - 0.6); c.lineTo(ex, ey - 0.6); c.stroke();
+      }
+    }
+  } else if (core === 'geo') {
+    // a concrete pad, a steel derrick and the wellhead, with pipes running off it
+    c.fillStyle = SHADOW; c.fillRect(-14 + 2, -14 + 3, 28, 28);
+    c.fillStyle = linear(c, -14, -14, 14, 14, [[0, '#b0aea6'], [1, '#6a6862']]); c.fillRect(-14, -14, 28, 28);
+    c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 0.4; for (let k = -14; k < 14; k += 7) { c.beginPath(); c.moveTo(k, -14); c.lineTo(k, 14); c.stroke(); c.beginPath(); c.moveTo(-14, k); c.lineTo(14, k); c.stroke(); }
+    for (const [px, py, ex, ey] of [[0, 0, 24, 4], [0, 0, -24, -6], [0, 0, 6, 24]]) { c.strokeStyle = '#7a4a2a'; c.lineWidth = 3.4; c.beginPath(); c.moveTo(px, py); c.lineTo(ex, ey); c.stroke(); c.strokeStyle = '#c8a070'; c.lineWidth = 1; c.beginPath(); c.moveTo(px, py - 0.8); c.lineTo(ex, ey - 0.8); c.stroke(); }
+    c.strokeStyle = '#d0a020'; c.lineWidth = 1.4;
+    c.strokeRect(-9, -9, 18, 18);
+    c.beginPath(); c.moveTo(-9, -9); c.lineTo(0, 0); c.lineTo(9, -9); c.moveTo(-9, 9); c.lineTo(0, 0); c.lineTo(9, 9); c.stroke();
+    c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 0.4; c.strokeRect(-9.6, -9.6, 19.2, 19.2);
+    circle(c, 0, 0, 5); c.fillStyle = radial(c, -1.5, -1.5, 6, '#8a8c88', '#2a2c28', 0, 0); c.fill();
+    circle(c, 0, 0, 2.6); c.fillStyle = radial(c, 0, 0, 2.6, '#fff0b0', '#e0501a', 0, 0); c.fill();
+    for (const [vx, vy] of [[-4, 4], [4, 4]]) { c.fillStyle = '#c8402e'; circle(c, vx, vy, 1); c.fill(); }
+  }
+  if (L.n >= 1) { c.strokeStyle = rgba(L.col, 0.5); c.lineWidth = 1; circle(c, 0, 0, 20); c.stroke(); }
+}
+// a steel oil drum burning wood, seen from above
+function fireDrum(c, x, y, r) {
+  circle(c, x + 1.2, y + 1.8, r); c.fillStyle = SHADOW; c.fill();
+  circle(c, x, y, r); c.fillStyle = radial(c, x - r * 0.3, y - r * 0.3, r * 1.3, '#8a8e90', '#2e3032', 0, 0); c.fill();
+  c.strokeStyle = 'rgba(120,60,24,0.6)'; c.lineWidth = r * 0.15; circle(c, x, y, r * 0.86); c.stroke();
+  circle(c, x, y, r * 0.78); c.fillStyle = '#140c08'; c.fill();
+  circle(c, x, y, r * 0.62); c.fillStyle = radial(c, x, y, r * 0.62, '#ffc060', '#7a1e08', 0, 0); c.fill();
+  c.strokeStyle = '#1a1210'; c.lineWidth = r * 0.12; for (const o of [-0.3, 0, 0.3]) { c.beginPath(); c.moveTo(x - r * 0.6, y + o * r); c.lineTo(x + r * 0.6, y + o * r); c.stroke(); }
+}
+// one live flame: three layered tongues licking upwards, flickering
+function flameTongue(c, x, y, s, t, seed) {
+  for (const [col, k] of [['rgba(190,40,12,0.8)', 1], ['rgba(255,128,30,0.9)', 0.72], ['rgba(255,226,140,0.95)', 0.42]]) {
+    const fl = Math.sin(t * 13 + seed) * 0.14 + Math.sin(t * 7.7 + seed * 2) * 0.1, sway = Math.sin(t * 5 + seed) * s * k * 1.4;
+    const h = s * k * (7 + fl * 7), w = s * k * 2.8;
+    c.fillStyle = col; c.beginPath(); c.moveTo(x - w, y);
+    c.quadraticCurveTo(x - w * 0.9, y - h * 0.55, x + sway, y - h); c.quadraticCurveTo(x + w * 0.9, y - h * 0.55, x + w, y);
+    c.quadraticCurveTo(x, y + w * 0.8, x - w, y); c.fill();
+  }
+}
+function heaterFire(c, x, y, s, t, seed, lights, wx, wy) {
+  c.save(); c.globalCompositeOperation = 'lighter';
+  c.fillStyle = radial(c, x, y, 14 * s, `rgba(255,150,60,${0.4 + Math.sin(t * 9 + seed) * 0.08})`, 'rgba(255,120,40,0)', 0, 0); circle(c, x, y, 14 * s); c.fill();
+  c.restore();
+  for (let i = 0; i < 3; i++) flameTongue(c, x + (i - 1) * 2.2 * s, y + Math.abs(i - 1) * 0.8 * s, s * (i === 1 ? 1 : 0.7), t, seed + i * 1.7);
+  for (let i = 0; i < 4; i++) {
+    const k = (t * 0.8 + i / 4 + seed * 0.1) % 1;
+    circle(c, x + Math.sin(seed + i * 2.1 + t * 2) * 4 * s, y - k * 18 * s, 0.6 * s * (1 - k) + 0.2); c.fillStyle = `rgba(255,${180 - k * 100},60,${1 - k})`; c.fill();
+  }
+  if (lights) lights.push({ x: wx, y: wy, r: 38 * s, color: '255,160,80', a: 0.75 });
+}
+function heaterLive(c, tw, tiers, t, lights, wx, wy) {
+  const [a, b, d] = tiers, core = heaterCore(tiers), seed = (wx * 0.37 + wy * 0.11) % 10;
+  if (core === 'drum') heaterFire(c, 0, 0, 1, t, seed, lights, wx, wy);
+  else if (core === 'bonfire') heaterFire(c, 0, 0, 1.8, t, seed, lights, wx, wy);
+  else if (core === 'inferno') { heaterFire(c, 0, 0, 1.5, t, seed, lights, wx, wy); }
+  else if (core === 'furnace' || core === 'boiler') {
+    // firelight flickering through the door, smoke from the chimney
+    const h = core === 'boiler' ? 18 : 14, fl = 0.75 + Math.sin(t * 11 + seed) * 0.15 + Math.sin(t * 17 + seed) * 0.1;
+    c.fillStyle = `rgba(255,${150 + fl * 60},60,${fl})`; c.fillRect(-3.4, h / 2 - 5, 6.8, 4.6);
+    c.fillStyle = '#1c1a18'; for (let k = -2.6; k < 3.4; k += 1.6) c.fillRect(k, h / 2 - 5, 0.5, 4.6);
+    const cx2 = core === 'boiler' ? 6 : 4;
+    for (let i = 0; i < 5; i++) { const k = (t * 0.35 + i / 5) % 1; circle(c, cx2 + k * 6 + Math.sin(t + i) * 1.5, -3 - k * 22, 2 + k * 5); c.fillStyle = `rgba(90,88,86,${(1 - k) * 0.5})`; c.fill(); }
+    if (lights) lights.push({ x: wx, y: wy + h / 2, r: 34, color: '255,150,70', a: 0.6 * fl });
+  } else if (core === 'geo') {
+    // steam boiling off the wellhead, lit orange from below
+    for (let i = 0; i < 7; i++) { const k = (t * 0.3 + i / 7) % 1; circle(c, Math.sin(t * 0.8 + i * 2) * 3 + k * 5, -k * 26, 3 + k * 8); c.fillStyle = `rgba(235,240,245,${(1 - k) * 0.45})`; c.fill(); }
+    if (lights) lights.push({ x: wx, y: wy, r: 46, color: '255,170,90', a: 0.7 });
+  }
+  if (d >= 3) for (const [bx, by] of [[-14, 12], [14, -12]]) heaterFire(c, bx, by, 0.6, t, seed + bx, null, wx, wy);
+  if (d >= 4) for (let i = 0; i < 8; i++) {
+    // gas jets roaring blue at the root, orange at the tip
+    const q = (i / 8) * TAU, nx = Math.cos(q) * 17, ny = Math.sin(q) * 17, fl = 0.8 + Math.sin(t * 15 + i * 2) * 0.2;
+    c.fillStyle = `rgba(110,170,255,${0.8 * fl})`; ellipse(c, nx, ny - 1.2, 1, 2 * fl, 0); c.fill();
+    flameTongue(c, nx, ny - 2, 0.45 * fl, t, i * 3);
+  }
+  if (b >= 2) for (let i = 0; i < 3; i++) { const k = (t * 0.45 + i / 3) % 1; circle(c, -12 + Math.sin(t * 2 + i) * 1.2, -2 - k * 10, 1 + k * 2.5); c.fillStyle = `rgba(240,240,240,${(1 - k) * 0.5})`; c.fill(); }
+  if (b >= 1) { const k = (t * 0.6) % 1; circle(c, 10, -12 - k * 6, 0.6 + k * 1.4); c.fillStyle = `rgba(240,240,240,${(1 - k) * 0.4})`; c.fill(); }
+}
+
 // The tower's best path shows as chevrons in its colour; tier 5 earns a star.
 function tierMarks(c, tiers, x, y) {
   let best = 0, bp = 0;
@@ -750,6 +963,7 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
       c.rotate(ang); c.strokeStyle = 'rgba(255,60,50,0.35)'; c.lineWidth = 0.8;
       for (const o of b >= 5 ? [-6, 6] : [0]) { c.beginPath(); c.moveTo(len + 4, o); c.lineTo(len + 70, o); c.stroke(); }
     }
+    if (type === 'heater') heaterLive(c, tw, tiers, t, lights, x, y);
   } else switch (type) {
     case 'gunner': {
       // Energy turns it into a laser, Heavy into a walking mech, Spread into a gun bunker.
@@ -1095,6 +1309,7 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
       }
       break;
     }
+    case 'heater': heaterBase(c, tiers, L); break;
     case 'heli': case 'jet': {
       // landing pad stays on the tile; the aircraft is drawn separately
       circle(c, 2, 3, 17); c.fillStyle = SHADOW; c.fill();

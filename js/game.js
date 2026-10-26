@@ -196,7 +196,9 @@ function startGame(index, save) {
   else {
     showBanner(`${L.id} · ${L.name}`, `Operation ${S.mission.op.name} · ${S.mission.objective}`);
     sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: 2.4 });
+    if (coldMap() && L.num <= 3) sayLine('voss', 'Out here the cold is as deadly as the dead. Crews away from a fire shoot slow. Build Heaters beside them.', { tag: 'COLD', delay: 1 });
   }
+  S.heatHint = false;
   checkpoint();
   buildShop(); renderInfo(); renderNextWave(); renderPowerbar(); updateHUD(true);
 }
@@ -244,6 +246,10 @@ function startWave() {
   const early = S.spawners.length > 0 || S.enemies.length > 0;
   S.wave++;
   S.spawners.push(makeSpawner(S.wave));
+  if (coldMap() && !S.heatHint && S.towers.some((t) => t.cold)) {
+    S.heatHint = true;
+    sayLine('moreno', 'Some of our crews are freezing out there. Get a Heater next to them or they will keep shooting slow.', { tag: 'COLD', delay: 0.5 });
+  }
   // farms drop their harvest as supply crates while the wave plays out
   for (const t of S.towers) {
     if (t.type !== 'farm' || !t.st.income) continue;
@@ -578,8 +584,17 @@ function auraCovers(a, t) {
   if (!A || (A.only === 'air' && !AIRCRAFT[t.type]) || (A.only === 'water' && TOWERS[t.type].place !== 'water')) return false;
   return A.range >= MAP_WIDE || dist2(a.x, a.y, t.x, t.y) <= (A.range * TILE + 1) ** 2;
 }
+// On snow maps crews out in the cold fire slower (a farm earns less) unless a heater's warmth
+// reaches them; the safehouse warms the towers right beside it. A blizzard makes it worse.
+const COLD = { rate: 1.6, blizzard: 1.9, income: 0.6, house: 1.6 };
+const coldMap = () => !!(S.L && S.L.world === 2);
+function warmAt(x, y, heaters) {
+  if (S.M && dist2(x, y, S.M.end.x, S.M.end.y) <= (COLD.house * TILE) ** 2) return true;
+  return heaters.some((a) => a.raw.aura.range >= MAP_WIDE || dist2(a.x, a.y, x, y) <= (a.raw.aura.range * TILE + 1) ** 2);
+}
 function refreshTowers() {
-  const auras = S.towers.filter((a) => a.raw.aura);
+  const auras = S.towers.filter((a) => a.raw.aura), heaters = auras.filter((a) => a.raw.aura.heat), cold = coldMap();
+  const chill = WEATHER.kind === 'blizzard' ? COLD.blizzard : COLD.rate;
   for (const t of S.towers) {
     let rate = 1, dmg = 1, reach = 0, detect = false;
     for (const a of auras) {
@@ -593,6 +608,11 @@ function refreshTowers() {
     if (st.range < MAP_WIDE) st.range += reach;
     if (detect) st.detect = true;
     t.buffed = rate < 1 || dmg > 1 || reach > 0 || (detect && !t.raw.detect);
+    t.cold = cold && CREWED.has(t.type) && !warmAt(t.x, t.y, heaters);
+    if (t.cold) {
+      for (const k of BUFF_RATE) if (st[k]) st[k] *= chill;
+      if (st.income) st.income *= COLD.income;
+    }
     t.st = st;
   }
 }
@@ -720,7 +740,7 @@ function updateTower(t, dt) {
   t.cd -= dt; t.cd2 -= dt; t.cd3 -= dt; t.cd4 -= dt; t.cd5 -= dt;
 
   if (st.fieldSlow || st.fieldDps) {
-    const r2 = (st.range * TILE) ** 2;
+    const r2 = ((st.fieldR || st.range) * TILE) ** 2;
     for (const e of S.enemies) {
       if (!targetable(e, st.air, st.detect) || dist2(e.x, e.y, t.x, t.y) > r2) continue;
       if (st.fieldSlow) e.fslowNext = Math.max(e.fslowNext, st.fieldSlow);
@@ -1329,7 +1349,28 @@ function initWeather() {
     say: ([who, text]) => { if (S.state === 'playing' && !Comms.busy) sayLine(who, text, { tag: 'WEATHER' }); },
     strike: (x, y) => { S.decals.push({ kind: 'scorch', x, y, r: 9, life: 14, max: 14, seed: Math.random() * 1000 }); S.shake = Math.max(S.shake, 3); },
     shake: (v) => { S.shake = Math.max(S.shake, v); },
+    changed: () => { if (coldMap() && S.towers.length) { refreshTowers(); if (S.selected) renderInfo(); } },
   });
+}
+
+// a crew left out in the cold: frost over the tower, breath clouds and a snowflake badge
+function drawFrost(c, tw, t) {
+  const x = tw.x, y = tw.y, p = 0.75 + Math.sin(t * 3 + x) * 0.25;
+  c.save();
+  c.fillStyle = radial(c, x, y, 23, 'rgba(190,225,255,0.12)', 'rgba(210,236,255,0.6)', 0, 0); circle(c, x, y, 23); c.fill();
+  for (let i = 0; i < 8; i++) { const a = i * 0.785 + 0.2; ice(c, x + Math.cos(a) * 19, y + Math.sin(a) * 19, 3.4, a + Math.PI / 2); }
+  c.strokeStyle = 'rgba(235,248,255,0.7)'; c.lineWidth = 0.8;
+  for (let i = 0; i < 6; i++) { const a = i * 1.05 + 0.4, r0 = 16, r1 = 21; c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke(); }
+  // breath clouds every couple of seconds
+  const k = (t * 0.5 + x * 0.01) % 1;
+  if (k < 0.4) { c.fillStyle = `rgba(240,248,255,${(0.4 - k) * 1.2})`; circle(c, x + 4 + k * 10, y - 8 - k * 12, 2 + k * 6); c.fill(); }
+  // the badge
+  const bx = x + 15, by = y - 17;
+  circle(c, bx, by, 6.5); c.fillStyle = 'rgba(16,40,70,0.88)'; c.fill();
+  c.strokeStyle = `rgba(160,215,255,${p})`; c.lineWidth = 1; c.stroke();
+  c.strokeStyle = '#e8f6ff'; c.lineWidth = 1; c.lineCap = 'round';
+  for (let i = 0; i < 3; i++) { const a = (i * Math.PI) / 3; c.beginPath(); c.moveTo(bx - Math.cos(a) * 4, by - Math.sin(a) * 4); c.lineTo(bx + Math.cos(a) * 4, by + Math.sin(a) * 4); c.stroke(); }
+  c.restore();
 }
 
 // ============================================================
@@ -1382,6 +1423,7 @@ function update(dt) {
       for (const t of S.towers) {
         if (t.st.income && t.type !== 'farm') { S.cash += Math.round(t.st.income); floatText(`+$${Math.round(t.st.income)}`, t.x, t.y - 26, '#86b356', 14); }
         if (t.type === 'farm') addXp('farm', Math.round((t.st.income || 0) / 6) + 2);
+        if (t.type === 'heater') addXp('heater', 2 + S.towers.filter((o) => CREWED.has(o.type) && auraCovers(t, o)).length);
         if (t.st.interest) {
           const g = Math.min(t.st.interestCap, Math.floor(S.cash * t.st.interest));
           if (g > 0) { S.cash += g; floatText(`Interest +$${g}`, t.x, t.y - 12, '#e3a83e', 13); Sound.play('interest', t.x); }
@@ -1472,12 +1514,25 @@ function render() {
   }
 
   const h = S.hover;
+  // warmth on snow maps: each heater (and the safehouse) throws a warm glow on the snow; while
+  // placing a tower the edges of every warm zone are marked so you can see where crews stay warm
+  if (coldMap()) {
+    const zones = S.towers.filter((tw) => tw.raw.aura && tw.raw.aura.heat).map((tw) => [tw.x, tw.y, tw.raw.aura.range]);
+    zones.push([S.M.end.x, S.M.end.y, COLD.house]);
+    const showEdge = S.placing && S.placing !== 'heater' && CREWED.has(S.placing) || S.placing === 'heater' || (S.selected && S.selected.type === 'heater');
+    for (const [x, y, rr] of zones) {
+      if (rr >= MAP_WIDE) continue;
+      const r = rr * TILE, fl = 0.9 + Math.sin(t * 3 + x) * 0.05 + Math.sin(t * 7.3 + y) * 0.03;
+      c.fillStyle = radial(c, x, y, r, `rgba(255,160,80,${0.3 * fl})`, `rgba(255,150,70,${0.08 * fl})`, 0, 0); circle(c, x, y, r); c.fill();
+      c.save(); c.strokeStyle = `rgba(255,170,90,${showEdge ? 0.75 : 0.28})`; c.lineWidth = showEdge ? 1.6 : 1; c.setLineDash([5, 5]); c.lineDashOffset = -t * 8; circle(c, x, y, r); c.stroke(); c.restore();
+    }
+  }
   // standing fields: cold mist, static and fire around the towers that have them
   for (const tw of S.towers) {
     const st = tw.st;
     if (!st.fieldSlow && !st.fieldDps) continue;
-    const col = tw.type === 'cryo' ? '190,230,255' : tw.type === 'flame' ? '255,130,50' : '140,210,255';
-    const r = st.range * TILE;
+    const col = tw.type === 'cryo' ? '190,230,255' : tw.type === 'flame' || tw.type === 'heater' ? '255,130,50' : '140,210,255';
+    const r = (st.fieldR || st.range) * TILE;
     c.save();
     c.globalAlpha = 0.5 + Math.sin(t * 2 + tw.x) * 0.15;
     c.fillStyle = radial(c, tw.x, tw.y, r, `rgba(${col},0.02)`, `rgba(${col},0.16)`, 0, 0);
@@ -1524,6 +1579,7 @@ function render() {
   for (const u of units) {
     if (u.tw) {
       drawTower(c, u.tw, t, lights);
+      if (u.tw.cold) drawFrost(c, u.tw, t);
       if (u.tw === S.selected) { c.save(); c.strokeStyle = `rgba(227,168,62,${0.6 + Math.sin(t * 6) * 0.3})`; c.lineWidth = 1.5; c.strokeRect(u.tw.x - 22, u.tw.y - 22, 44, 44); c.restore(); }
     } else if (u.e) drawZombie(c, u.e, t, lights);
     else {
@@ -1580,6 +1636,10 @@ function render() {
     drawTower(c, ghost, t, null, { alpha: 0.6 });
     if (AIRCRAFT[S.placing]) { c.save(); c.globalAlpha = 0.6; drawAircraft(c, ghost, t, null); c.restore(); }
     if (S.pending) label(c, 'TAP AGAIN TO BUILD', gx, gy - 34, 13, '#ece6d6');
+    if (coldMap() && CREWED.has(S.placing)) {
+      const warm = warmAt(gx, gy, S.towers.filter((tw) => tw.raw.aura && tw.raw.aura.heat));
+      label(c, warm ? 'WARM' : 'COLD: FIRES SLOWER', gx, gy + 32, 12, warm ? '#ffc078' : '#9fd4ff');
+    }
   }
   if (S.power === 'airstrike' && h.inside) {
     c.save(); c.strokeStyle = 'rgba(201,72,61,0.9)'; c.lineWidth = 1.5;
@@ -1684,6 +1744,7 @@ function buildShop() {
   shop.innerHTML = '';
   for (const type of TOWER_KEYS) {
     const def = TOWERS[type];
+    if (def.snowOnly && !coldMap()) continue;
     const open = towerUnlocked(type);
     const b = document.createElement('button');
     b.type = 'button';
@@ -1733,6 +1794,9 @@ function statRows(st) {
   if (st.pierce) rows.push(['Armor pierce', pct(Math.min(1, st.pierce))]);
   if (st.rocket) rows.push(['Rockets', `${st.rockets || 1} × ${Math.round(st.rocket)}`]);
   if (st.bombDmg) rows.push(['Bombs', Math.round(st.bombDmg)]);
+  if (st.heat) rows.push(['Warms crews within', st.heat >= MAP_WIDE ? 'Whole map' : st.heat.toFixed(1) + ' tiles']);
+  if (st.heat && st.warmRate < 1) rows.push(['Warm crews fire', `${pct(1 / st.warmRate - 1)} faster`]);
+  if (st.heat && st.warmDmg > 1) rows.push(['Warm crews hit', `${pct(st.warmDmg - 1)} harder`]);
   if (st.fieldDps) rows.push(['Field damage / sec', Math.round(st.fieldDps)]);
   if (st.fieldSlow) rows.push(['Field slow', pct(st.fieldSlow)]);
   if (st.stunChance) rows.push(['Stun chance', pct(Math.min(1, st.stunChance))]);
@@ -1794,6 +1858,8 @@ function renderInfo() {
     info.append(ups);
     info.insertAdjacentHTML('beforeend', `
       ${t.buffed ? '<p class="hint buff-note">Boosted by a support tower nearby.</p>' : ''}
+      ${t.cold ? `<p class="hint cold-note">Freezing: this crew ${t.type === 'farm' ? 'earns 40% less' : `fires ${WEATHER.kind === 'blizzard' ? 'about half as fast in the blizzard' : '40% slower'}`}. Build a Heater nearby.</p>` : ''}
+      ${coldMap() && CREWED.has(t.type) && !t.cold ? '<p class="hint warm-note">Warm: a heater keeps this crew at full speed.</p>' : ''}
       ${statRows(t.st)}
       <p class="hint" id="info-kills"></p>`);
     if (canTarget) $('#btn-target').addEventListener('click', () => cycleTarget(t));
@@ -1807,7 +1873,8 @@ function renderInfo() {
     const where = def.place === 'water' ? 'a water tile' : 'an open ground tile';
     info.insertAdjacentHTML('beforeend', `<p>${def.desc}</p>${statRows(towerStats(S.placing, [0, 0, 0]))}
       <p class="hint">${coarse() ? `Tap ${where} to preview, then tap it again to build.` : `Click ${where} to build. Hold <kbd>Shift</kbd> to build several. <kbd>Esc</kbd> cancels.`}${def.air ? '' : ' Cannot hit flying zombies.'}</p>
-      <p class="hint more">Upgrade paths: ${def.paths.map((p) => p.name).join(', ')}.</p>`);
+      <p class="hint more">Upgrade paths: ${def.paths.map((p) => p.name).join(', ')}.</p>
+      ${coldMap() && CREWED.has(S.placing) ? '<p class="hint cold-note">Snow map: this crew fires 40% slower unless a Heater (or the safehouse) keeps it warm.</p>' : ''}`);
   } else if (S.power === 'airstrike') {
     info.innerHTML = `<h2 class="card-title">Airstrike</h2><p>${SUPPLIES.airstrike.desc}</p><p class="hint">Tap the battlefield to mark the target. Press <kbd>Esc</kbd> to cancel.</p>`;
   } else {
@@ -2116,7 +2183,7 @@ function selectLevel(i) {
   const stamp = L.boss ? (L.boss === 'juggernaut' ? 'Elite' : 'Boss') : st ? 'Cleared' : 'Active';
   mapBox.insertAdjacentHTML('beforeend', `<span class="ld-stamp ${stamp.toLowerCase()}">${stamp}</span>`);
   box.append(mapBox);
-  const tags = [`${L.waves} waves`, L.look.time, WEATHER.forecast(L)];
+  const tags = [`${L.waves} waves`, L.look.time, WEATHER.forecast(L), ...(L.world === 2 ? ['crews need heat'] : [])];
   if (L.paths.length > 1) tags.push('2 entrances');
   if (L.water.some((v) => v)) tags.push('water');
   if (L.boss) tags.push(L.boss === 'juggernaut' ? 'elite' : 'boss');
@@ -2202,7 +2269,7 @@ function showStore(tab = storeTab) {
 
 // ---------- Armory: spend tower XP to unlock upgrade tiers for good ----------
 let armoryType = 'gunner', armorySel = null;
-const TAB_NAMES = { gunner: 'Gunner', sniper: 'Sniper', mortar: 'Mortar', cryo: 'Cryo', gunboat: 'Gunboat', flame: 'Flamer', tesla: 'Tesla', heli: 'Gunship', sub: 'Sub', jet: 'Jet', farm: 'Farm' };
+const TAB_NAMES = { gunner: 'Gunner', sniper: 'Sniper', mortar: 'Mortar', cryo: 'Cryo', gunboat: 'Gunboat', flame: 'Flamer', tesla: 'Tesla', heli: 'Gunship', sub: 'Sub', jet: 'Jet', farm: 'Farm', heater: 'Heater' };
 const fmtNum = (n) => Math.floor(n).toLocaleString('en-US');
 // Upgrades a tower could unlock right now with the XP it has.
 function armoryReady(type) {
@@ -2374,7 +2441,7 @@ window.addEventListener('keydown', (ev) => {
     ev.preventDefault(); startWave(); return;
   }
   const idx = TOWER_KEYS.findIndex((tk) => TOWERS[tk].key === k);
-  if (idx >= 0) { if (towerUnlocked(TOWER_KEYS[idx])) selectPlacing(TOWER_KEYS[idx]); return; }
+  if (idx >= 0) { const tk = TOWER_KEYS[idx]; if (towerUnlocked(tk) && (!TOWERS[tk].snowOnly || coldMap())) selectPlacing(tk); return; }
   if (k === 'f') cycleSpeed();
   else if (k === 'a') toggleAuto();
   else if (k === 'm') toggleSound();

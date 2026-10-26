@@ -484,8 +484,39 @@ const TOWERS = {
       ] },
     ],
   },
+  // Only sold on snow maps, where crews out in the cold fire slower (see COLD in game.js).
+  heater: {
+    name: 'Heater', role: 'Warmth', place: 'land', air: false, cost: 60, key: 'h', snowOnly: true,
+    desc: 'A fire barrel that keeps nearby crews warm. On snow maps, soldiers out of the heat fire slower; machines do not mind the cold.',
+    base: { dmg: 0, rate: 1, heat: 2.2, warmRate: 1, warmDmg: 1 },
+    paths: [
+      { name: 'Fuel', ups: [
+        { name: 'Propane Tank', desc: 'More fuel, more heat: warms a wider area.', fx: { heat: 0.4 } },
+        { name: 'Hot-Air Ducts', desc: 'Ducting carries the heat further out.', fx: { heat: 0.4 } },
+        { name: 'Brick Furnace', desc: 'A real furnace: much wider warmth, and warm crews fire 5% faster.', fx: { heat: 0.7, '*warmRate': 0.95 } },
+        { name: 'Boiler House', desc: 'Steam pipes run out across the snow: a huge warm area.', fx: { heat: 1, '*warmRate': 0.95 } },
+        { name: 'Geothermal Plant', desc: 'Taps the heat under the ice. Warms every crew on the map.', fx: { heat: 99, '*warmRate': 0.95 }, cost: 1400 },
+      ] },
+      { name: 'Comfort', ups: [
+        { name: 'Hot Coffee', desc: 'Warm crews fire 5% faster.', fx: { '*warmRate': 0.95 } },
+        { name: 'Hot Meals', desc: 'A cooking pot on the fire: warm crews fire 5% faster again.', fx: { '*warmRate': 0.95 } },
+        { name: 'Warm Bunks', desc: 'Rested crews hit 10% harder.', fx: { warmDmg: 0.1 } },
+        { name: 'Barracks Stove', desc: 'Warm crews fire 10% faster and hit 10% harder.', fx: { '*warmRate': 0.9, warmDmg: 0.1 } },
+        { name: 'Morale Bonfire', desc: 'A roaring bonfire: warm crews fire 15% faster and hit 20% harder.', fx: { '*warmRate': 0.85, warmDmg: 0.2 } },
+      ] },
+      { name: 'Burner', ups: [
+        { name: 'Coal Bed', desc: 'Hot coals scorch zombies that walk close.', fx: { fieldDps: 5, fieldR: 1.2 } },
+        { name: 'Fire Pit', desc: 'A bigger, hotter pit.', fx: { fieldDps: 8, fieldR: 0.2 } },
+        { name: 'Fire Barrels', desc: 'Extra burning barrels: scorches a wider ring.', fx: { fieldDps: 16, fieldR: 0.4 } },
+        { name: 'Gas Burners', desc: 'A ring of roaring gas jets.', fx: { fieldDps: 34, fieldR: 0.3 } },
+        { name: 'Inferno Stove', desc: 'A furnace with its doors thrown open: everything nearby burns.', fx: { fieldDps: 80, fieldR: 0.4 } },
+      ] },
+    ],
+  },
 };
 const TOWER_KEYS = Object.keys(TOWERS);
+// towers with people in them, who feel the cold on snow maps
+const CREWED = new Set(['gunner', 'sniper', 'mortar', 'flame', 'gunboat', 'farm']);
 const MODES = [['first', 'First'], ['last', 'Last'], ['strong', 'Strongest'], ['close', 'Closest']];
 const PATH_COLORS = ['#e3a83e', '#e0675b', '#8fc7e6'];
 
@@ -518,6 +549,8 @@ function towerStats(type, tiers) {
     }
   });
   for (const [k, v] of mul) if (st[k] != null) st[k] *= v;
+  // a heater's warmth works like a support aura: its range is how far the heat reaches
+  if (st.heat) { st.range = st.heat; st.aura = { range: st.heat, heat: true, rate: st.warmRate, dmg: st.warmDmg }; }
   return st;
 }
 // Name shown for a tower: its highest upgrade, like "Minigun".

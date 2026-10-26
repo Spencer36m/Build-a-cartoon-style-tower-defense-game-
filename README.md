@@ -72,6 +72,12 @@ The weather changes while you play, and each level runs its own forecast (the mi
 
 A notice slides in when the weather turns, the squad comments on the big ones over the radio, and the ambience follows the sky (rain, wind, a tornado's roar, thunder after each strike). Weather is for looks and atmosphere; it does not change how towers or zombies behave.
 
+### Cold and heaters (Tundra)
+
+Out on the tundra the cold is an enemy too. Towers with crews (Machine Gunner, Sniper, Mortar Team, Flamethrower, Gunboat and Farm) fire 40% slower when nothing keeps them warm, and a cold Farm earns 40% less; a blizzard makes it bite harder. Machines (Cryo Cannon, Tesla Coil, Gunship, Submarine, Fighter Jet) do not mind.
+
+Build **Heaters** (key H, only sold on snow maps) to keep crews warm. Each throws a warm glow over the snow; crews inside it fight at full speed, and the safehouse warms the towers right beside it. Cold towers show frost and a snowflake badge, and while you place a tower the edges of every warm zone are marked. Heaters have their own three paths: **Fuel** (wider warmth, up to a geothermal plant that warms the whole map), **Comfort** (warm crews fire faster and hit harder) and **Burner** (fire that scorches zombies walking close).
+
 ### Zombies
 
 | Zombie | What it does |
@@ -167,7 +173,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 
 | Key | Action |
 | --- | --- |
-| `1`–`9`, `0`, `Q` | Pick a tower |
+| `1`–`9`, `0`, `Q` | Pick a tower (`H` for a Heater on snow maps) |
 | `Shift` + click | Build several of the same tower |
 | `Space` | Start or call the next wave |
 | `,` `.` `/` | Upgrade path 1, 2 or 3 of the selected tower |
