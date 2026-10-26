@@ -888,8 +888,11 @@ const SCENES = (() => {
       }
       vignette(c, w, h, 0.6, k);
       spot(c, col, () => c.fillRect(0, 0, w, h), 0.25);
-      // the lettering block
+      // the lettering block, on a torn ink band so it reads over snow as well as night
       const px = Math.min(h * 0.2, w * 0.1);
+      c.save(); c.globalAlpha = 0.78; c.fillStyle = INK; c.beginPath(); c.moveTo(0, h * 0.25 - px * 0.55); c.lineTo(w * 0.62, h * 0.25 - px * 0.6);
+      for (let i = 0; i <= 8; i++) c.lineTo(w * (0.62 + (i % 2) * 0.03), h * 0.25 - px * 0.6 + (i / 8) * px * 2.4);
+      c.lineTo(0, h * 0.25 + px * 1.85); c.closePath(); c.fill(); c.restore();
       c.textAlign = 'left'; c.textBaseline = 'alphabetic';
       c.font = font(px * 0.32); c.fillStyle = col; if (c.letterSpacing !== undefined) c.letterSpacing = `${px * 0.08}px`;
       c.fillText(o.kicker || 'CHAPTER', w * 0.06, h * 0.25);
@@ -949,8 +952,8 @@ const SCENES = (() => {
       c.save(); c.beginPath(); c.roundRect(bx, by, bw, bh, u * 2); c.clip(); gradTone(c, bx, by, bx + bw, by + bh, 0, 0.8, k, INK, [bx, by, bw, bh]); c.restore();
       // screen with a waveform
       const sx = bx + bw * 0.08, sy = by + bh * 0.12, sw = bw * 0.5, sh = bh * 0.34;
-      c.fillStyle = '#0c1a10'; c.fillRect(sx, sy, sw, sh); c.strokeStyle = INK; c.lineWidth = u * 0.8; c.strokeRect(sx, sy, sw, sh);
-      label(c, o.ch || 'CH 07  ·  31.250 MHz', sx + sw * 0.05, sy + sh * 0.18, sh * 0.16, SPOT.green, 'left', 600);
+      c.fillStyle = o.red ? '#1a0c0c' : '#0c1a10'; c.fillRect(sx, sy, sw, sh); c.strokeStyle = INK; c.lineWidth = u * 0.8; c.strokeRect(sx, sy, sw, sh);
+      label(c, o.ch || 'CH 07  ·  31.250 MHz', sx + sw * 0.05, sy + sh * 0.18, sh * 0.16, o.red ? SPOT.red : SPOT.green, 'left', 600);
       // dials and switches
       for (const [dx, dy, r] of [[0.75, 0.3, 0.12], [0.75, 0.7, 0.09], [0.2, 0.72, 0.07], [0.4, 0.72, 0.07]]) {
         const x = bx + bw * dx, y = by + bh * dy, rr = Math.min(bw, bh) * r;
@@ -968,11 +971,11 @@ const SCENES = (() => {
       for (let i = 0; i < 6; i++) { let x = rng() * w, y = rng() * h * 0.3; c.beginPath(); c.moveTo(x, y); for (let j = 0; j < 5; j++) { x += (rng() - 0.3) * u * 6; y += u * 3; c.lineTo(x, y); } c.stroke(); }
       vignette(c, w, h, 0.7, k);
     },
-    anim(c, w, h, t) {
+    anim(c, w, h, t, o) {
       const u = unit(w, h), bx = w * 0.12, by = h * 0.18, bw = w * 0.62, bh = h * 0.7;
       const sx = bx + bw * 0.08, sy = by + bh * 0.12, sw = bw * 0.5, sh = bh * 0.34;
       c.save(); c.beginPath(); c.rect(sx, sy, sw, sh); c.clip();
-      c.strokeStyle = SPOT.green; c.lineWidth = Math.max(1, u * 0.4); c.beginPath();
+      c.strokeStyle = o && o.red ? SPOT.red : SPOT.green; c.lineWidth = Math.max(1, u * 0.4); c.beginPath();
       for (let i = 0; i <= 60; i++) { const f = i / 60, x = sx + f * sw, burst = Math.max(0, Math.sin(t * 3 + f * 5)) ** 3, y = sy + sh * 0.62 + Math.sin(f * 40 + t * 20) * sh * 0.25 * burst * (0.4 + 0.6 * Math.sin(f * 7 + t * 5)); i ? c.lineTo(x, y) : c.moveTo(x, y); }
       c.stroke(); c.restore();
       if (Math.sin(t * 6) > 0) { c.fillStyle = SPOT.red; c.beginPath(); c.arc(bx + bw * 0.6, by + bh * 0.72, u * 1.2, 0, TAU); c.fill(); glow(c, bx + bw * 0.6, by + bh * 0.72, u * 4, SPOT.red, 0.7); }
@@ -1596,6 +1599,113 @@ const SCENES = (() => {
       vignette(c, w, h, 0.6, k);
     },
     anim(c, w, h, t) { glow(c, w * 0.72, h * 0.55, unit(w, h) * (18 + 8 * pulse(t, 7)), SPOT.green, 0.4); },
+  };
+
+
+  // ============================================================ KESSLER-VANE
+  // Silas Vane's office at the top of Kessler-Vane Tower: the burning city through a wall of glass,
+  // a wall of monitors, and the man himself in a high-backed chair, only ever seen from behind.
+  S.office = {
+    base(c, w, h, o) {
+      const k = cellOf(w, h), u = unit(w, h), col = SPOT[o.spot || 'red'];
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      // the window: night sky, a burning skyline, mullions
+      const wx = w * 0.04, wy = h * 0.06, ww = w * 0.92, wh = h * 0.62;
+      c.save(); c.beginPath(); c.rect(wx, wy, ww, wh); c.clip();
+      c.fillStyle = PAPER; c.fillRect(wx, wy, ww, wh); vTone(c, wx, wy, ww, wy + wh, 0.95, 0.45, k);
+      glow(c, w * 0.62, wy + wh, w * 0.5, SPOT.orange, 0.7);
+      for (let i = 0; i < 5; i++) cloud(c, w * (0.2 + i * 0.16), wy + wh * (0.45 - (i % 2) * 0.12), u * 9, 700 + i, 0.8, k, 8, 0, 0.3);
+      const wins = skyline(c, w, wy + wh, wh * 0.5, 91, INK, 0.1); c.fillStyle = SPOT.amber; for (const [x, y, ww2, hh] of wins) c.fillRect(x, y, ww2, hh);
+      spot(c, SPOT.orange, () => c.fillRect(wx, wy, ww, wh), 0.35);
+      c.restore();
+      c.fillStyle = INK; for (let i = 0; i <= 5; i++) c.fillRect(wx + (i / 5) * ww - u * 0.6, wy, u * 1.2, wh); c.fillRect(wx, wy + wh * 0.5, ww, u * 0.8);
+      // reflections streaked across the glass
+      c.save(); c.globalAlpha = 0.12; c.fillStyle = PAPER; for (const f of [0.15, 0.55]) { poly(c, [[w * f, wy], [w * (f + 0.08), wy], [w * (f - 0.06), wy + wh], [w * (f - 0.14), wy + wh]]); c.fill(); } c.restore();
+      // the desk and a bank of monitors glowing with outbreak maps
+      c.fillStyle = INK; c.fillRect(0, h * 0.7, w, h * 0.3);
+      for (let i = 0; i < 3; i++) {
+        const mx = w * (0.32 + i * 0.13), my = h * 0.56, mw = w * 0.11, mh = h * 0.12;
+        c.fillStyle = '#0a1510'; c.fillRect(mx, my, mw, mh); c.strokeStyle = tone(c, 0.5, k); c.lineWidth = u * 0.5; c.strokeRect(mx, my, mw, mh);
+        c.save(); c.beginPath(); c.rect(mx, my, mw, mh); c.clip(); radialTone(c, mx + mw * (0.3 + i * 0.2), my + mh * 0.5, 0, mw * 0.6, 0.8, 0, Math.max(2, k - 1), [mx, my, mw, mh]); spot(c, i === 1 ? col : SPOT.green, () => c.fillRect(mx, my, mw, mh), 0.9); c.restore();
+      }
+      glow(c, w * 0.5, h * 0.62, w * 0.3, SPOT.green, 0.3);
+      // the chair, high-backed, with Vane's head and shoulders above it
+      const cx = w * 0.5, cy = h * 0.78;
+      c.fillStyle = INK; c.beginPath(); c.moveTo(cx - w * 0.09, h); c.lineTo(cx - w * 0.085, cy - h * 0.2); c.quadraticCurveTo(cx, cy - h * 0.3, cx + w * 0.085, cy - h * 0.2); c.lineTo(cx + w * 0.09, h); c.fill();
+      c.strokeStyle = col; c.lineWidth = u * 0.5; c.beginPath(); c.moveTo(cx - w * 0.085, cy - h * 0.2); c.quadraticCurveTo(cx, cy - h * 0.3, cx + w * 0.085, cy - h * 0.2); c.stroke();
+      c.fillStyle = INK; c.beginPath(); c.ellipse(cx + w * 0.005, cy - h * 0.31, w * 0.035, h * 0.07, 0, 0, TAU); c.fill();
+      c.strokeStyle = SPOT.green; c.globalAlpha = 0.8; c.lineWidth = u * 0.4; c.beginPath(); c.ellipse(cx + w * 0.005, cy - h * 0.31, w * 0.035, h * 0.07, 0, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); c.globalAlpha = 1;
+      // a glass of something on the desk, catching the fire
+      c.fillStyle = 'rgba(242,238,228,0.18)'; c.fillRect(w * 0.78, h * 0.64, u * 2.2, h * 0.06); c.fillStyle = SPOT.amber; c.fillRect(w * 0.78, h * 0.68, u * 2.2, h * 0.02);
+      label(c, 'KESSLER-VANE', w * 0.5, h * 0.9, u * 3.2, tone(c, 0.6, k), 'center');
+      vignette(c, w, h, 0.5, k);
+    },
+    anim(c, w, h, t) { glow(c, w * 0.62, h * 0.66, w * (0.25 + 0.04 * Math.sin(t * 5) * Math.sin(t * 2.3)), SPOT.orange, 0.12); },
+  };
+
+  // an extreme close-up: half of Vane's face caught in monitor light, the outbreak map in his lens
+  S.vaneClose = {
+    base(c, w, h, o) {
+      const k = cellOf(w, h, 0.8), u = unit(w, h), cx = w * 0.6, cy = h * 0.5, col = SPOT[o.spot || 'green'];
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      glow(c, w * 0.95, h * 0.4, w * 0.6, col, 0.55);
+      // the lit edge of a profile: brow, nose, lips, chin
+      const s2 = Math.min(w, h) / 100;
+      c.save(); c.translate(cx, cy); c.scale(s2, s2);
+      const prof = () => { c.beginPath(); c.moveTo(-10, -60); c.quadraticCurveTo(14, -58, 18, -30); c.lineTo(17, -20); c.quadraticCurveTo(28, -6, 30, 4); c.lineTo(22, 7); c.quadraticCurveTo(24, 13, 20, 15); c.quadraticCurveTo(24, 19, 20, 24); c.quadraticCurveTo(22, 36, 6, 44); c.lineTo(-40, 60); c.lineTo(-40, -60); c.closePath(); };
+      prof(); c.fillStyle = INK; c.fill();
+      // the light falls off across the face; the tone is laid in screen pixels so its dots stay fine
+      c.save(); prof(); c.clip(); c.scale(1 / s2, 1 / s2); gradTone(c, 36 * s2, 0, -4 * s2, 0, 0.05, 1, Math.max(2, k), PAPER, [-14 * s2, -62 * s2, 50 * s2, 124 * s2]); c.restore();
+      prof(); c.strokeStyle = PAPER; c.lineWidth = 1.2; c.stroke();
+      spot(c, col, () => { prof(); c.fill(); }, 0.5);
+      // slicked-back hair
+      c.fillStyle = INK; c.beginPath(); c.moveTo(-40, -70); c.quadraticCurveTo(0, -78, 14, -60); c.quadraticCurveTo(-4, -64, -10, -54); c.lineTo(-40, -50); c.fill();
+      c.strokeStyle = 'rgba(242,238,228,0.35)'; c.lineWidth = 0.6; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(-36 + i * 3, -66 + i); c.quadraticCurveTo(-10 + i * 2, -70 + i, 10, -60 + i * 0.6); c.stroke(); }
+      // the eye and a rimless lens holding a tiny burning map
+      c.fillStyle = PAPER; c.beginPath(); c.moveTo(4, -28); c.quadraticCurveTo(10, -32, 15, -27); c.quadraticCurveTo(10, -25, 4, -28); c.fill();
+      c.fillStyle = INK; c.beginPath(); c.arc(11, -28, 1.6, 0, TAU); c.fill();
+      c.strokeStyle = PAPER; c.lineWidth = 0.8; c.beginPath(); c.ellipse(10, -28, 9, 6.5, 0, 0, TAU); c.stroke();
+      c.save(); c.beginPath(); c.ellipse(10, -28, 8.6, 6.1, 0, 0, TAU); c.clip(); c.globalAlpha = 0.55; c.fillStyle = SPOT.red; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(5 + i * 2.6, -30 + (i % 2) * 3, 1.2, 0, TAU); c.fill(); } c.globalAlpha = 1; c.restore();
+      c.strokeStyle = PAPER; c.beginPath(); c.moveTo(1, -28); c.lineTo(-14, -26); c.stroke();
+      // a thin smile
+      c.strokeStyle = PAPER; c.lineWidth = 0.9; c.beginPath(); c.moveTo(14, 15.5); c.quadraticCurveTo(18, 17.5, 21, 14); c.stroke();
+      c.restore();
+      M.motionLines(c, 0, 0, w * 0.45, h, 0, 30, tone(c, 0.3, k), 8);
+      vignette(c, w, h, 0.6, k);
+    },
+  };
+
+  // Kessler-Vane cleaners in the Blackwood crypt: hazmat suits, gas masks, flashlights in the dust
+  S.cleaners = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h);
+      c.fillStyle = INK; c.fillRect(0, 0, w, h);
+      // a vaulted crypt: arches in tone, coffins in niches
+      for (let i = 0; i < 4; i++) {
+        const ax = w * (0.12 + i * 0.25), aw = w * 0.2, top = h * 0.18;
+        c.beginPath(); c.moveTo(ax - aw / 2, h * 0.75); c.lineTo(ax - aw / 2, top + aw * 0.4); c.quadraticCurveTo(ax, top - aw * 0.2, ax + aw / 2, top + aw * 0.4); c.lineTo(ax + aw / 2, h * 0.75); c.closePath(); fillT(c, 0.82, k);
+        c.strokeStyle = tone(c, 0.4, k); c.lineWidth = u * 0.6; c.stroke();
+        c.beginPath(); c.rect(ax - aw * 0.32, h * 0.46, aw * 0.64, h * 0.12); fillT(c, 0.6, k); c.strokeStyle = INK; c.lineWidth = u * 0.4; c.stroke();
+      }
+      c.beginPath(); c.rect(0, h * 0.75, w, h * 0.25); fillT(c, 0.7, k);
+      // flashlight beams cutting through the dust
+      const men = [[0.22, 0.95, 0.5, 1], [0.48, 0.97, 0.56, -1], [0.75, 0.94, 0.48, -1]];
+      for (const [fx, fy, sc, f] of men) {
+        const hx = w * fx + f * h * sc * 0.12, hy = h * fy - h * sc * 0.62;
+        c.save(); c.globalAlpha = 0.35; const g = c.createLinearGradient(hx, hy, hx + f * w * 0.4, hy - h * 0.1); g.addColorStop(0, 'rgba(242,238,228,1)'); g.addColorStop(1, 'rgba(242,238,228,0)'); c.fillStyle = g;
+        poly(c, [[hx, hy], [hx + f * w * 0.45, hy - h * 0.3], [hx + f * w * 0.45, hy + h * 0.05]]); c.fill(); c.restore();
+      }
+      motes(c, w, h, 1, 60, 4, PAPER, 0.5, u * 0.25, 0);
+      // the cleaners: bulky suits, gas-mask snouts, KV on the back
+      for (const [fx, fy, sc, f] of men) {
+        figure(c, w * fx, h * fy, h * sc, 'parka', { face: f, pose: 'gun', rim: SPOT.purple });
+        const hx = w * fx + f * h * sc * 0.03, hy = h * fy - h * sc * 0.84;
+        c.fillStyle = INK; c.beginPath(); c.ellipse(hx + f * h * sc * 0.07, hy + h * sc * 0.02, h * sc * 0.05, h * sc * 0.035, 0, 0, TAU); c.fill();
+        c.fillStyle = SPOT.red; c.beginPath(); c.arc(hx + f * h * sc * 0.03, hy - h * sc * 0.01, h * sc * 0.012, 0, TAU); c.fill();
+        label(c, 'KV', w * fx - f * h * sc * 0.04, h * fy - h * sc * 0.55, h * sc * 0.07, PAPER, 'center');
+      }
+      vignette(c, w, h, 0.7, k);
+    },
   };
 
   S.blank = { base(c, w, h, o) { c.fillStyle = o.ink ? INK : PAPER; c.fillRect(0, 0, w, h); } };

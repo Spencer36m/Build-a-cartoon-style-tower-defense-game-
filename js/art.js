@@ -1237,7 +1237,7 @@ function layerReach(tw, part) {
   let R = TFIN.bounds.get(key);
   if (R) return R;
   const S = 160, cv = document.createElement('canvas'); cv.width = cv.height = S;
-  const g = cv.getContext('2d'); g.translate(S / 2, S / 2);
+  const g = cv.getContext('2d', { willReadFrequently: true }); g.translate(S / 2, S / 2);
   let far = -1;
   for (const ang of [0, Math.PI / 2]) {
     g.clearRect(-S, -S, S * 2, S * 2);
