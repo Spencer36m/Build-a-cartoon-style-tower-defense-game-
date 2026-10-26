@@ -1144,10 +1144,12 @@ function drawFx(c, f, lights) {
       c.globalAlpha = k; c.strokeStyle = '#ffd28a'; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(f.x, f.y); c.lineTo(f.x - f.vx * 0.03, f.y - f.vy * 0.03); c.stroke(); break;
     case 'smoke': {
+      // a billowing puff: lit on top, shaded underneath, turning slowly as it spreads and fades
       const r = f.r + (1 - k) * (f.grow || 10);
-      c.globalAlpha = k * 0.45;
-      c.fillStyle = radial(c, f.x, f.y, r, `rgba(${f.color},0.9)`, `rgba(${f.color},0)`, 0, 0);
-      circle(c, f.x, f.y, r); c.fill();
+      if (f.rot == null) { f.rot = Math.random() * TAU; f.spin = (Math.random() - 0.5) * 1.6; f.v = Math.floor(Math.random() * 4); }
+      c.globalAlpha = Math.min(1, k * 1.4) * 0.62;
+      c.translate(f.x, f.y - (1 - k) * 4); c.rotate(f.rot + (1 - k) * f.spin);
+      c.drawImage(puffSprite(f.color, f.v), -r * 1.25, -r * 1.25, r * 2.5, r * 2.5);
       break;
     }
     case 'fire': {
@@ -1162,6 +1164,9 @@ function drawFx(c, f, lights) {
     }
     case 'blast': {
       const g = 1 - k, r = f.r * (0.4 + Math.sqrt(g) * 0.8);
+      // the shockwave ring racing out ahead of the fireball
+      c.globalAlpha = k * 0.7; c.strokeStyle = 'rgba(255,240,210,0.9)'; c.lineWidth = 1 + k * 3;
+      circle(c, f.x, f.y, f.r * (0.5 + Math.sqrt(g) * 1.5)); c.stroke();
       c.globalAlpha = Math.min(1, k * 1.6);
       c.fillStyle = radial(c, f.x, f.y, r, 'rgba(255,245,200,1)', 'rgba(230,90,30,0)', 0, 0);
       circle(c, f.x, f.y, r); c.fill();
@@ -1213,6 +1218,29 @@ function drawFx(c, f, lights) {
     }
   }
   c.restore();
+}
+
+// smoke puff sprites: a cluster of soft lobes lit from the upper left, cached per colour
+const PUFFS = new Map();
+function puffSprite(color, v) {
+  const key = color + v;
+  let cv = PUFFS.get(key);
+  if (cv) return cv;
+  const S2 = 96; cv = document.createElement('canvas'); cv.width = cv.height = S2;
+  const g = cv.getContext('2d'), rng = mulberry32(v * 97 + 3), [r0, g0, b0] = color.split(',').map(Number);
+  const lit = `rgb(${Math.min(255, r0 + 70)},${Math.min(255, g0 + 70)},${Math.min(255, b0 + 70)})`, dark = `rgb(${r0 * 0.55 | 0},${g0 * 0.55 | 0},${b0 * 0.55 | 0})`;
+  for (let i = 0; i < 9; i++) {
+    const a = rng() * TAU, d = rng() * S2 * 0.2, x = S2 / 2 + Math.cos(a) * d, y = S2 / 2 + Math.sin(a) * d, r = S2 * (0.14 + rng() * 0.12);
+    const gr = g.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+    gr.addColorStop(0, lit); gr.addColorStop(0.55, `rgb(${color})`); gr.addColorStop(1, dark);
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  }
+  // feather the edge so puffs blend into each other
+  g.globalCompositeOperation = 'destination-in';
+  const m = g.createRadialGradient(S2 / 2, S2 / 2, S2 * 0.18, S2 / 2, S2 / 2, S2 * 0.48);
+  m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = m; g.fillRect(0, 0, S2, S2);
+  PUFFS.set(key, cv);
+  return cv;
 }
 
 function drawProjectile(c, p, lights) {
