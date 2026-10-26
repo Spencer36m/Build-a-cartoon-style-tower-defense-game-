@@ -1782,16 +1782,19 @@ function render() {
   }
 }
 
+// the main theme on the menus, a world's own song on its level map and in its battles
+const levelsScreen = $('#levels-screen');
 function updateAudioScene() {
   if (!Sound.ac || Story.active) return;
-  let mode = 'menu';
+  let mode = 'menu', world = 0;
   if (S.state === 'playing' || S.state === 'won' || S.state === 'over') {
     if (S.state !== 'playing' || S.paused) mode = 'calm';
     else if (S.enemies.some((e) => ZOMBIES[e.type].boss)) mode = 'boss';
     else mode = S.spawners.length || S.enemies.length ? 'battle' : 'calm';
+    world = S.L.world;
     if (!Sound.amb) Sound.setAmbience(S.L.look.weather, S.L.look.time, S.L.world);
-  }
-  Sound.setScene(mode, S.L ? S.L.world : 0);
+  } else if (!levelsScreen.hidden) { mode = 'calm'; world = S.worldSel; }
+  Sound.setScene(mode, world);
 }
 
 let lastFrame = performance.now();

@@ -174,7 +174,15 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 
 Every sound is synthesized live with Web Audio, so the game ships no audio files. Weapons, upgrades, menus, the store and the Armory all have their own sounds, and every kind of zombie groans and dies differently (bones rattle, crows caw, wraiths wail, bloaters pop, bosses roar). Effects pan left or right with where they happen on the map.
 
-The music follows the action: a menu theme, a calm arrangement between waves, drums once a wave is on, and a faster boss theme, in a different key for each world. Ambience follows the weather as it changes and the time of day: rain, wind, thunder, a tornado's roar, crickets at night, owls in the cemetery, frogs in the bayou.
+The music is a main theme on the menus and a song of its own for each world, with its own instruments, tempo and feel:
+
+- **Main theme**: a creeping cartoon-horror march, with pizzicato bass, harpsichord and a theremin melody.
+- **Farmland**: a bluegrass hoedown, with banjo rolls, upright bass, guitar and a fiddle.
+- **Cemetery**: a skeleton waltz in 3/4, with a church organ, harpsichord, a xylophone of bones and a tolling bell.
+- **Tundra**: a slow, icy piece, with a low drone, glass arpeggios ringing into an echo, a breathy flute and taiko drums.
+- **Bayou**: a swamp-blues shuffle, with boogie bass, accordion, slide guitar or harmonica, stomps and a washboard.
+
+A world's song plays on its level map and in its battles, and the arrangement follows the action. Cutscenes get a quiet version. Between waves it is calm, the drums and full band come in once a wave is on, and bosses get a heavier, faster version. Ambience follows the weather as it changes and the time of day: rain, wind, thunder, a tornado's roar, crickets at night, owls in the cemetery, frogs in the bayou.
 
 **Sound** in the top bar mutes everything; **Music** on the main menu and the pause screen turns off just the music. On iPhone, the ring/silent switch also mutes the game, as with most games.
 
@@ -224,7 +232,8 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/manga.js`, `js/scenes.js`: the manga art kit (screentones, speed lines, portraits) and every cutscene panel
 - `js/story.js`: the story script and the cutscene player
 - `js/missions.js`, `js/comms.js`: the 40 operations, the cast's radio lines, and the comms card that shows them in a mission
-- `js/audio.js`: synthesized sound effects, music and ambience
+- `js/music.js`: the menu theme and each world's song, all synthesized
+- `js/audio.js`: synthesized sound effects, the music player and ambience
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
 - `manifest.webmanifest`, `sw.js`, `icons/`: installable web app and offline support

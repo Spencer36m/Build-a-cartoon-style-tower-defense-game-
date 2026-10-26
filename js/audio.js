@@ -1,11 +1,10 @@
 'use strict';
 // ============================================================
 // Sound: every effect is synthesized with Web Audio, so the game ships no audio files.
-// Effects pan left or right with their position on the battlefield. Music is a small
-// step sequencer whose arrangement follows the action, and ambience follows the weather.
+// Effects pan left or right with their position on the battlefield. Music (music.js) is a
+// step sequencer with a song per world whose arrangement follows the action, and ambience
+// follows the weather.
 // ============================================================
-const midiHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
-
 // Throttle per effect (ms) so rapid fire doesn't stack into noise.
 const SOUND_GAP = {
   mg: 70, heli: 70, sniper: 90, mortar: 120, boom: 100, thud: 70, cryo: 100, flame: 160, zap: 90, missile: 120, cannon: 110,
@@ -18,32 +17,13 @@ const SOUND_GAP = {
   jet: 600, freezeall: 500, supply: 400, medkit: 400, thunder: 3000, alarm: 1200, static: 300, page: 200, shatter: 300, impact: 500, type: 40,
 };
 
-// Music: four-bar minor progressions per world, as [semitones above the key, chord quality].
-const MUSIC_KEYS = [45, 50, 52, 43]; // A, D, E and G
-const MUSIC_PROG = [
-  [[0, 'm'], [8, 'M'], [10, 'M'], [7, 'm']],
-  [[0, 'm'], [1, 'M'], [0, 'm'], [10, 'M']],
-  [[0, 'm'], [5, 'm'], [8, 'M'], [7, 'm']],
-  [[0, 'm'], [10, 'M'], [8, 'M'], [10, 'M']],
-];
-const MENU_PROG = [[0, 'm'], [8, 'M'], [3, 'M'], [10, 'M']];
-const MUSIC_MODES = {
-  menu: { bpm: 72, pad: 1, arp: [0, 3, 6, 9, 12], bass: [0, 8], kick: [], snare: [], hat: 0 },
-  calm: { bpm: 84, pad: 1, arp: [0, 6, 12], bass: [0, 8], kick: [0], snare: [], hat: 0 },
-  battle: { bpm: 100, pad: 0.8, arp: [0, 10], bass: [0, 3, 6, 8, 11, 14], kick: [0, 8], snare: [4, 12], hat: 2 },
-  boss: { bpm: 118, pad: 0.7, arp: [], bass: [0, 2, 4, 6, 8, 10, 12, 14], kick: [0, 6, 8, 10], snare: [4, 12], hat: 1 },
-  // cutscenes: a slow held pad, and a pulse for the tense pages
-  story: { bpm: 60, pad: 1.4, arp: [0, 10], bass: [0], kick: [], snare: [], hat: 0, quiet: true },
-  tension: { bpm: 88, pad: 1, arp: [0, 6, 12], bass: [0, 3, 6, 8, 11, 14], kick: [0, 8], snare: [], hat: 0, quiet: true },
-};
-
 // a tenth of a second of silence, used to unlock audio on older iPhones
 const SILENT_WAV = 'data:audio/wav;base64,' + btoa(String.fromCharCode(...[82, 73, 70, 70, 36, 9, 0, 0, 87, 65, 86, 69, 102, 109, 116, 32, 16, 0, 0, 0, 1, 0, 1, 0, 64, 31, 0, 0, 64, 31, 0, 0, 1, 0, 8, 0, 100, 97, 116, 97, 0, 9, 0, 0], ...new Array(2304).fill(128)));
 
 const Sound = {
   ac: null, master: null, sfx: null, musicBus: null, ambBus: null, verb: null, noiseBuf: null, curve: null,
   muted: false, musicOn: true, last: {}, recent: [],
-  music: { mode: null, world: 0, step: 0, next: 0 }, amb: null, ticker: null,
+  music: { mode: null, world: 0, song: null, step: 0, next: 0 }, amb: null, ticker: null,
 
   init() {
     this.unlock();
@@ -70,6 +50,7 @@ const Sound = {
       this.verb = ac.createConvolver(); this.verb.buffer = ir;
       const wet = ac.createGain(); wet.gain.value = 0.5;
       this.verb.connect(wet); wet.connect(this.master);
+      MUSIC.attach(ac, this.musicBus, this.verb, this.noiseBuf);
       // soft clipping for growls and roars
       this.curve = new Float32Array(256);
       for (let i = 0; i < 256; i++) { const x = (i / 255) * 2 - 1; this.curve[i] = Math.tanh(x * 3); }
@@ -263,12 +244,19 @@ const Sound = {
   },
 
   // ---------- music ----------
-  // mode: 'menu', 'calm', 'battle', 'boss' or null for silence.
+  // mode: 'menu', 'calm', 'battle', 'boss', 'story', 'tension' or null for silence. Each world
+  // has its own song; the mode picks how full the arrangement is.
   setScene(mode, world = 0) {
     const m = this.music;
     if (m.mode === mode && m.world === world) return;
-    if (!m.mode && this.ac) m.next = this.ac.currentTime + 0.1;
-    m.mode = mode; m.world = world;
+    const song = mode ? MUSIC.songFor(mode, world) : m.song;
+    if (this.ac && (song !== m.song || !m.mode)) {
+      // a new song starts from its first bar after a short breath
+      m.next = this.ac.currentTime + (m.mode ? 0.35 : 0.1);
+      m.step = 0;
+      MUSIC.change(song, this.ac.currentTime);
+    }
+    m.mode = mode; m.world = world; m.song = song;
   },
   tick() {
     const ac = this.ac;
@@ -277,59 +265,12 @@ const Sound = {
     if (m.mode) {
       if (m.next < ac.currentTime) m.next = ac.currentTime + 0.05;
       while (m.next < ac.currentTime + 0.3) {
-        const cfg = MUSIC_MODES[m.mode], dur = 60 / cfg.bpm / 4;
-        this.musicStep(m.step, m.next, cfg, dur);
+        const dur = MUSIC.stepDur(m.song, m.mode);
+        MUSIC.step(m.song, m.mode, m.step, m.next, dur);
         m.next += dur; m.step++;
       }
     }
     if (this.amb && !this.muted) this.ambEvents(0.06);
-  },
-  musicStep(step, t, cfg, dur) {
-    const ac = this.ac, bus = this.musicBus, m = this.music;
-    const bar = Math.floor(step / 16), s = step % 16;
-    const prog = m.mode === 'menu' ? MENU_PROG : MUSIC_PROG[m.world] || MUSIC_PROG[0];
-    const [root, q] = prog[bar % 4];
-    const key = m.mode === 'menu' ? 45 : MUSIC_KEYS[m.world] || 45;
-    const triad = q === 'm' ? [0, 3, 7] : [0, 4, 7];
-    const at = t - ac.currentTime;
-    const note = (midi, len, type, vol, attack = 0.01, verb = 0, cutoff = 0) => {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.type = type; o.frequency.value = midiHz(midi);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      let src = o;
-      if (cutoff) { const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(cutoff * 2, t); f.frequency.exponentialRampToValueAtTime(cutoff, t + len); o.connect(f); src = f; }
-      src.connect(g); g.connect(bus);
-      if (verb) { const sg = ac.createGain(); sg.gain.value = verb; g.connect(sg); sg.connect(this.verb); }
-      o.start(t); o.stop(t + len + 0.05);
-    };
-    // pad: a held chord each bar
-    if (s === 0 && cfg.pad) for (const iv of triad) for (const det of [-6, 6]) {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.type = 'triangle'; o.frequency.value = midiHz(key + 24 + root + iv); o.detune.value = det;
-      const len = dur * 16;
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.06 * cfg.pad, t + len * 0.25); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
-      o.connect(g); g.connect(bus); const sg = ac.createGain(); sg.gain.value = 0.5; g.connect(sg); sg.connect(this.verb);
-      o.start(t); o.stop(t + len + 0.05);
-    }
-    if (cfg.bass.includes(s)) {
-      const bn = key + root + (m.mode === 'boss' && s % 4 === 2 ? 12 : 0), bl = dur * (m.mode === 'menu' ? 6 : 1.8);
-      note(bn, bl, 'sawtooth', 0.12, 0.01, 0, m.mode === 'boss' ? 500 : 300);
-      // the same line an octave up with a brighter filter, so phone and laptop speakers can hear it
-      note(bn + 12, bl, 'sawtooth', 0.05, 0.01, 0, 1400);
-    }
-    const ai = cfg.arp.indexOf(s);
-    if (ai >= 0) { const an = key + 36 + root + triad[(ai + bar) % 3] + (bar % 2 ? 12 : 0); note(an, dur * 3, 'sine', 0.07, 0.01, 0.5); note(an, dur * 2, 'triangle', 0.025, 0.01, 0.3); }
-    if (m.mode === 'boss' && s === 0) note(key + 12 + root, dur * 6, 'sawtooth', 0.08, 0.02, 0.3, 900);
-    // drums
-    if (cfg.kick.includes(s) || (m.mode === 'battle' && bar % 2 && s === 14)) {
-      const o = ac.createOscillator(), g = ac.createGain();
-      o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15);
-      g.gain.setValueAtTime(m.mode === 'calm' ? 0.18 : 0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
-      o.connect(g); g.connect(bus); o.start(t); o.stop(t + 0.3);
-    }
-    if (cfg.snare.includes(s)) { this.noise(0.18, 0.18, 1800, at, 'bandpass', bus, 0.8); note(key + 31, 0.08, 'triangle', 0.05); }
-    if (cfg.hat && s % cfg.hat === 0) this.noise(0.04, s % 4 === 2 ? 0.07 : 0.04, 8000, at, 'highpass', bus);
-    if (m.mode !== 'menu' && m.mode !== 'calm' && !cfg.quiet && bar % 4 === 3 && s >= 12) note(key + 7 + (15 - s) * 2, 0.15, 'sine', 0.18, 0.005);
   },
 
   // ---------- ambience ----------
