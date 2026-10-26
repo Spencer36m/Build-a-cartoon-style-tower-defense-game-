@@ -205,9 +205,9 @@ function startGame(index, save, sb = null) {
   else {
     showBanner(`${L.id} · ${L.name}`, `Operation ${S.mission.op.name} · ${S.mission.objective}`);
     sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: 2.4 });
-    if (coldMap() && L.num <= 3) sayLine('voss', 'Out here the cold is as deadly as the dead. Crews away from a fire shoot slow. Build Heaters beside them.', { tag: 'COLD', delay: 1 });
+    if (coldMap() && L.num <= 3) sayLine('voss', 'Out here the cold is as deadly as the dead. Crews away from a fire freeze solid and stop shooting. Build Heaters beside them.', { tag: 'COLD', delay: 1 });
   }
-  S.heatHint = false;
+  S.heatHint = false; S.frozeHint = false;
   checkpoint();
   buildShop(); renderInfo(); renderNextWave(); renderPowerbar(); updateHUD(true);
 }
@@ -258,11 +258,11 @@ function startWave() {
   S.spawners.push(makeSpawner(S.wave));
   if (coldMap() && !S.heatHint && S.towers.some((t) => t.cold)) {
     S.heatHint = true;
-    sayLine('moreno', 'Some of our crews are freezing out there. Get a Heater next to them or they will keep shooting slow.', { tag: 'COLD', delay: 0.5 });
+    sayLine('moreno', 'Some of our crews are freezing out there. Get a Heater next to them before they freeze solid.', { tag: 'COLD', delay: 0.5 });
   }
   // farms drop their harvest as supply crates while the wave plays out
   for (const t of S.towers) {
-    if (t.type !== 'farm' || !t.st.income) continue;
+    if (t.type !== 'farm' || !t.st.income || t.frozen) continue;
     const n = clamp(Math.round(t.st.income / 15), 2, 10), v = t.st.income / n;
     for (let i = 0; i < n; i++) t.drops.push({ at: S.time + 1 + i * 1.4, v });
   }
@@ -606,17 +606,18 @@ function auraCovers(a, t) {
   if (!A || (A.only === 'air' && !AIRCRAFT[t.type]) || (A.only === 'water' && TOWERS[t.type].place !== 'water')) return false;
   return A.range >= MAP_WIDE || dist2(a.x, a.y, t.x, t.y) <= (A.range * TILE + 1) ** 2;
 }
-// On snow maps crews out in the cold fire slower (a farm earns less) unless a heater's warmth
-// reaches them; the safehouse warms the towers right beside it. A blizzard makes it worse.
-const COLD = { rate: 1.6, blizzard: 1.9, income: 0.6, house: 1.6 };
+// On snow maps a crew out in the cold freezes up: frost builds over a few seconds (faster in a
+// blizzard) and once it is frozen solid the tower stops working altogether (a farm drops no
+// crates) until a heater's warmth thaws it. The safehouse warms the towers right beside it.
+const COLD = { freeze: 6, blizzard: 3, thaw: 1.5, unfreeze: 0.35, house: 1.6 };
 const coldMap = () => !!(S.L && S.L.world === 2 && !(S.sandbox && S.sandbox.cold === false));
 function warmAt(x, y, heaters) {
   if (S.M && dist2(x, y, S.M.end.x, S.M.end.y) <= (COLD.house * TILE) ** 2) return true;
   return heaters.some((a) => a.raw.aura.range >= MAP_WIDE || dist2(a.x, a.y, x, y) <= (a.raw.aura.range * TILE + 1) ** 2);
 }
 function refreshTowers() {
-  const auras = S.towers.filter((a) => a.raw.aura), heaters = auras.filter((a) => a.raw.aura.heat), cold = coldMap();
-  const chill = WEATHER.kind === 'blizzard' ? COLD.blizzard : COLD.rate;
+  // a frozen crew's support aura goes out with it
+  const auras = S.towers.filter((a) => a.raw.aura && !a.frozen), heaters = auras.filter((a) => a.raw.aura.heat), cold = coldMap();
   for (const t of S.towers) {
     let rate = 1, dmg = 1, reach = 0, detect = false;
     for (const a of auras) {
@@ -631,10 +632,6 @@ function refreshTowers() {
     if (detect) st.detect = true;
     t.buffed = rate < 1 || dmg > 1 || reach > 0 || (detect && !t.raw.detect);
     t.cold = cold && CREWED.has(t.type) && !warmAt(t.x, t.y, heaters);
-    if (t.cold) {
-      for (const k of BUFF_RATE) if (st[k]) st[k] *= chill;
-      if (st.income) st.income *= COLD.income;
-    }
     t.st = st;
   }
 }
@@ -753,8 +750,32 @@ function strike(e, dmg, t, pierce) {
   if (st.knock && !ZOMBIES[e.type].boss && Math.random() < st.knockChance) { e.d = Math.max(0, e.d - st.knock); placeOnPath(e); }
 }
 
+// frost builds on crews left in the cold and melts off in the warm; frozen solid, a tower does nothing
+function updateFrost(t, dt) {
+  const was = t.frozen;
+  if (t.cold) t.frost = Math.min(1, (t.frost || 0) + dt / (WEATHER.kind === 'blizzard' ? COLD.blizzard : COLD.freeze));
+  else t.frost = Math.max(0, (t.frost || 0) - dt / COLD.thaw);
+  if (t.frost >= 1) t.frozen = true;
+  else if (t.frost < COLD.unfreeze) t.frozen = false;
+  if (t.frozen && !was) {
+    floatText('Frozen solid', t.x, t.y - 30, '#bfe6ff', 15); Sound.play('freeze', t.x);
+    if (!S.frozeHint) { S.frozeHint = true; sayLine('moreno', `Our ${TOWERS[t.type].name.toLowerCase()} just froze solid! Get a Heater over there or it is useless.`, { tag: 'COLD' }); }
+    if (t.raw.aura) refreshTowers();
+    if (S.selected === t) renderInfo();
+  } else if (!t.frozen && was) {
+    floatText('Thawed', t.x, t.y - 30, '#ffc078', 14);
+    if (t.raw.aura) refreshTowers();
+    if (S.selected === t) renderInfo();
+  }
+}
 function updateTower(t, dt) {
   const st = t.st;
+  if (t.cold || t.frost) updateFrost(t, dt);
+  if (t.frozen) {
+    // nothing moves: no shots, no fields, and the crates a farm would have dropped are lost
+    if (t.drops && t.drops.length) t.drops = t.drops.filter((d) => d.at > S.time);
+    return;
+  }
   t.recoil = Math.max(0, t.recoil - dt * 6);
   t.sonarPing = Math.max(0, t.sonarPing - dt * 0.8);
   t.pulse = Math.max(0, t.pulse - dt * 2);
@@ -1379,15 +1400,36 @@ function initWeather() {
 
 // a crew left out in the cold: frost over the tower, breath clouds and a snowflake badge
 function drawFrost(c, tw, t) {
-  const x = tw.x, y = tw.y, p = 0.75 + Math.sin(t * 3 + x) * 0.25;
+  const x = tw.x, y = tw.y, p = 0.75 + Math.sin(t * 3 + x) * 0.25, f = tw.frost || 0;
   c.save();
-  c.fillStyle = radial(c, x, y, 23, 'rgba(190,225,255,0.12)', 'rgba(210,236,255,0.6)', 0, 0); circle(c, x, y, 23); c.fill();
-  for (let i = 0; i < 8; i++) { const a = i * 0.785 + 0.2; ice(c, x + Math.cos(a) * 19, y + Math.sin(a) * 19, 3.4, a + Math.PI / 2); }
-  c.strokeStyle = 'rgba(235,248,255,0.7)'; c.lineWidth = 0.8;
-  for (let i = 0; i < 6; i++) { const a = i * 1.05 + 0.4, r0 = 16, r1 = 21; c.beginPath(); c.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); c.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1); c.stroke(); }
-  // breath clouds every couple of seconds
-  const k = (t * 0.5 + x * 0.01) % 1;
-  if (k < 0.4) { c.fillStyle = `rgba(240,248,255,${(0.4 - k) * 1.2})`; circle(c, x + 4 + k * 10, y - 8 - k * 12, 2 + k * 6); c.fill(); }
+  // frost creeping in from the edges as it builds
+  c.fillStyle = radial(c, x, y, 23, `rgba(190,225,255,${0.12 * f})`, `rgba(210,236,255,${0.6 * f})`, 0, 0); circle(c, x, y, 23); c.fill();
+  const n = Math.round(8 * f);
+  for (let i = 0; i < n; i++) { const a = i * 0.785 + 0.2; ice(c, x + Math.cos(a) * 19, y + Math.sin(a) * 19, 1.5 + 2 * f, a + Math.PI / 2); }
+  if (tw.frozen) {
+    // frozen solid: the whole tower sealed in a block of ice, cracked and glinting
+    const R = 21;
+    c.beginPath(); c.roundRect(x - R, y - R, R * 2, R * 2, 7);
+    c.fillStyle = linear(c, x - R, y - R, x + R, y + R, [[0, 'rgba(235,248,255,0.62)'], [0.45, 'rgba(170,215,245,0.45)'], [1, 'rgba(120,175,220,0.6)']]); c.fill();
+    c.strokeStyle = 'rgba(240,250,255,0.9)'; c.lineWidth = 1.2; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 0.6;
+    c.beginPath(); c.moveTo(x - 12, y - 18); c.lineTo(x - 5, y - 6); c.lineTo(x - 9, y + 3); c.moveTo(x - 5, y - 6); c.lineTo(x + 4, y - 9); c.moveTo(x + 10, y + 18); c.lineTo(x + 6, y + 7); c.lineTo(x + 13, y + 1); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.moveTo(x - R + 3, y - R + 3); c.lineTo(x - R + 14, y - R + 3); c.lineTo(x - R + 3, y - R + 14); c.fill();
+    const g = (t * 0.6 + x * 0.01) % 1;
+    if (g < 0.25) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,255,255,${(0.25 - g) * 3})`; star(c, x + 10, y - 12, 4, 0.8, 4, 0); c.fill(); c.restore(); }
+    for (let i = 0; i < 6; i++) { const ix = x - R + 4 + i * 7, l = 3 + ((i * 7 + 3) % 5); c.fillStyle = 'rgba(225,242,255,0.85)'; c.beginPath(); c.moveTo(ix - 1.2, y + R); c.lineTo(ix + 1.2, y + R); c.lineTo(ix, y + R + l); c.fill(); }
+  } else if (tw.cold) {
+    // still breathing, for now: breath clouds every couple of seconds
+    const k = (t * 0.5 + x * 0.01) % 1;
+    if (k < 0.4) { c.fillStyle = `rgba(240,248,255,${(0.4 - k) * 1.2})`; circle(c, x + 4 + k * 10, y - 8 - k * 12, 2 + k * 6); c.fill(); }
+    // a ring filling up as it freezes
+    c.strokeStyle = 'rgba(10,30,50,0.6)'; c.lineWidth = 3; c.beginPath(); c.arc(x, y, 24, -Math.PI / 2, -Math.PI / 2 + TAU); c.stroke();
+    c.strokeStyle = '#9fd8ff'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 24, -Math.PI / 2, -Math.PI / 2 + TAU * f); c.stroke();
+  } else {
+    // thawing: melt water dripping off
+    for (let i = 0; i < 3; i++) { const k = (t * 1.4 + i / 3) % 1; c.fillStyle = `rgba(200,230,255,${(1 - k) * 0.8 * f})`; circle(c, x - 10 + i * 10, y + 18 + k * 8, 1.1); c.fill(); }
+  }
+  if (!tw.frozen && !tw.cold) { c.restore(); return; }
   // the badge
   const bx = x + 15, by = y - 17;
   circle(c, bx, by, 6.5); c.fillStyle = 'rgba(16,40,70,0.88)'; c.fill();
@@ -1453,14 +1495,14 @@ function update(dt) {
       floatText(`Wave ${sp.wave} cleared +$${bonus}`, W / 2, H / 2 - 40, '#e3a83e', 22);
       // income towers pay out and medics patch up the walls
       for (const t of S.towers) {
-        if (t.st.income && t.type !== 'farm') { S.cash += Math.round(t.st.income); floatText(`+$${Math.round(t.st.income)}`, t.x, t.y - 26, '#86b356', 14); }
+        if (t.st.income && t.type !== 'farm' && !t.frozen) { S.cash += Math.round(t.st.income); floatText(`+$${Math.round(t.st.income)}`, t.x, t.y - 26, '#86b356', 14); }
         if (t.type === 'farm') addXp('farm', Math.round((t.st.income || 0) / 6) + 2);
         if (t.type === 'heater') addXp('heater', 2 + S.towers.filter((o) => CREWED.has(o.type) && auraCovers(t, o)).length);
-        if (t.st.interest) {
+        if (t.st.interest && !t.frozen) {
           const g = Math.min(t.st.interestCap, Math.floor(S.cash * t.st.interest));
           if (g > 0) { S.cash += g; floatText(`Interest +$${g}`, t.x, t.y - 12, '#e3a83e', 13); Sound.play('interest', t.x); }
         }
-        if (t.st.lifePerWave && S.lives < S.maxLives) { S.lives = Math.min(S.maxLives, S.lives + t.st.lifePerWave); floatText(`+${t.st.lifePerWave} lives`, t.x, t.y - 40, '#86b356', 13); }
+        if (t.st.lifePerWave && S.lives < S.maxLives && !t.frozen) { S.lives = Math.min(S.maxLives, S.lives + t.st.lifePerWave); floatText(`+${t.st.lifePerWave} lives`, t.x, t.y - 40, '#86b356', 13); }
       }
       Sound.play('clear'); bumpStat('.stat-cash');
     }
@@ -1612,7 +1654,7 @@ function render() {
   for (const u of units) {
     if (u.tw) {
       drawTower(c, u.tw, t, lights);
-      if (u.tw.cold) drawFrost(c, u.tw, t);
+      if (u.tw.frost > 0.02) drawFrost(c, u.tw, t);
       if (u.tw === S.selected) { c.save(); c.strokeStyle = `rgba(227,168,62,${0.6 + Math.sin(t * 6) * 0.3})`; c.lineWidth = 1.5; c.strokeRect(u.tw.x - 22, u.tw.y - 22, 44, 44); c.restore(); }
     } else if (u.e) drawZombie(c, u.e, t, lights);
     else if (u.an) ANIMALS.draw(c, u.an, t);
@@ -1673,7 +1715,7 @@ function render() {
     if (S.pending) label(c, 'TAP AGAIN TO BUILD', gx, gy - 34, 13, '#ece6d6');
     if (coldMap() && CREWED.has(S.placing)) {
       const warm = warmAt(gx, gy, S.towers.filter((tw) => tw.raw.aura && tw.raw.aura.heat));
-      label(c, warm ? 'WARM' : 'COLD: FIRES SLOWER', gx, gy + 32, 12, warm ? '#ffc078' : '#9fd4ff');
+      label(c, warm ? 'WARM' : 'COLD: WILL FREEZE', gx, gy + 32, 12, warm ? '#ffc078' : '#9fd4ff');
     }
   }
   if (S.power === 'airstrike' && h.inside) {
@@ -1895,8 +1937,9 @@ function renderInfo() {
     info.append(ups);
     info.insertAdjacentHTML('beforeend', `
       ${t.buffed ? '<p class="hint buff-note">Boosted by a support tower nearby.</p>' : ''}
-      ${t.cold ? `<p class="hint cold-note">Freezing: this crew ${t.type === 'farm' ? 'earns 40% less' : `fires ${WEATHER.kind === 'blizzard' ? 'about half as fast in the blizzard' : '40% slower'}`}. Build a Heater nearby.</p>` : ''}
-      ${coldMap() && CREWED.has(t.type) && !t.cold ? '<p class="hint warm-note">Warm: a heater keeps this crew at full speed.</p>' : ''}
+      ${t.frozen ? `<p class="hint cold-note">Frozen solid: this ${t.type === 'farm' ? 'farm drops no crates' : 'crew cannot fire'} until a Heater thaws it.</p>`
+        : t.cold ? '<p class="hint cold-note">Freezing: it will freeze solid and stop working in a few seconds. Build a Heater nearby.</p>' : ''}
+      ${coldMap() && CREWED.has(t.type) && !t.cold && !t.frozen ? '<p class="hint warm-note">Warm: a heater keeps this crew working.</p>' : ''}
       ${statRows(t.st)}
       <p class="hint" id="info-kills"></p>`);
     if (canTarget) $('#btn-target').addEventListener('click', () => cycleTarget(t));
@@ -1911,7 +1954,7 @@ function renderInfo() {
     info.insertAdjacentHTML('beforeend', `<p>${def.desc}</p>${statRows(towerStats(S.placing, [0, 0, 0]))}
       <p class="hint">${coarse() ? `Tap ${where} to preview, then tap it again to build.` : `Click ${where} to build. Hold <kbd>Shift</kbd> to build several. <kbd>Esc</kbd> cancels.`}${def.air ? '' : ' Cannot hit flying zombies.'}</p>
       <p class="hint more">Upgrade paths: ${def.paths.map((p) => p.name).join(', ')}.</p>
-      ${coldMap() && CREWED.has(S.placing) ? '<p class="hint cold-note">Snow map: this crew fires 40% slower unless a Heater (or the safehouse) keeps it warm.</p>' : ''}`);
+      ${coldMap() && CREWED.has(S.placing) ? '<p class="hint cold-note">Snow map: out of the heat this crew freezes solid and stops working. Keep it near a Heater (or the safehouse).</p>' : ''}`);
   } else if (S.power === 'airstrike') {
     info.innerHTML = `<h2 class="card-title">Airstrike</h2><p>${SUPPLIES.airstrike.desc}</p><p class="hint">Tap the battlefield to mark the target. Press <kbd>Esc</kbd> to cancel.</p>`;
   } else {

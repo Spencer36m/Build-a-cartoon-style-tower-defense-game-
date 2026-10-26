@@ -97,9 +97,9 @@ A notice slides in when the weather turns, the squad comments on the big ones ov
 
 ### Cold and heaters (Tundra)
 
-Out on the tundra the cold is an enemy too. Towers with crews (Machine Gunner, Sniper, Mortar Team, Flamethrower, Gunboat and Farm) fire 40% slower when nothing keeps them warm, and a cold Farm earns 40% less; a blizzard makes it bite harder. Machines (Cryo Cannon, Tesla Coil, Gunship, Submarine, Fighter Jet) do not mind.
+Out on the tundra the cold is an enemy too. Towers with crews (Machine Gunner, Sniper, Mortar Team, Flamethrower, Gunboat and Farm) start to freeze when nothing keeps them warm: frost builds over about 6 seconds (3 in a blizzard), a ring around the tower shows how close it is, and once it is **frozen solid** it stops working completely (no shots, no fire fields, no farm crates, no support aura) until heat reaches it, when it thaws in a second or two. Machines (Cryo Cannon, Tesla Coil, Gunship, Submarine, Fighter Jet) do not mind.
 
-Build **Heaters** (key H, only sold on snow maps) to keep crews warm. Each throws a warm glow over the snow; crews inside it fight at full speed, and the safehouse warms the towers right beside it. Cold towers show frost and a snowflake badge, and while you place a tower the edges of every warm zone are marked. Heaters have their own three paths: **Fuel** (wider warmth, up to a geothermal plant that warms the whole map), **Comfort** (warm crews fire faster and hit harder) and **Burner** (fire that scorches zombies walking close).
+Build **Heaters** (key H, only sold on snow maps) to keep crews warm. Each throws a warm glow over the snow; crews inside it fight at full speed, and the safehouse warms the towers right beside it. Freezing towers show frost, breath and a snowflake badge, frozen ones are sealed in a block of ice, and while you place a tower the edges of every warm zone are marked. Heaters have their own three paths: **Fuel** (wider warmth, up to a geothermal plant that warms the whole map), **Comfort** (warm crews fire faster and hit harder) and **Burner** (fire that scorches zombies walking close).
 
 ### Zombies
 
