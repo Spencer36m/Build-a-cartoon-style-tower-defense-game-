@@ -1055,7 +1055,7 @@ function fire(t, target, st) {
         dmg *= 0.85; hit.add(next); pts.push({ x: next.x, y: next.y });
         strike(next, dmg, t, 1); cur = next;
       }
-      S.fx.push({ kind: 'arc', pts, life: 0.16, max: 0.16, seed: Math.random() * 1000 });
+      S.fx.push({ kind: 'arc', pts, life: ARC_LIFE, max: ARC_LIFE, seed: Math.random() * 1000 });
       Sound.play('zap', t.x);
       break;
     }
@@ -1217,6 +1217,57 @@ function updateFx(dt) {
   S.decals = S.decals.filter((d) => d.life > 0);
 }
 
+// Tesla lightning: it races from the coil to each zombie in turn, crackling (re-forming many
+// times a second), with a wide blue halo, a white-hot core, forks off every jump, and a flash,
+// shock ring and sparks on each zombie it hits. Drawn additively over the night and the weather
+// so it always reads.
+const ARC_LIFE = 0.34, ARC_HOP = 0.035;
+function boltPath(c, a, b, rng, jag) {
+  const d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(5, Math.round(d / 8)), nx = -(b.y - a.y) / (d || 1), ny = (b.x - a.x) / (d || 1);
+  const pts = [[a.x, a.y]];
+  for (let j = 1; j < n; j++) { const tt = j / n, o = (rng() - 0.5) * jag * Math.sin(tt * Math.PI) * 2; pts.push([lerp(a.x, b.x, tt) + nx * o, lerp(a.y, b.y, tt) + ny * o]); }
+  pts.push([b.x, b.y]);
+  c.moveTo(pts[0][0], pts[0][1]); for (let j = 1; j < pts.length; j++) c.lineTo(pts[j][0], pts[j][1]);
+  return pts;
+}
+function drawArcs(c) {
+  const arcs = S.fx.filter((f) => f.kind === 'arc');
+  if (!arcs.length) return;
+  c.save(); c.globalCompositeOperation = 'lighter'; c.lineJoin = 'round'; c.lineCap = 'round';
+  for (const f of arcs) {
+    const k = f.life / f.max, age = f.max - f.life, flick = 0.75 + Math.random() * 0.25;
+    const rng = mulberry32(Math.floor(f.seed + age * 32));
+    // how far along the chain the lightning has got
+    const shown = Math.min(f.pts.length - 1, Math.floor(age / ARC_HOP) + 1);
+    const main = new Path2D(), forks = new Path2D();
+    for (let i = 0; i < shown; i++) {
+      const a = f.pts[i], b = f.pts[i + 1], d = Math.hypot(b.x - a.x, b.y - a.y);
+      const P = new Path2D(); const pts = boltPath(P, a, b, rng, Math.min(16, 4 + d * 0.16)); main.addPath(P);
+      // a couple of forks splitting off and fading out
+      for (let q = 0; q < 2; q++) {
+        const at = pts[1 + Math.floor(rng() * (pts.length - 2))], ang = Math.atan2(b.y - a.y, b.x - a.x) + (rng() < 0.5 ? -1 : 1) * (0.5 + rng() * 0.8), l = 8 + rng() * 12;
+        let x = at[0], y = at[1]; forks.moveTo(x, y);
+        for (let j = 0; j < 3; j++) { x += Math.cos(ang + (rng() - 0.5)) * l / 3; y += Math.sin(ang + (rng() - 0.5)) * l / 3; forks.lineTo(x, y); }
+      }
+    }
+    const A = k * flick;
+    c.strokeStyle = `rgba(70,150,255,${0.2 * A})`; c.lineWidth = 9; c.stroke(main);
+    c.strokeStyle = `rgba(120,205,255,${0.55 * A})`; c.lineWidth = 3.6; c.stroke(main);
+    c.strokeStyle = `rgba(150,215,255,${0.45 * A})`; c.lineWidth = 2; c.stroke(forks);
+    c.strokeStyle = `rgba(250,253,255,${A})`; c.lineWidth = 1.8; c.stroke(main);
+    c.strokeStyle = `rgba(240,250,255,${0.7 * A})`; c.lineWidth = 0.7; c.stroke(forks);
+    // the coil's crown flares, and each zombie the bolt reaches is lit up with a ring and sparks
+    for (let i = 0; i <= shown; i++) {
+      const p = f.pts[i], hitAge = Math.max(0, age - (i - 1) * ARC_HOP), r = i === 0 ? 12 : 9;
+      c.fillStyle = radial(c, p.x, p.y, r, `rgba(200,232,255,${0.45 * A})`, 'rgba(100,180,255,0)', 0, 0); circle(c, p.x, p.y, r); c.fill();
+      if (i === 0) continue;
+      c.strokeStyle = `rgba(150,215,255,${0.7 * k})`; c.lineWidth = 1.4; circle(c, p.x, p.y, 5 + hitAge * 60); c.stroke();
+      c.fillStyle = `rgba(235,248,255,${A})`;
+      for (let q = 0; q < 5; q++) { const ang = rng() * TAU, dd = 4 + hitAge * 70 * (0.5 + rng() * 0.5); circle(c, p.x + Math.cos(ang) * dd, p.y + Math.sin(ang) * dd, 0.9); c.fill(); }
+    }
+  }
+  c.restore();
+}
 function drawFx(c, f, lights) {
   const k = f.life / f.max; // 1 -> 0
   c.save();
@@ -1301,20 +1352,8 @@ function drawFx(c, f, lights) {
       c.globalAlpha = k * 0.8; c.strokeStyle = `rgb(${f.color})`; c.lineWidth = 2;
       circle(c, f.x, f.y, f.r * (1 + (1 - k) * 1.3)); c.stroke(); break;
     case 'arc': {
-      const rng = mulberry32(Math.floor(f.seed + (1 - k) * 5));
-      c.beginPath();
-      for (let i = 0; i < f.pts.length - 1; i++) {
-        const a = f.pts[i], b = f.pts[i + 1];
-        if (i === 0) c.moveTo(a.x, a.y);
-        for (let j = 1; j <= 6; j++) {
-          const tt = j / 6, jit = j === 6 ? 0 : 10;
-          c.lineTo(lerp(a.x, b.x, tt) + (rng() - 0.5) * jit, lerp(a.y, b.y, tt) + (rng() - 0.5) * jit);
-        }
-      }
-      c.lineJoin = 'round'; c.globalAlpha = k;
-      c.strokeStyle = 'rgba(120,200,255,0.5)'; c.lineWidth = 5; c.stroke();
-      c.strokeStyle = 'rgba(235,250,255,1)'; c.lineWidth = 1.6; c.stroke();
-      if (lights) for (const p of f.pts) lights.push({ x: p.x, y: p.y, r: 40, color: '130,210,255', a: 0.7 * k });
+      // the bolt is drawn after the night and the weather (drawArcs); here it only lights things up
+      if (lights) for (const p of f.pts) lights.push({ x: p.x, y: p.y, r: 40, color: '130,210,255', a: 0.55 * k });
       break;
     }
     case 'text': {
@@ -1690,6 +1729,7 @@ function render() {
   }
   c.restore();
   WEATHER.drawSky(c, look.glow);
+  drawArcs(c);
   if (S.freezeFlash > 0) { c.fillStyle = `rgba(190,230,255,${S.freezeFlash * 0.5})`; c.fillRect(-20, -20, W + 40, H + 40); }
   if (S.leakFlash > 0) {
     c.save(); c.globalAlpha = S.leakFlash;
