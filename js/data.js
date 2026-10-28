@@ -484,10 +484,10 @@ const TOWERS = {
       ] },
     ],
   },
-  // Only sold on snow maps, where crews out in the cold fire slower (see COLD in game.js).
+  // Only sold on snow maps, where crews out in the cold freeze solid and stop working (see COLD in game.js).
   heater: {
     name: 'Heater', role: 'Warmth', place: 'land', air: false, cost: 60, key: 'h', snowOnly: true,
-    desc: 'A fire barrel that keeps nearby crews warm. On snow maps, soldiers out of the heat fire slower; machines do not mind the cold.',
+    desc: 'A fire barrel that keeps nearby crews warm. On snow maps, soldiers away from the heat freeze solid and stop working; machines do not mind the cold.',
     base: { dmg: 0, rate: 1, heat: 2.2, warmRate: 1, warmDmg: 1 },
     paths: [
       { name: 'Fuel', ups: [

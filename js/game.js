@@ -180,7 +180,9 @@ function startGame(index, save, sb = null) {
   if (sb) save = null;
   S.levelIndex = index; S.L = L; S.M = buildLevel(L);
   S.maxLives = sb ? (sb.infLives ? 99 : sb.lives) : maxLives(); S.lives = S.maxLives;
-  S.cash = sb ? (sb.infCash ? INF_CASH : sb.cash) : L.gold + 60 * upg('cash'); S.wave = 0;
+  // the first snow levels come with the price of a heater, while players learn about the cold
+  const heatFund = !sb && L.world === 2 && L.num <= 3 ? TOWERS.heater.cost : 0;
+  S.cash = sb ? (sb.infCash ? INF_CASH : sb.cash) : L.gold + 60 * upg('cash') + heatFund; S.wave = 0;
   S.sbQueue = []; S.sbTime = 0;
   S.towers = []; S.enemies = []; S.projectiles = []; S.fx = []; S.decals = []; S.spawners = []; S.strikes = []; S.crates = [];
   S.towerAt = new Map();
@@ -204,8 +206,10 @@ function startGame(index, save, sb = null) {
   else if (sb) showBanner('Sandbox', `${L.id} · ${L.name}`);
   else {
     showBanner(`${L.id} · ${L.name}`, `Operation ${S.mission.op.name} · ${S.mission.objective}`);
-    sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: 2.4 });
-    if (coldMap() && L.num <= 3) sayLine('voss', 'Out here the cold is as deadly as the dead. Crews away from a fire freeze solid and stop shooting. Build Heaters beside them.', { tag: 'COLD', delay: 1 });
+    // lines play in order; on the first snow levels the cold warning comes first, before any towers go down
+    const cold = coldMap() && L.num <= 3;
+    if (cold) sayLine('voss', `Out here the cold is as deadly as the dead. Crews away from a fire freeze solid and stop shooting. Build Heaters beside them. I sent $${heatFund} extra for your first one.`, { tag: 'COLD', delay: 2.4 });
+    sayLine(S.mission.who, S.mission.line, { tag: `Op. ${S.mission.op.name} · ${S.mission.step + 1}/5`, delay: cold ? 0.4 : 2.4 });
   }
   S.heatHint = false; S.frozeHint = false;
   checkpoint();

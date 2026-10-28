@@ -23,7 +23,7 @@ const SILENT_WAV = 'data:audio/wav;base64,' + btoa(String.fromCharCode(...[82, 7
 const Sound = {
   ac: null, master: null, sfx: null, musicBus: null, ambBus: null, verb: null, noiseBuf: null, curve: null,
   muted: false, musicOn: true, last: {}, recent: [],
-  music: { mode: null, world: 0, song: null, step: 0, next: 0 }, amb: null, ticker: null,
+  music: { mode: null, world: 0, song: null, ready: null, step: 0, next: 0 }, amb: null, ticker: null,
 
   init() {
     this.unlock();
@@ -250,12 +250,8 @@ const Sound = {
     const m = this.music;
     if (m.mode === mode && m.world === world) return;
     const song = mode ? MUSIC.songFor(mode, world) : m.song;
-    if (this.ac && (song !== m.song || !m.mode)) {
-      // a new song starts from its first bar after a short breath
-      m.next = this.ac.currentTime + (m.mode ? 0.35 : 0.1);
-      m.step = 0;
-      MUSIC.change(song, this.ac.currentTime);
-    }
+    // a new song starts from its first bar after a short breath
+    if (song !== m.song || !m.mode) { m.next = this.ac ? this.ac.currentTime + (m.mode ? 0.35 : 0.1) : 0; m.step = 0; }
     m.mode = mode; m.world = world; m.song = song;
   },
   tick() {
@@ -263,6 +259,8 @@ const Sound = {
     if (!ac || ac.state !== 'running') return;
     const m = this.music;
     if (m.mode) {
+      // set up the song here rather than in setScene, which can run before audio has started
+      if (m.ready !== m.song) { MUSIC.change(m.song, ac.currentTime); m.ready = m.song; }
       if (m.next < ac.currentTime) m.next = ac.currentTime + 0.05;
       while (m.next < ac.currentTime + 0.3) {
         const dur = MUSIC.stepDur(m.song, m.mode);

@@ -85,7 +85,8 @@ const MUSIC = (() => {
     }
     src.connect(g); g.connect(dest); sends(g, o);
     osc.start(t); osc.stop(end + 0.05);
-    if (o.held) held.push({ g, end });
+    // long notes a song change may need to fade; finished ones are dropped so the list stays short
+    if (o.held) { held = held.filter((h) => h.end > ac.currentTime); held.push({ g, end }); }
     return g;
   }
   function noiseHit(dest, t, len, vol, type, f, o = {}) {
