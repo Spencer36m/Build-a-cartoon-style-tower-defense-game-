@@ -4,7 +4,7 @@
 // its own instruments, tempo and feel. Farmland is a bluegrass hoedown, the cemetery a
 // skeleton waltz, the tundra an icy echo and the bayou a swamp-blues shuffle. Within a
 // song the arrangement thins out or fills in with the action:
-// story < calm < tension < battle < boss.
+// story < calm < tension < battle. A boss gets a theme of its own, fast and frightening.
 // Everything is made from oscillators, noise and plucked-string buffers (Karplus-Strong),
 // so the game still ships no audio files.
 // ============================================================
@@ -14,11 +14,13 @@ const MUSIC = (() => {
   const CHORDS = { m: [0, 3, 7], M: [0, 4, 7], m7: [0, 3, 7, 10], 7: [0, 4, 7, 10] };
   const WORLD_SONGS = ['farm', 'grave', 'tundra', 'swamp'];
 
-  let ac = null, out = null, verb = null, noise = null, ch = {}, echo = null, waves = {}, plucks = {}, held = [];
+  let ac = null, out = null, mixer = null, verb = null, noise = null, ch = {}, echo = null, waves = {}, plucks = {}, held = [];
 
   // ---------- wiring ----------
   function attach(context, bus, reverb, noiseBuf) {
-    ac = context; out = bus; verb = reverb; noise = noiseBuf; waves = {}; plucks = {}; held = [];
+    ac = context; verb = reverb; noise = noiseBuf; waves = {}; plucks = {}; held = [];
+    // every part goes through one song-level gain, so a song can sit louder (the boss theme)
+    mixer = ac.createGain(); mixer.connect(bus); out = mixer;
     // each part sits in its own place in the stereo field
     const lane = (pan, vol = 1) => {
       const g = ac.createGain(); g.gain.value = vol;
@@ -26,6 +28,10 @@ const MUSIC = (() => {
       return g;
     };
     ch = { bass: lane(0), pad: lane(0), comp: lane(-0.28), arp: lane(0.3), lead: lane(0.08), drum: lane(0), hat: lane(0.22) };
+    // an overdriven bus for the boss theme's bass and brass
+    const ws = ac.createWaveShaper(), curve = new Float32Array(512);
+    for (let i = 0; i < 512; i++) { const x = (i / 511) * 2 - 1; curve[i] = Math.tanh(x * 3.2) * 0.8; }
+    ws.curve = curve; ws.oversample = '2x'; ws.connect(ch.bass); ch.dist = ws;
     // a filtered feedback echo, timed to each song's beat
     const inp = ac.createGain(), dl = ac.createDelay(2), fb = ac.createGain(), lp = ac.createBiquadFilter(), wet = ac.createGain();
     dl.delayTime.value = 0.4; fb.gain.value = 0.38; lp.type = 'lowpass'; lp.frequency.value = 2600; wet.gain.value = 0.55;
@@ -33,10 +39,10 @@ const MUSIC = (() => {
     if (ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = -0.35; wet.connect(p); p.connect(out); } else wet.connect(out);
     echo = { inp, dl };
   }
-  const songFor = (mode, world) => (mode === 'menu' ? 'menu' : WORLD_SONGS[world] || 'farm');
-  function stepDur(id, mode) {
+  const songFor = (mode, world) => (mode === 'menu' ? 'menu' : mode === 'boss' ? 'boss' : WORLD_SONGS[world] || 'farm');
+  function stepDur(id) {
     const S = SONGS[id];
-    return 60 / (S.bpm * (mode === 'boss' ? 1.08 : 1)) / S.spb;
+    return 60 / S.bpm / S.spb;
   }
   // a new song: let the old drones and pads fade instead of ringing on under it
   function change(id, now) {
@@ -49,6 +55,7 @@ const MUSIC = (() => {
     held = [];
     const S = SONGS[id];
     if (echo) echo.dl.delayTime.setValueAtTime((S.echo || 0.75) * 60 / S.bpm, now);
+    if (mixer) mixer.gain.setTargetAtTime(S.gain || 1, now, 0.08);
     S.last = null;
   }
 
@@ -454,16 +461,73 @@ const MUSIC = (() => {
         if (lvl >= 3 && b === 7 && s >= 9) snare(t, 0.07 + (s - 9) * 0.03);
       },
     },
+
+    // The boss theme, in the world's own key: a galloping overdriven bass, pounding drums, a
+    // menacing brass line over horror-film harmony (the chord a semitone up, the tritone),
+    // shrieking string tremolo in the second half and a siren rising into each new phrase.
+    boss: {
+      keys: [45, 50, 52, 43], key: 45, bpm: 152, beats: 4, spb: 4, swing: 0, echo: 0.5, gain: 1.35,
+      prog: [[0, 'm'], [0, 'm'], [1, 'M'], [0, 'm'], [8, 'M'], [6, 'M'], [7, 'M'], [7, '7']],
+      tune: [
+        [[0, 0, 3], [3, 1, 1], [4, 0, 2], [6, 3, 2], [8, 7, 4], [12, 6, 4]],
+        [[0, 7, 3], [3, 8, 1], [4, 7, 2], [6, 3, 2], [8, 0, 8]],
+        [[0, 1, 3], [3, 5, 1], [4, 8, 4], [8, 13, 4], [12, 8, 4]],
+        [[0, 7, 2], [2, 6, 2], [4, 3, 2], [6, 1, 2], [8, 0, 8]],
+        [[0, 12, 3], [3, 11, 1], [4, 8, 2], [6, 12, 2], [8, 15, 4], [12, 12, 4]],
+        [[0, 13, 3], [3, 10, 1], [4, 6, 4], [8, 10, 4], [12, 13, 4]],
+        [[0, 7, 2], [2, 8, 2], [4, 11, 4], [8, 14, 4], [12, 11, 4]],
+        [[0, 12, 2], [2, 11, 2], [4, 10, 2], [6, 8, 2], [8, 7, 8]],
+      ],
+      accent: [0, 3, 6, 8, 11, 14],
+      play(x, S) {
+        const { t, dur, s, b, root, chord, key, phrase } = x, R = key + root, acc = S.accent.includes(s);
+        // bass: sixteenths on the root, octave jumps on the 3-3-2 accents, through the overdrive
+        const bn = R - 12 + (acc && s % 2 ? 12 : 0);
+        note(ch.dist, bn, t, dur * (acc ? 1.6 : 0.8), acc ? 0.2 : 0.12, { wave: 'sawtooth', cut: acc ? 900 : 520, cutTo: 260, q: 4 });
+        if (acc) note(ch.bass, R - 24, t, dur * 2, 0.16, { cut: 200 });
+        // drums
+        if (acc) kick(t, 0.36, 130, 40, 0.3);
+        if (s === 4 || s === 12) { snare(t, 0.2, { f: 2200, verb: 0.25 }); clap(t, 0.08); }
+        hat(t, s % 2 ? 0.025 : 0.05, s % 4 === 2 ? 0.09 : 0.035);
+        if (s === 0 || s === 8) taiko(t, 0.3);
+        if (s === 0 && b % 4 === 0) cymbal(t, 0.09);
+        if (b === 7 && s >= 8) tom(t, 52 - (s - 8) * 2.5, 0.16 + (s - 8) * 0.02, 0.35);
+        // brass stab on each bar: the chord with a clashing tritone on top, swept shut
+        if (s === 0) for (const iv of [0, chord[1], 7, 6 + 12]) note(ch.dist, R + iv, t, dur * 3, 0.05, { wave: wave('horn'), cut: 3200, cutTo: 500, cutT: dur * 3, q: 2 });
+        // the lead: a snarling brass line an octave up
+        const n = tuneAt(S, b, s);
+        if (n) {
+          const m = key + 12 + n[0], len = n[1] * dur;
+          note(ch.lead, m, t, len * 0.85, 0.08, { wave: wave('horn'), cut: 2600, q: 1.5, at: 0.02, rel: 0.06, vib: 0.008, vibRate: 6.5, vibAt: 0.15, verb: 0.3 });
+          note(ch.lead, m - 12, t, len * 0.85, 0.045, { wave: 'sawtooth', cut: 900, at: 0.02, rel: 0.06 });
+        }
+        // shrieking strings: a semitone tremolo high up, in the second half of every phrase
+        if (b >= 4) note(ch.arp, key + 36 + (s % 2) + (b >= 6 ? 7 : 0), t, dur * 0.9, 0.022, { wave: 'sawtooth', bp: 2400, q: 1.4, at: 0.004, verb: 0.5 });
+        // a siren rising into the next phrase
+        if (b === 7 && s === 4) note(ch.lead, key + 31, t, dur * 12, 0.05, { wave: 'sawtooth', glide: key + 17, glideT: dur * 12, cut: 2400, at: 0.3, rel: 0.1, verb: 0.4 });
+        // a low choir-like organ drone holding the chord underneath
+        if (s === 0) for (const iv of chord.slice(0, 3)) note(ch.pad, R + iv, t, dur * 16 * 0.95, 0.02, { wave: wave('organ'), at: 0.1, rel: 0.2, vib: 0.005, vibRate: 5, verb: 0.5, held: true });
+        if (phrase === 0 && b === 0 && s === 0) cymbal(t, 0.1);
+      },
+    },
   };
 
+  // The boss arrives: a deep drum hit, a crash and a blast of dissonant brass, before the theme.
+  function sting(t, world) {
+    const key = SONGS.boss.keys[world] || 45;
+    taiko(t, 0.55); kick(t, 0.5, 90, 30, 0.9); cymbal(t, 0.14);
+    for (const iv of [-12, -6, 0, 1, 6, 12]) note(ch.dist, key + iv, t, 1.3, 0.05, { wave: wave('horn'), cut: 4000, cutTo: 300, cutT: 1.3, q: 2, at: 0.01, verb: 0.5 });
+    noiseHit(ch.drum, t, 1.2, 0.12, 'lowpass', 900, { to: 120, verb: 0.5 });
+  }
+
   // schedule one step of the song at time t
-  function step(id, mode, n, t, dur) {
+  function step(id, mode, n, t, dur, world = 0) {
     const S = SONGS[id], lvl = LEVEL[mode] == null ? 1 : LEVEL[mode], per = S.beats * S.spb;
     const bar = Math.floor(n / per), s = n % per, b = bar % 8;
     const [root, q] = S.prog[b];
     if (S.swing && s % 2) t += S.swing * dur;
-    S.play({ t, dur, s, b, bar, phrase: Math.floor(bar / 8), lvl, root, chord: CHORDS[q], key: S.key, per, boss: mode === 'boss', mode }, S);
+    S.play({ t, dur, s, b, bar, phrase: Math.floor(bar / 8), lvl, root, chord: CHORDS[q], key: S.keys ? S.keys[world] || S.key : S.key, per, boss: mode === 'boss', mode }, S);
   }
 
-  return { attach, songFor, stepDur, change, step, SONGS, LEVEL };
+  return { attach, songFor, stepDur, change, step, sting, SONGS, LEVEL };
 })();

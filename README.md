@@ -182,7 +182,7 @@ The music is a main theme on the menus and a song of its own for each world, wit
 - **Tundra**: a slow, icy piece, with a low drone, glass arpeggios ringing into an echo, a breathy flute and taiko drums.
 - **Bayou**: a swamp-blues shuffle, with boogie bass, accordion, slide guitar or harmonica, stomps and a washboard.
 
-A world's song plays on its level map and in its battles, and the arrangement follows the action. Cutscenes get a quiet version. Between waves it is calm, the drums and full band come in once a wave is on, and bosses get a heavier, faster version. Ambience follows the weather as it changes and the time of day: rain, wind, thunder, a tornado's roar, crickets at night, owls in the cemetery, frogs in the bayou.
+A world's song plays on its level map and in its battles, and the arrangement follows the action. Cutscenes get a quiet version. Between waves it is calm, the drums and full band come in once a wave is on. When a boss arrives there is a dramatic hit and the music switches to a boss theme of its own, in that world's key: fast (152 BPM) and frightening, with a galloping overdriven bass, pounding drums, a snarling brass line over dissonant horror-film harmony, shrieking strings and a rising siren. The world's song comes back once the boss is dead. Ambience follows the weather as it changes and the time of day: rain, wind, thunder, a tornado's roar, crickets at night, owls in the cemetery, frogs in the bayou.
 
 **Sound** in the top bar mutes everything; **Music** on the main menu and the pause screen turns off just the music. On iPhone, the ring/silent switch also mutes the game, as with most games.
 

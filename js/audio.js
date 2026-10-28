@@ -245,7 +245,7 @@ const Sound = {
 
   // ---------- music ----------
   // mode: 'menu', 'calm', 'battle', 'boss', 'story', 'tension' or null for silence. Each world
-  // has its own song; the mode picks how full the arrangement is.
+  // has its own song and the mode picks how full the arrangement is; a boss has a theme of its own.
   setScene(mode, world = 0) {
     const m = this.music;
     if (m.mode === mode && m.world === world) return;
@@ -260,11 +260,16 @@ const Sound = {
     const m = this.music;
     if (m.mode) {
       // set up the song here rather than in setScene, which can run before audio has started
-      if (m.ready !== m.song) { MUSIC.change(m.song, ac.currentTime); m.ready = m.song; }
+      if (m.ready !== m.song) {
+        MUSIC.change(m.song, ac.currentTime);
+        // a boss gets a dramatic entrance, and its theme starts as the hit dies away
+        if (m.song === 'boss') { MUSIC.sting(ac.currentTime + 0.03, m.world); m.next = Math.max(m.next, ac.currentTime + 0.8); }
+        m.ready = m.song;
+      }
       if (m.next < ac.currentTime) m.next = ac.currentTime + 0.05;
       while (m.next < ac.currentTime + 0.3) {
-        const dur = MUSIC.stepDur(m.song, m.mode);
-        MUSIC.step(m.song, m.mode, m.step, m.next, dur);
+        const dur = MUSIC.stepDur(m.song);
+        MUSIC.step(m.song, m.mode, m.step, m.next, dur, m.world);
         m.next += dur; m.step++;
       }
     }
