@@ -1077,6 +1077,189 @@ function heaterLive(c, tw, tiers, t, lights, wx, wy) {
 }
 
 // The tower's best path shows as chevrons in its colour; tier 5 earns a star.
+// The farm, drawn in a 38-unit square, each upgrade in its own place so nothing piles up:
+// the crop field on the right (rows, an irrigation ditch, a greenhouse, an orchard, then golden
+// wheat and a silo), and down the left the homestead corner (well, watchtower, field hospital),
+// the market corner (root cellar, market stall, bank) and the barn. A post-and-rail fence goes
+// round it all, or a stone wall for a Safe Haven.
+function farmBase(c, tiers, L) {
+  const [a, b, d] = tiers, rng = mulberry32(17 + a * 7 + b * 3 + d);
+  // the yard: packed earth with a little grass
+  c.fillStyle = linear(c, -19, -19, 19, 19, [[0, paint('#9c8458', L, 0.15)], [1, paint('#6e5838', L, 0.15)]]); c.fillRect(-19, -19, 38, 38);
+  for (let i = 0; i < 60; i++) { const px = -18 + rng() * 36, py = -18 + rng() * 36; c.fillStyle = rng() < 0.5 ? 'rgba(60,44,24,0.25)' : 'rgba(210,190,140,0.2)'; circle(c, px, py, 0.3 + rng() * 0.6); c.fill(); }
+  c.strokeStyle = 'rgba(90,120,50,0.7)'; c.lineWidth = 0.5;
+  for (let i = 0; i < 40; i++) { const side = i % 4, f = rng() * 36 - 18, px = side < 2 ? f : (side === 2 ? -17.6 : 17.6), py = side < 2 ? (side ? 17.6 : -17.6) : f; for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(px, py); c.lineTo(px + k * 0.7, py - 1.2); c.stroke(); } }
+
+  // ---- the field ----
+  const FX0 = -2.5, FX1 = 17, FY0 = -17, FY1 = 17;
+  const orchard = a >= 4, glass = a >= 3, wheat = a >= 5;
+  c.fillStyle = SHADOW; c.fillRect(FX0 + 0.6, FY0 + 0.8, FX1 - FX0, FY1 - FY0);
+  c.fillStyle = linear(c, FX0, FY0, FX1, FY1, [[0, '#6a4a2c'], [1, '#432e1a']]); c.fillRect(FX0, FY0, FX1 - FX0, FY1 - FY0);
+  const rowsN = 5, rowW = (FX1 - FX0 - 1) / rowsN;
+  const rowTop = glass ? -3 : FY0 + 1, crop = paint(a >= 2 ? '#6e9e36' : '#5c8a2e', L, 0.2);
+  for (let r = 0; r < rowsN; r++) {
+    const x = FX0 + 0.5 + rowW * (r + 0.5);
+    const bottom = orchard && x > 7 ? 0.5 : FY1 - 1;
+    // the furrow either side and the lit ridge
+    c.strokeStyle = 'rgba(25,14,6,0.6)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x + rowW / 2, rowTop - 0.6); c.lineTo(x + rowW / 2, bottom + 0.6); c.stroke();
+    c.strokeStyle = 'rgba(160,120,80,0.35)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x - 0.6, rowTop - 0.6); c.lineTo(x - 0.6, bottom + 0.6); c.stroke();
+    for (let y = rowTop + 0.8; y < bottom; y += wheat ? 1.4 : 2.9) {
+      if (wheat) {
+        // a dense band of ripe wheat: stalks leaning with the wind, a golden head on each
+        for (let k = 0; k < 3; k++) { const wx = x - 1 + k + (rng() - 0.5) * 0.4; c.strokeStyle = k % 2 ? '#b8902e' : '#d8b048'; c.lineWidth = 0.45; c.beginPath(); c.moveTo(wx, y + 0.6); c.lineTo(wx + 0.5, y - 0.6); c.stroke(); ellipse(c, wx + 0.55, y - 0.75, 0.3, 0.55, 0.4); c.fillStyle = '#f0cc62'; c.fill(); }
+      } else {
+        const pr = (a >= 1 ? 1.35 : 1.05) * (0.85 + rng() * 0.3), rot = rng() * TAU;
+        circle(c, x + 0.4, y + 0.4, pr); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+        for (let lf = 0; lf < 5; lf++) { const q = rot + (lf / 5) * TAU; ellipse(c, x + Math.cos(q) * pr * 0.5, y + Math.sin(q) * pr * 0.5, pr * 0.62, pr * 0.32, q); c.fillStyle = tint(crop, lf % 2 ? -0.22 : 0.06); c.fill(); }
+        circle(c, x - pr * 0.15, y - pr * 0.2, pr * 0.28); c.fillStyle = tint(crop, 0.35); c.fill();
+      }
+    }
+  }
+  // irrigation: a water ditch down the field's edge with a sluice gate
+  if (a >= 2) {
+    c.fillStyle = '#3a2a18'; c.fillRect(FX0 - 0.2, FY0, 1.9, FY1 - FY0);
+    c.fillStyle = linear(c, FX0, 0, FX0 + 1.5, 0, [[0, '#3f7f9a'], [1, '#2a5a70']]); c.fillRect(FX0 + 0.1, FY0 + 0.3, 1.3, FY1 - FY0 - 0.6);
+    c.fillStyle = 'rgba(220,245,255,0.55)'; for (let y = FY0 + 2; y < FY1; y += 4.5) c.fillRect(FX0 + 0.35, y, 0.35, 1.6);
+    c.fillStyle = '#6a4a2a'; c.fillRect(FX0 - 0.5, FY1 - 3, 2.5, 0.9);
+  }
+  // greenhouse over the top of the field: a glass roof on a white frame, plants showing through
+  if (glass) {
+    const gx0 = FX0 + 1.8, gx1 = FX1 - 0.4, gy0 = FY0 + 0.4, gy1 = -4.2, mid = (gy0 + gy1) / 2;
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(gx0 + 1, gy0 + 1.4, gx1 - gx0, gy1 - gy0);
+    c.fillStyle = '#4a6a3a'; c.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+    for (let i = 0; i < 26; i++) { circle(c, gx0 + 1 + rng() * (gx1 - gx0 - 2), gy0 + 1 + rng() * (gy1 - gy0 - 2), 0.8 + rng() * 0.6); c.fillStyle = rng() < 0.5 ? '#7aae46' : '#5a8a34'; c.fill(); }
+    c.fillStyle = linear(c, 0, gy0, 0, mid, [[0, 'rgba(235,248,252,0.78)'], [1, 'rgba(190,220,232,0.55)']]); c.fillRect(gx0, gy0, gx1 - gx0, mid - gy0);
+    c.fillStyle = linear(c, 0, mid, 0, gy1, [[0, 'rgba(150,185,200,0.5)'], [1, 'rgba(110,145,165,0.62)']]); c.fillRect(gx0, mid, gx1 - gx0, gy1 - mid);
+    c.strokeStyle = 'rgba(250,252,250,0.9)'; c.lineWidth = 0.45;
+    for (let x = gx0 + 2.2; x < gx1 - 0.5; x += 2.2) { c.beginPath(); c.moveTo(x, gy0); c.lineTo(x, gy1); c.stroke(); }
+    c.lineWidth = 0.9; c.strokeRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+    c.beginPath(); c.moveTo(gx0, mid); c.lineTo(gx1, mid); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.5)'; c.fillRect(gx0 + 1, gy0 + 0.8, 3.5, 1);
+    c.fillStyle = '#d8dcd8'; c.fillRect(gx0 + (gx1 - gx0) / 2 - 1.2, gy1 - 0.3, 2.4, 1);
+  }
+  // orchard in the bottom corner of the field: grass under fruit trees in a row
+  if (orchard) {
+    c.fillStyle = '#58783a'; c.fillRect(7.6, 1.4, FX1 - 7.6, FY1 - 1.4);
+    for (const [tx, ty] of [[10.4, 4.6], [14.6, 6.8], [10.6, 10.6], [14.4, 13.6]]) {
+      canopy(c, tx, ty, 2.9, '#2f5a22', '#6a9a42', mulberry32(tx * 7 + ty), 5);
+      for (let k = 0; k < 4; k++) { circle(c, tx - 1.5 + rng() * 3, ty - 1.5 + rng() * 3, 0.42); c.fillStyle = wheat ? '#f0a83a' : '#d8402a'; c.fill(); }
+    }
+  }
+
+  // ---- homestead corner (top left): well, then a watchtower, then a field hospital ----
+  if (d >= 1) {
+    const [wx, wy] = d >= 3 ? [-6.5, -8.2] : [-10.5, -11];
+    circle(c, wx + 0.6, wy + 0.9, 2.9); c.fillStyle = SHADOW; c.fill();
+    for (let i = 0; i < 10; i++) { const q = (i / 10) * TAU; circle(c, wx + Math.cos(q) * 2.3, wy + Math.sin(q) * 2.3, 0.85); c.fillStyle = i % 2 ? '#8a8a82' : '#a8a69c'; c.fill(); }
+    circle(c, wx, wy, 1.6); c.fillStyle = radial(c, wx, wy, 1.6, '#0c1a20', '#2a4a58', 0, 0); c.fill();
+    c.fillStyle = 'rgba(200,230,240,0.5)'; circle(c, wx - 0.5, wy - 0.5, 0.4); c.fill();
+    c.fillStyle = '#6a4a2a'; c.fillRect(wx - 3, wy - 0.35, 6, 0.7);
+    c.fillStyle = '#5a4a3a'; c.fillRect(wx + 1.9, wy + 0.5, 1.2, 1.2);
+  }
+  if (d >= 3) {
+    // a wooden watchtower: tall, so a long shadow, a plank deck, corner posts, a railing and a ladder
+    const tx = -13.5, ty = -13.5, h = 3.8;
+    c.fillStyle = 'rgba(0,0,0,0.38)'; c.fillRect(tx - h + 2.4, ty - h + 3.4, h * 2, h * 2);
+    c.fillStyle = '#5a3e22'; c.fillRect(tx - 0.7, ty + h, 1.4, 4.2);
+    c.fillStyle = '#8a6a3e'; for (let k = 0; k < 4; k++) c.fillRect(tx - 1.1, ty + h + 0.6 + k, 2.2, 0.35);
+    c.fillStyle = linear(c, tx - h, ty - h, tx + h, ty + h, [[0, '#b08a58'], [1, '#7a5a34']]); c.fillRect(tx - h, ty - h, h * 2, h * 2);
+    c.strokeStyle = 'rgba(60,40,20,0.5)'; c.lineWidth = 0.3; for (let k = -h + 1.2; k < h; k += 1.2) { c.beginPath(); c.moveTo(tx - h, ty + k); c.lineTo(tx + h, ty + k); c.stroke(); }
+    c.strokeStyle = '#4e3620'; c.lineWidth = 0.7; c.strokeRect(tx - h + 0.35, ty - h + 0.35, h * 2 - 0.7, h * 2 - 0.7);
+    c.fillStyle = '#3e2a16'; for (const [px, py] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) c.fillRect(tx + px * (h - 0.5) - 0.6, ty + py * (h - 0.5) - 0.6, 1.2, 1.2);
+  }
+  if (d >= 4) {
+    // field hospital: a white ridge tent with a red cross on the roof
+    const hx = -6.6, hy = -15, w = 5.6, hh = 3.6;
+    c.fillStyle = 'rgba(0,0,0,0.32)'; c.fillRect(hx - w / 2 + 0.7, hy - hh / 2 + 1, w, hh);
+    c.fillStyle = '#f2efe6'; c.fillRect(hx - w / 2, hy - hh / 2, w, hh / 2);
+    c.fillStyle = '#c9c4b6'; c.fillRect(hx - w / 2, hy, w, hh / 2);
+    c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 0.35; c.strokeRect(hx - w / 2, hy - hh / 2, w, hh);
+    c.fillStyle = '#c9302a'; c.fillRect(hx - 0.4, hy - 1.4, 0.8, 2.8); c.fillRect(hx - 1.4, hy - 0.4, 2.8, 0.8);
+  }
+
+  // ---- market corner (middle left): root cellar, market stall, bank ----
+  if (b >= 1 && b < 4) {
+    // root cellar: a grassy mound with two wooden doors
+    ellipse(c, -12.6, -0.6, 4, 3.3); c.fillStyle = SHADOW; c.fill();
+    ellipse(c, -13.2, -1.2, 4, 3.3); c.fillStyle = radial(c, -14, -2, 5, '#7a9a4a', '#4a6a2a', 0, 0); c.fill();
+    c.fillStyle = '#5a3e22'; c.fillRect(-13.2, -2.6, 3.4, 2.8); c.strokeStyle = '#3a2814'; c.lineWidth = 0.35; c.strokeRect(-13.2, -2.6, 3.4, 2.8); c.beginPath(); c.moveTo(-11.5, -2.6); c.lineTo(-11.5, 0.2); c.stroke();
+  }
+  if (b >= 4) {
+    // the bank: a stone building with a hipped slate roof, columns along the front and a sign
+    const x0 = -17, y0 = -5, w = 9, h = 7.6;
+    c.fillStyle = 'rgba(0,0,0,0.38)'; c.fillRect(x0 + 1, y0 + 1.4, w, h);
+    c.fillStyle = '#c8c2b0'; c.fillRect(x0, y0, w, h);
+    c.fillStyle = paint('#6a7078', L, 0.25); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + w, y0); c.lineTo(x0 + w - 2.4, y0 + 2.4); c.lineTo(x0 + 2.4, y0 + 2.4); c.closePath(); c.fill();
+    c.fillStyle = paint('#4e545c', L, 0.25); c.beginPath(); c.moveTo(x0, y0 + h); c.lineTo(x0 + w, y0 + h); c.lineTo(x0 + w - 2.4, y0 + h - 2.4); c.lineTo(x0 + 2.4, y0 + h - 2.4); c.closePath(); c.fill();
+    c.fillStyle = paint('#5a6068', L, 0.25); c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + 2.4, y0 + 2.4); c.lineTo(x0 + 2.4, y0 + h - 2.4); c.lineTo(x0, y0 + h); c.closePath(); c.fill();
+    c.fillStyle = paint('#7a8088', L, 0.25); c.beginPath(); c.moveTo(x0 + w, y0); c.lineTo(x0 + w - 2.4, y0 + 2.4); c.lineTo(x0 + w - 2.4, y0 + h - 2.4); c.lineTo(x0 + w, y0 + h); c.closePath(); c.fill();
+    c.fillStyle = paint('#8a9098', L, 0.25); c.fillRect(x0 + 2.4, y0 + 2.4, w - 4.8, h - 4.8);
+    c.fillStyle = '#ece6d6'; for (let k = 0; k < 4; k++) { circle(c, x0 + w + 0.7, y0 + 1.2 + k * 1.75, 0.5); c.fill(); }
+    c.fillStyle = b >= 5 ? '#e3b83e' : '#2f5d3a'; c.fillRect(x0 + w / 2 - 1.3, y0 + h / 2 - 0.8, 2.6, 1.6);
+    c.fillStyle = b >= 5 ? '#6a4a10' : '#d8e8c8'; c.font = '700 1.5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('$', x0 + w / 2, y0 + h / 2 + 0.1);
+    if (b >= 5) { c.strokeStyle = '#e3b83e'; c.lineWidth = 0.5; c.strokeRect(x0 + 0.25, y0 + 0.25, w - 0.5, h - 0.5); }
+  }
+  if (b >= 2) {
+    // market stall: a table of produce under a striped awning
+    const sx = -7.4, sy = -1.4;
+    c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(sx - 2.2, sy - 2.4, 5.4, 6);
+    c.fillStyle = '#7a5a34'; c.fillRect(sx - 2.6, sy - 2.8, 5.2, 5.6);
+    const produce = ['#d8402a', '#e88a2a', '#7aae3a', '#e8c43a'];
+    for (let k = 0; k < 8; k++) { circle(c, sx - 1.6 + (k % 2) * 1.6 + 0.3, sy - 1.9 + Math.floor(k / 2) * 1.3, 0.55); c.fillStyle = produce[Math.floor(k / 2)]; c.fill(); }
+    for (let k = 0; k < 4; k++) { c.fillStyle = k % 2 ? '#ece6d6' : '#c9483d'; c.fillRect(sx + 0.6, sy - 3 + k * 1.5, 2.4, 1.5); }
+    c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(sx + 0.6, sy - 3, 0.4, 6);
+  }
+
+  // ---- the barn (bottom left), and a silo or hay bales beside it ----
+  {
+    const x0 = -17, y0 = 5, w = 10, h = 11.5, ridge = x0 + w / 2;
+    const metal = b >= 3, rf = paint(metal ? '#a8aeb0' : '#a8402e', L, 0.2);
+    c.fillStyle = 'rgba(0,0,0,0.4)'; c.fillRect(x0 + 1.2, y0 + 1.6, w, h);
+    c.fillStyle = linear(c, x0, 0, ridge, 0, [[0, tint(rf, 0.12)], [1, tint(rf, 0.28)]]); c.fillRect(x0, y0, w / 2, h);
+    c.fillStyle = linear(c, ridge, 0, x0 + w, 0, [[0, tint(rf, -0.18)], [1, tint(rf, -0.38)]]); c.fillRect(ridge, y0, w / 2, h);
+    c.strokeStyle = metal ? 'rgba(60,64,66,0.45)' : 'rgba(60,20,12,0.4)'; c.lineWidth = 0.3;
+    if (metal) for (let x = x0 + 0.8; x < x0 + w; x += 0.9) { c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y0 + h); c.stroke(); }
+    else for (let y = y0 + 1; y < y0 + h; y += 1.1) { c.beginPath(); c.moveTo(x0, y); c.lineTo(x0 + w, y); c.stroke(); }
+    c.fillStyle = tint(rf, -0.5); c.fillRect(ridge - 0.35, y0, 0.7, h);
+    c.strokeStyle = '#ece6d6'; c.lineWidth = 0.5; c.strokeRect(x0 + 0.25, y0 + 0.25, w - 0.5, h - 0.5);
+    // a cupola on the ridge, with a gold weathervane for War Bonds
+    c.fillStyle = '#ece6d6'; c.fillRect(ridge - 1.2, y0 + h / 2 - 1.2, 2.4, 2.4); c.fillStyle = tint(rf, -0.25); c.fillRect(ridge - 0.9, y0 + h / 2 - 0.9, 1.8, 1.8);
+    if (b >= 5) { c.strokeStyle = '#e3b83e'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(ridge - 2, y0 + h / 2); c.lineTo(ridge + 2, y0 + h / 2); c.stroke(); circle(c, ridge, y0 + h / 2, 0.6); c.fillStyle = '#f0c858'; c.fill(); }
+    if (wheat) {
+      const cx = -4.6, cy = 12.2;
+      circle(c, cx + 1, cy + 1.4, 2.8); c.fillStyle = 'rgba(0,0,0,0.4)'; c.fill();
+      circle(c, cx, cy, 2.8); c.fillStyle = radial(c, cx - 1, cy - 1, 3.4, '#e6eaec', '#8a9298', 0, 0); c.fill();
+      c.strokeStyle = 'rgba(70,80,86,0.5)'; c.lineWidth = 0.3; for (const r2 of [1, 1.9]) { circle(c, cx, cy, r2); c.stroke(); }
+      circle(c, cx, cy, 0.5); c.fillStyle = '#6a7278'; c.fill();
+    } else if (a >= 1) {
+      for (const [hx, hy] of [[-4.8, 9.6], [-4.8, 13.4]]) { c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(hx - 1.3, hy - 1, 3, 2.6); rr(c, hx - 1.6, hy - 1.4, 3, 2.6, 0.5); c.fillStyle = '#d8b860'; c.fill(); c.strokeStyle = 'rgba(120,90,30,0.6)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(hx - 1.6, hy - 0.5); c.lineTo(hx + 1.4, hy - 0.5); c.moveTo(hx - 1.6, hy + 0.5); c.lineTo(hx + 1.4, hy + 0.5); c.stroke(); }
+    }
+  }
+
+  // ---- fence, or a stone wall for the Safe Haven ----
+  if (d >= 5) {
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(-19 + 0.8, -19 + 1, 38, 2.4); c.fillRect(-19 + 0.8, -19 + 1, 2.4, 38);
+    for (const [x, y, w, h] of [[-19, -19, 38, 2.2], [-19, 16.8, 38, 2.2], [-19, -19, 2.2, 38], [16.8, -19, 2.2, 38]]) {
+      c.fillStyle = '#9a968a'; c.fillRect(x, y, w, h);
+      c.strokeStyle = 'rgba(50,48,42,0.5)'; c.lineWidth = 0.25;
+      if (w > h) for (let k = x; k < x + w; k += 2) { c.beginPath(); c.moveTo(k, y); c.lineTo(k, y + h); c.stroke(); }
+      else for (let k = y; k < y + h; k += 2) { c.beginPath(); c.moveTo(x, k); c.lineTo(x + w, k); c.stroke(); }
+      c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(x, y, w, 0.5);
+    }
+    for (const [px, py] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.fillStyle = '#7a766c'; c.fillRect(px * 17.6 - 2, py * 17.6 - 2, 4, 4); c.fillStyle = '#b4b0a4'; c.fillRect(px * 17.6 - 1.4, py * 17.6 - 1.4, 2.8, 2.8); }
+  } else {
+    const wood = paint('#9a7a4c', L, 0.35);
+    for (const off of [-0.5, 0.5]) { c.strokeStyle = off < 0 ? tint(wood, 0.2) : tint(wood, -0.25); c.lineWidth = 0.45; c.strokeRect(-18.4 + off, -18.4 + off, 36.8 - off * 2, 36.8 - off * 2); }
+    for (let i = 0; i <= 8; i++) {
+      const f = -18.4 + i * 4.6;
+      for (const [px, py] of [[f, -18.4], [f, 18.4], [-18.4, f], [18.4, f]]) {
+        c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(px - 0.5, py - 0.3, 1.4, 1.4);
+        c.fillStyle = tint(wood, -0.3); c.fillRect(px - 0.7, py - 0.7, 1.4, 1.4);
+        c.fillStyle = L.n >= 3 ? L.col : tint(wood, 0.15); c.fillRect(px - 0.4, py - 0.4, 0.8, 0.8);
+      }
+    }
+  }
+}
 function tierMarks(c, tiers, x, y) {
   let best = 0, bp = 0;
   tiers.forEach((n, p) => { if (n > best) { best = n; bp = p; } });
@@ -1435,59 +1618,19 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
       break;
     }
     case 'farm': {
-      // fenced field; crops, market buildings and the homestead grow with the paths
-      const big = a >= 4 || b >= 4 || d >= 5;
-      const R = big ? 22 : 19;
+      // laid out like a real homestead (see farmBase); the farmers turn to shoot
+      const big = a >= 4 || b >= 4 || d >= 5, R = big ? 22 : 19, k = R / 19;
       c.fillStyle = SHADOW; c.fillRect(-R + 3, -R + 4, R * 2, R * 2);
-      c.fillStyle = linear(c, -R, -R, R, R, [[0, '#7a5a38'], [1, '#4e3a24']]); c.fillRect(-R, -R, R * 2, R * 2);
-      const rows = 4 + Math.min(3, a);
-      const crop = a >= 5 ? '#e0b84a' : a >= 2 ? '#7aa83a' : '#5e8a30';
-      // ploughed furrows, each ridge lit on top, with a plant every few steps
-      const prng = mulberry32(rows * 13 + a);
-      for (let i = 0; i < rows; i++) {
-        const yy = -R + 4 + (i * (R * 2 - 8)) / (rows - 1);
-        c.strokeStyle = 'rgba(30,18,8,0.55)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-R + 3, yy + 1.2); c.lineTo(R - 3, yy + 1.2); c.stroke();
-        c.strokeStyle = 'rgba(170,130,90,0.35)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-R + 3, yy - 0.6); c.lineTo(R - 3, yy - 0.6); c.stroke();
-        for (let k = -R + 5; k < R - 3; k += 4) {
-          const pr = (a >= 1 ? 2.1 : 1.7) * (0.85 + prng() * 0.3), rot = prng() * TAU;
-          c.fillStyle = 'rgba(0,0,0,0.3)'; circle(c, k + 0.6, yy + 0.4, pr); c.fill();
-          for (let lf = 0; lf < 4; lf++) { const q = rot + lf * Math.PI / 2; ellipse(c, k + Math.cos(q) * pr * 0.55, yy - 1 + Math.sin(q) * pr * 0.55, pr * 0.62, pr * 0.3, q); c.fillStyle = shade(crop, lf % 2 ? -0.18 : 0.08); c.fill(); }
-          if (a >= 5) { circle(c, k, yy - 1, pr * 0.42); c.fillStyle = '#f4d36a'; c.fill(); }
-          else { circle(c, k - pr * 0.2, yy - 1.3, pr * 0.25); c.fillStyle = 'rgba(255,255,220,0.45)'; c.fill(); }
-        }
-      }
-      if (a >= 3) { c.fillStyle = 'rgba(210,235,240,0.45)'; c.fillRect(-R + 2, -R + 2, R - 3, R - 3); c.strokeStyle = 'rgba(255,255,255,0.6)'; c.lineWidth = 0.8; c.strokeRect(-R + 2, -R + 2, R - 3, R - 3); c.beginPath(); c.moveTo(-R + 2, -R / 2); c.lineTo(-1, -R / 2); c.stroke(); }
-      if (a >= 4) for (const [tx, ty] of [[R - 6, -R + 6], [R - 6, -R + 14], [R - 14, -R + 6]]) canopy(c, tx, ty, 4.5, '#2f5a22', '#5a8a3a', mulberry32(tx * 7 + ty), 5);
-      if (a >= 5) { canister(c, R - 6, R - 7, 5, '#b8bcc0'); c.fillStyle = '#8a8e92'; c.fillRect(R - 8, R - 13, 4, 6); }
-      // fence
-      c.strokeStyle = L.n === 5 ? '#f0c858' : paint(d >= 5 ? '#6a6a64' : '#a88a5a', L, 1.1); c.lineWidth = d >= 5 ? 2.6 : 1.2 + L.n * 0.35;
-      c.strokeRect(-R + 0.5, -R + 0.5, R * 2 - 1, R * 2 - 1);
-      if (d >= 5) { c.fillStyle = '#5a5a54'; for (const [px, py] of [[-R, -R], [R, -R], [-R, R], [R, R]]) { c.fillRect(px - 3, py - 3, 6, 6); } }
-      // barn, market and bank
-      const bx = -R + 2, by = R - 12;
-      // the barn from above: a pitched roof, lit on one slope, with ridge cap and plank lines
-      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(bx + 1.5, by - 3, 12.5, 14);
-      const rf = b >= 3 ? '#b8bcbc' : '#a8402e';
-      c.fillStyle = linear(c, bx, by - 4, bx, by + 2, [[0, shade(rf, 0.25)], [1, shade(rf, -0.05)]]); c.fillRect(bx - 0.5, by - 4, 13, 7);
-      c.fillStyle = linear(c, bx, by + 3, bx, by + 10, [[0, shade(rf, -0.25)], [1, shade(rf, -0.5)]]); c.fillRect(bx - 0.5, by + 3, 13, 7);
-      c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 0.4; for (let px = bx + 1.5; px < bx + 12; px += 2) { c.beginPath(); c.moveTo(px, by - 4); c.lineTo(px, by + 10); c.stroke(); }
-      c.fillStyle = shade(rf, -0.55); c.fillRect(bx - 0.5, by + 2.4, 13, 1.2);
-      c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 0.6; c.strokeRect(bx - 0.5, by - 4, 13, 14);
-      if (b >= 3) { c.fillStyle = '#6a7072'; for (let k = 0; k < 3; k++) c.fillRect(bx + 2 + k * 3.5, by + 2, 1.2, 8); }
-      if (b >= 5) { c.fillStyle = '#e3a83e'; c.fillRect(bx + 3, by + 3, 6, 4); }
-      if (b >= 1) { c.fillStyle = '#3a2a1a'; c.fillRect(bx + 14, by + 5, 5, 4); }
-      if (b >= 2) { for (let k = 0; k < 4; k++) { c.fillStyle = k % 2 ? '#ece6d6' : '#c9483d'; c.fillRect(-2 + k * 3, R - 6, 3, 4); } }
-      if (d >= 1) { circle(c, R - 7, 0, 3.4); c.fillStyle = '#6a6a64'; c.fill(); circle(c, R - 7, 0, 2); c.fillStyle = '#2f5d6b'; c.fill(); }
-      if (d >= 3) { c.fillStyle = SHADOW; c.fillRect(-4, -9, 12, 12); c.fillStyle = '#7a5a38'; c.fillRect(-6, -11, 12, 12); c.strokeStyle = '#4e3a24'; c.lineWidth = 1; c.strokeRect(-6, -11, 12, 12); }
-      if (d >= 4) { c.fillStyle = '#ece6d6'; c.fillRect(R - 12, -R + 3, 9, 7); c.fillStyle = '#c9483d'; c.fillRect(R - 8.5, -R + 4, 2, 5); c.fillRect(R - 10, -R + 5.5, 5, 2); }
-      if (d >= 2) { // the farmer with a shotgun
-        const shooters = d >= 4 ? [[0, -5], [-6, 6]] : [[0, -5]];
-        for (const [sx, sy] of shooters) {
-          c.save(); c.translate(sx, sy); turn();
+      c.save(); c.scale(k, k); farmBase(c, tiers, L); c.restore();
+      if (d >= 2) { // farmers with shotguns: one on the watchtower (or by the well), a second in the yard
+        const spots = [d >= 3 ? [-13.5, -13.5, 0.6] : [-10.5, -6.5, 0.55]];
+        if (d >= 4) spots.push([-4.4, 3, 0.55]);
+        spots.forEach(([sx, sy, sc], i) => {
+          c.save(); c.translate(sx * k, sy * k); turn(); c.scale(sc, sc);
           c.fillStyle = '#1d1f1c'; c.fillRect(2 - kick, -1, 12, 2); c.fillStyle = '#6a4a2a'; c.fillRect(-0.5 - kick, -1.3, 5, 2.6);
-          soldier(c, helmet('#a88a4a'), uniform('#5a6a8a'), { farmer: true, hands: [[9, -0.2], [3.6, 1.2]], seed: sx ? 3 : 0 });
+          soldier(c, helmet('#a88a4a'), uniform(i ? '#7a4a3a' : '#5a6a8a'), { farmer: true, hands: [[9, -0.2], [3.6, 1.2]], seed: i ? 3 : 0 });
           c.restore();
-        }
+        });
       }
       break;
     }
