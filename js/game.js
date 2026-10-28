@@ -184,7 +184,7 @@ function startGame(index, save, sb = null) {
   const heatFund = !sb && L.world === 2 && L.num <= 3 ? TOWERS.heater.cost : 0;
   S.cash = sb ? (sb.infCash ? INF_CASH : sb.cash) : L.gold + 60 * upg('cash') + heatFund; S.wave = 0;
   S.sbQueue = []; S.sbTime = 0;
-  S.towers = []; S.enemies = []; S.projectiles = []; S.fx = []; S.decals = []; S.spawners = []; S.strikes = []; S.crates = [];
+  S.towers = []; S.enemies = []; S.projectiles = []; S.fx = []; S.decals = []; S.spawners = []; S.strikes = []; S.crates = []; S.bossBars = []; S.bossBarPos = null;
   S.towerAt = new Map();
   S.runXp = {};
   S.placing = null; S.power = null; S.selected = null; S.pending = null;
@@ -1576,24 +1576,118 @@ function drawRange(c, x, y, r, ok, t) {
   c.restore();
 }
 
-function drawBossPlate(c) {
-  const boss = S.enemies.find((e) => ZOMBIES[e.type].boss);
-  if (!boss) return;
-  const def = ZOMBIES[boss.type];
-  const w = 360, h = 40, x = (W - w) / 2, y = 10;
-  c.save();
-  c.fillStyle = 'rgba(12,15,18,0.88)';
-  c.beginPath(); c.moveTo(x, y); c.lineTo(x + w - 12, y); c.lineTo(x + w, y + 12); c.lineTo(x + w, y + h); c.lineTo(x + 12, y + h); c.lineTo(x, y + h - 12); c.closePath(); c.fill();
-  c.strokeStyle = 'rgba(201,72,61,0.8)'; c.lineWidth = 1; c.stroke();
-  c.fillStyle = '#c9483d'; c.fillRect(x + 10, y + 7, 40, 14);
-  label(c, def.mini ? 'ELITE' : 'BOSS', x + 30, y + 14.5, 12, '#1a0a08');
-  label(c, def.name.toUpperCase(), x + 60, y + 14.5, 16, '#ece6d6', 700, 'left');
-  const k = clamp(boss.hp / boss.maxHp, 0, 1);
-  c.fillStyle = 'rgba(255,255,255,0.08)'; c.fillRect(x + 10, y + 26, w - 20, 7);
-  c.fillStyle = linear(c, x, 0, x + w, 0, [[0, '#8e2e24'], [1, '#e0675b']]); c.fillRect(x + 10, y + 26, (w - 20) * k, 7);
-  c.fillStyle = 'rgba(0,0,0,0.5)';
-  for (let i = 1; i < 10; i++) c.fillRect(x + 10 + ((w - 20) * i) / 10, y + 26, 1, 7);
+// ---------- the boss bar ----------
+// When a boss arrives a big health bar drops in at the top of the battlefield: its portrait, a
+// BOSS or ELITE tag, its name, armour and health. Damage leaves a pale trail that drains away,
+// heavy hits shake the bar, it pulses when the boss is nearly dead, and it stamps DEFEATED (or
+// BROKE THROUGH) before it fades. It moves aside for the radio card. Two bosses get two bars.
+const BOSS_BAR = { intro: 0.45, out: 1.6 };
+function updateBossBars(dt) {
+  const bars = S.bossBars || (S.bossBars = []);
+  for (const e of S.enemies) if (ZOMBIES[e.type].boss && !e.dead && !bars.some((b) => b.e === e)) bars.push({ e, t: 0, trail: e.hp, hold: 0, last: e.hp, shake: 0, gone: 0 });
+  for (const b of bars) {
+    b.t += dt;
+    const e = b.e, alive = !e.dead && S.enemies.includes(e), hp = alive ? Math.max(0, e.hp) : 0;
+    if (!alive && !b.gone) b.fate = e.d >= e.route.total ? 'leak' : 'kill';
+    if (!alive) b.gone += dt;
+    if (hp < b.last) { b.shake = Math.min(1, b.shake + ((b.last - hp) / e.maxHp) * 10); b.hold = 0.45; }
+    b.last = hp;
+    b.shake = Math.max(0, b.shake - dt * 3);
+    // the trail waits a moment, then drains down to the health
+    if (b.hold > 0) b.hold -= dt; else b.trail = Math.max(hp, b.trail - e.maxHp * dt * 0.5);
+    if (b.trail < hp) b.trail = hp;
+  }
+  S.bossBars = bars.filter((b) => b.gone < BOSS_BAR.out);
+}
+let commsEl = null;
+function drawBossBars(c) {
+  const bars = S.bossBars;
+  if (!bars || !bars.length) return;
+  const t = S.anim;
+  // where the bar goes: top centre, or beside (else below) the radio card when it is showing;
+  // on a small screen it is drawn larger so it stays readable
+  const cr = canvas.getBoundingClientRect(), ui = clamp(720 / Math.max(1, cr.width), 1, 1.75);
+  let bw = Math.min(460 * ui, W - 20), x = (W - bw) / 2, y = 10;
+  commsEl = commsEl || document.querySelector('.comms');
+  if (commsEl && commsEl.classList.contains('in') && !commsEl.hidden) {
+    const r = commsEl.getBoundingClientRect();
+    const right = ((r.right - cr.left) * W) / cr.width, bottom = ((r.bottom - cr.top) * H) / cr.height;
+    if (right + 12 + 300 * ui <= W - 10) { x = right + 12; bw = Math.min(bw, W - 10 - x); } else y = bottom + 8;
+  }
+  S.bossBarPos = S.bossBarPos ? { x: lerp(S.bossBarPos.x, x, 0.18), y: lerp(S.bossBarPos.y, y, 0.18), w: lerp(S.bossBarPos.w, bw, 0.18) } : { x, y, w: bw };
+  const P = S.bossBarPos;
+  // a red pulse round the edges as a boss arrives
+  const fresh = bars.reduce((m, b) => Math.min(m, b.t), 99);
+  if (fresh < 1.4) {
+    const a = (1 - fresh / 1.4) * (0.55 + Math.sin(t * 14) * 0.15);
+    const g = c.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, W * 0.62);
+    g.addColorStop(0, 'rgba(160,20,10,0)'); g.addColorStop(1, `rgba(170,24,12,${a})`);
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+  }
+  let oy = 0;
+  bars.slice(0, 2).forEach((b, i) => { oy += drawBossBar(c, b, P.x, P.y + oy, P.w, (i ? 0.78 : 1) * ui, t) + 6; });
+}
+function drawBossBar(c, b, x0, y0, w0, s, t) {
+  const e = b.e, def = ZOMBIES[e.type];
+  const h = 58 * s, w = w0 * (b !== S.bossBars[0] ? 0.86 : 1), x = x0 + (w0 - w) / 2;
+  const k = Math.min(1, b.t / BOSS_BAR.intro), ease = 1 - (1 - k) ** 3;
+  const fade = b.gone ? Math.max(0, 1 - Math.max(0, b.gone - 0.9) / (BOSS_BAR.out - 0.9)) : 1;
+  const sx = (Math.random() - 0.5) * b.shake * 7, sy = (Math.random() - 0.5) * b.shake * 4;
+  const y = y0 - (1 - ease) * (h + 20) + sy;
+  const hp = b.gone ? 0 : Math.max(0, e.hp), frac = clamp(hp / e.maxHp, 0, 1), low = frac < 0.25 && !b.gone;
+  c.save(); c.globalAlpha = ease * fade; c.translate(sx, 0);
+  // the plate: chamfered corners, a drop shadow, a red edge that glows harder as it weakens
+  const plate = () => { c.beginPath(); c.moveTo(x, y); c.lineTo(x + w - 14, y); c.lineTo(x + w, y + 14); c.lineTo(x + w, y + h); c.lineTo(x + 14, y + h); c.lineTo(x, y + h - 14); c.closePath(); };
+  c.save(); c.translate(3, 4); plate(); c.fillStyle = 'rgba(0,0,0,0.45)'; c.fill(); c.restore();
+  plate(); c.fillStyle = linear(c, 0, y, 0, y + h, [[0, 'rgba(30,22,22,0.94)'], [1, 'rgba(12,12,14,0.94)']]); c.fill();
+  const glow = low ? 0.6 + Math.sin(t * 10) * 0.4 : 0.75;
+  c.strokeStyle = `rgba(214,72,58,${glow})`; c.lineWidth = 1.6; c.stroke();
+  // portrait in a round frame
+  const pr = 21 * s, px = x + 12 * s + pr, py = y + h / 2;
+  circle(c, px, py, pr + 2); c.fillStyle = '#c9483d'; c.fill();
+  circle(c, px, py, pr); c.fillStyle = radial(c, px, py - 4, pr, '#a8806a', '#3a1c16', 0, 0); c.fill();
+  c.save(); circle(c, px, py, pr); c.clip(); c.translate(px - pr * 1.5, py - pr * 1.5); try { drawZombieIcon(c, e.type, pr * 3); } catch (err) { /* no portrait */ } c.restore();
+  circle(c, px, py, pr); c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 1.2; c.stroke();
+  // tag, name, armour and health numbers
+  const tx = px + pr + 10 * s, top = y + 15 * s;
+  const tag = def.mini ? 'ELITE' : 'BOSS', tw = 44 * s;
+  c.fillStyle = '#c9483d'; c.fillRect(tx, top - 8 * s, tw, 16 * s);
+  label(c, tag, tx + tw / 2, top + 0.5, 12 * s, '#1a0a08', 800);
+  label(c, def.name.toUpperCase(), tx + tw + 8 * s, top + 0.5, 17 * s, '#ece6d6', 800, 'left');
+  const right = x + w - 12;
+  const maxShown = Math.ceil(e.maxHp), hpText = `${Math.min(maxShown, Math.ceil(hp)).toLocaleString()} / ${maxShown.toLocaleString()}`;
+  c.font = `700 ${12 * s}px ${FONT_DISPLAY}`;
+  const hpW = c.measureText(hpText).width;
+  label(c, hpText, right, top + 0.5, 12 * s, low ? '#ff8a7a' : '#c8c2b4', 700, 'right');
+  if (e.armor > 0) {
+    // armour: a steel shield with the number on it
+    const ax = right - hpW - 16 * s, sh = 9 * s;
+    c.beginPath(); c.moveTo(ax, top - sh); c.lineTo(ax + sh * 0.85, top - sh * 0.62); c.lineTo(ax + sh * 0.85, top + sh * 0.1); c.quadraticCurveTo(ax + sh * 0.85, top + sh * 0.75, ax, top + sh); c.quadraticCurveTo(ax - sh * 0.85, top + sh * 0.75, ax - sh * 0.85, top + sh * 0.1); c.lineTo(ax - sh * 0.85, top - sh * 0.62); c.closePath();
+    c.fillStyle = linear(c, 0, top - sh, 0, top + sh, [[0, '#d4dce2'], [1, '#7a868e']]); c.fill(); c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.8; c.stroke();
+    label(c, String(Math.round(e.armor)), ax, top + 0.5, 10 * s, '#14161a', 800);
+  }
+  // the health bar: dark well, the pale trail of recent damage, the red health, ticks every 10%
+  const bx = tx, by = y + h - 21 * s, bwid = right - bx, bh = 12 * s;
+  c.fillStyle = '#1a0d0b'; c.fillRect(bx - 1, by - 1, bwid + 2, bh + 2);
+  c.fillStyle = 'rgba(255,255,255,0.05)'; c.fillRect(bx, by, bwid, bh);
+  c.fillStyle = '#f2d9a0'; c.fillRect(bx, by, bwid * clamp(b.trail / e.maxHp, 0, 1), bh);
+  c.fillStyle = linear(c, bx, 0, bx + bwid, 0, [[0, '#7a1c14'], [0.6, '#c8382c'], [1, '#e8564a']]); c.fillRect(bx, by, bwid * frac, bh);
+  if (low) { c.fillStyle = `rgba(255,220,200,${0.18 + Math.sin(t * 10) * 0.15})`; c.fillRect(bx, by, bwid * frac, bh); }
+  c.fillStyle = 'rgba(255,255,255,0.28)'; c.fillRect(bx, by, bwid * frac, 2 * s);
+  c.fillStyle = 'rgba(0,0,0,0.55)'; for (let i = 1; i < 10; i++) c.fillRect(bx + (bwid * i) / 10, by, 1, bh);
+  c.strokeStyle = 'rgba(0,0,0,0.8)'; c.lineWidth = 1; c.strokeRect(bx - 0.5, by - 0.5, bwid + 1, bh + 1);
+  // the stamp when it is over
+  if (b.gone) {
+    const kk = Math.min(1, b.gone / 0.25), killed = b.fate !== 'leak';
+    c.save(); c.translate(x + w / 2, y + h / 2); c.rotate(-0.06); c.scale(1.6 - 0.6 * kk, 1.6 - 0.6 * kk); c.globalAlpha *= kk;
+    const msg = killed ? 'DEFEATED' : 'BROKE THROUGH', mw = (killed ? 150 : 200) * s;
+    c.fillStyle = killed ? 'rgba(20,16,8,0.85)' : 'rgba(40,8,6,0.85)'; c.fillRect(-mw / 2, -15 * s, mw, 30 * s);
+    c.strokeStyle = killed ? '#e3a83e' : '#e0473a'; c.lineWidth = 2; c.strokeRect(-mw / 2, -15 * s, mw, 30 * s);
+    label(c, msg, 0, 1, 20 * s, killed ? '#f0c858' : '#ff7a6a', 800);
+    c.restore();
+  }
   c.restore();
+  return h;
 }
 
 function render() {
@@ -1771,7 +1865,7 @@ function render() {
     c.restore();
     label(c, 'TAP TO CALL AIRSTRIKE', h.x, h.y - TILE * 1.8 - 10, 13, '#ece6d6');
   }
-  drawBossPlate(c);
+  drawBossBars(c);
 
   if (S.banner) {
     const b = S.banner, k = b.t / b.dur;
@@ -1820,7 +1914,7 @@ function frame(now) {
     if (S.L) WEATHER.update(dt, S.state === 'playing');
     if (S.L && S.state !== 'menu') ANIMALS.update(dt, S.enemies, S.towerAt);
   }
-  if (S.state !== 'menu') render();
+  if (S.state !== 'menu') { updateBossBars(dt); render(); }
   updateHUD();
   updateAudioScene();
   requestAnimationFrame(frame);

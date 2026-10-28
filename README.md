@@ -50,6 +50,8 @@ The app is landscape-only, hides the status bar, bundles its fonts, and declares
 
 Each world has 50 levels. Every level has its own road layout, scenery and time of day. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and level 50 is the world boss. Beating a level unlocks the next, and clearing level 50 unlocks the next world.
 
+When a boss or elite arrives, a health bar drops in at the top of the battlefield with a red flash round the edges. It shows the boss's portrait, name, armour and health; damage leaves a pale trail that drains away, big hits shake it, and it pulses when the boss is nearly dead. It stamps DEFEATED (or BROKE THROUGH) when the fight is over, moves aside for the radio messages, and shows two bars when two bosses are on the field.
+
 | World | New zombies | Boss |
 | --- | --- | --- |
 | Hollow Creek Farmland | Shambler, Runner, Conehead, Tunneler, Carrion Crow | The Harvester |
