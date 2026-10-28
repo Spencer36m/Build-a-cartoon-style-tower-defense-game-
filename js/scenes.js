@@ -1652,6 +1652,7 @@ const SCENES = (() => {
       // the lit edge of a profile: brow, nose, lips, chin
       const s2 = Math.min(w, h) / 100;
       c.save(); c.translate(cx, cy); c.scale(s2, s2);
+      M.noteFace(c, -14, -40, 32, 26); // brow, eye, nose, lips and chin
       const prof = () => { c.beginPath(); c.moveTo(-10, -60); c.quadraticCurveTo(14, -58, 18, -30); c.lineTo(17, -20); c.quadraticCurveTo(28, -6, 30, 4); c.lineTo(22, 7); c.quadraticCurveTo(24, 13, 20, 15); c.quadraticCurveTo(24, 19, 20, 24); c.quadraticCurveTo(22, 36, 6, 44); c.lineTo(-40, 60); c.lineTo(-40, -60); c.closePath(); };
       prof(); c.fillStyle = INK; c.fill();
       // the light falls off across the face; the tone is laid in screen pixels so its dots stay fine

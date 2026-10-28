@@ -137,11 +137,26 @@ const MANGA = (() => {
   // Bust of a named character, head centred at (cx, cy), s = head height. Lit hard from the left:
   // the far side of the face drops into solid ink with a thin reflected-light rim.
   // o.mood: calm, grim, shout, smile, tired. o.turn: -1..1. o.glasses: lens colour. o.parka: hood up.
+  // Faces drawn while a recorder runs are noted, in canvas pixels, so the story's lettering can
+  // keep off them. Scenes with faces of their own note them with noteFace.
+  let faceLog = null;
+  function noteFace(c, x0, y0, x1, y1) {
+    if (!faceLog) return;
+    const m = c.getTransform(), pts = [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].map(([x, y]) => [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]);
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    faceLog.push({ x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) });
+  }
+  function recordFaces(fn) {
+    const prev = faceLog, log = (faceLog = []);
+    try { fn(); } finally { faceLog = prev; }
+    return log;
+  }
   function bust(c, who, cx, cy, s, o = {}) {
     const mood = o.mood || 'calm', turn = clamp(o.turn || 0, -0.6, 0.6), lw = Math.max(1.1, s * 0.011);
     const W = s * (who === 'moreno' ? 0.37 : who === 'laila' ? 0.32 : 0.33), T = turn * W * 0.35;
     const dark = who === 'okafor', litTone = dark ? 0.38 : who === 'crane' ? 0.22 : 0;
     c.save(); c.translate(cx, cy); c.lineJoin = 'round'; c.lineCap = 'round';
+    noteFace(c, -W * 1.02 + T, -s * 0.24, W * 1.02 + T, s * 0.52); // brows to chin (a balloon may cover hair)
     const fill = (d) => (d <= 0 ? PAPER : tone(c, d, 4));
     // screentone is dots on clear, so toned areas get a paper base first
     const solid = (d, cell = 4) => { c.fillStyle = PAPER; c.fill(); if (d > 0) { c.fillStyle = tone(c, d, cell); c.fill(); } };
@@ -472,5 +487,5 @@ const MANGA = (() => {
     c.restore();
   }
 
-  return { INK, PAPER, GREY, SPOT, tone, gradTone, focusLines, motionLines, poly, sub, ell, glow, spot, stars, sky, soldier, zombie, cornRow, farmhouse, bust };
+  return { INK, PAPER, GREY, SPOT, tone, gradTone, focusLines, motionLines, poly, sub, ell, glow, spot, stars, sky, soldier, zombie, cornRow, farmhouse, bust, noteFace, recordFaces };
 })();

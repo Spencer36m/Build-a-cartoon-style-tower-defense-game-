@@ -28,7 +28,7 @@ return {
         { at: [[14, 14], [550, 14], [520, 548], [14, 548]], art: 'labTank', cam: [1.1, 1, 0, 0.03],
           text: [{ k: 'cap', x: 30, y: 30, w: 290, t: 'Kessler-Vane Biotech buried a research lab under the cornfields.' }, { k: 'cap', x: 30, y: 490, w: 300, t: 'They called it Project Lazarus.' }] },
         { at: [[562, 14], [986, 14], [986, 270], [548, 270]], art: 'portrait', o: { who: 'okafor', mood: 'grim', glasses: '#52e07c', bg: 'lab', x: 0.68 }, cam: [1, 1.08, 0, 0.02],
-          text: [{ k: 'say', who: 'Dr. Mara Okafor', x: 580, y: 46, w: 190, t: "It doesn't just repair dead tissue.", tail: [800, 150] }] },
+          text: [{ k: 'say', who: 'Dr. Mara Okafor', x: 562, y: 40, w: 160, t: "It doesn't just repair dead tissue.", tail: [805, 165] }] },
         { at: [[547, 282], [986, 282], [986, 548], [532, 548]], art: 'monitor', cam: [1.06, 1],
           text: [{ k: 'say', x: 560, y: 300, w: 200, t: 'It rewrites it. Cell by cell.', tail: [545, 380] }, { k: 'cap', x: 740, y: 500, w: 230, t: 'They wanted to end death.' }] },
       ] },
@@ -60,14 +60,14 @@ return {
         { at: [[14, 14], [986, 14], [986, 230], [14, 250]], art: 'convoy', cam: [1.1, 1, -0.03, 0],
           text: [{ k: 'cap', x: 30, y: 30, w: 330, t: 'What was left of the army regrouped as Bastion Company.' }] },
         { at: [[14, 262], [420, 254], [420, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'grim', bg: 'night', glow: 'amber', x: 0.4 }, cam: [1.08, 1],
-          text: [{ k: 'say', who: 'Major Elena Voss', x: 206, y: 290, w: 150, t: 'Commander. You have the field.', tail: [190, 400] }] },
+          text: [{ k: 'say', who: 'Major Elena Voss', x: 236, y: 286, w: 140, t: 'Commander. You have the field.', tail: [205, 410] }] },
         { at: [[432, 253], [986, 242], [986, 548], [432, 548]], art: 'briefing', cam: [1.12, 1, 0.03, 0],
           text: [{ k: 'say', x: 474, y: 264, w: 240, t: 'Dr. Mara Okafor escaped Ground Zero with the Lazarus Core.', tail: [425, 330] }, { k: 'say', x: 470, y: 470, w: 220, t: "If anyone can reverse this, it's her.", tail: [425, 500] }] },
       ] },
       { panels: [
         { at: [[14, 14], [560, 14], [540, 548], [14, 548]], art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'lines', sandbags: true, turn: 0.2 }, cam: [1.08, 1],
           text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 230, t: 'We hold the roads. We keep the safehouses breathing. And we find her before Kessler-Vane does.', tail: [14, 300] },
-            { k: 'say', who: 'Sgt. Dax Moreno', x: 330, y: 300, w: 180, t: "Then let's go to work.", tail: [300, 240] }] },
+            { k: 'say', who: 'Sgt. Dax Moreno', x: 330, y: 392, w: 180, t: "Then let's go to work.", tail: [318, 360] }] },
         { at: [[572, 14], [986, 14], [986, 548], [552, 548]], art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.04],
           text: [{ k: 'cap', x: 600, y: 484, w: 360, t: 'Every road. Every safehouse. Every night.' }] },
       ] },
@@ -82,18 +82,18 @@ return {
       { panels: [
         { at: [[14, 14], [640, 14], [620, 548], [14, 548]], art: 'farmRoad', cam: [1, 1.1, 0, -0.02], snd: 'groan',
           text: [{ k: 'loc', x: 30, y: 30, w: 300, t: 'Hollow Creek. Where it started.' }] },
-        { at: [[652, 14], [986, 14], [986, 276], [643, 276]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', x: 0.62 }, cam: [1.06, 1],
-          text: [{ k: 'radio', who: 'Voss', x: 662, y: 26, w: 180, t: 'Survivors are holding a farmhouse at the end of this road.', tail: [800, 120] }] },
-        { at: [[642, 288], [986, 288], [986, 548], [632, 548]], art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'speed', x: 0.62, turn: -0.2 }, cam: [1.08, 1],
-          text: [{ k: 'say', who: 'Moreno', x: 650, y: 300, w: 170, t: "Slow, loud and hungry. Light 'em up before they reach the fence.", tail: [800, 400] }] },
+        { at: [[652, 14], [986, 14], [986, 276], [643, 276]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', x: 0.8 }, cam: [1.06, 1],
+          text: [{ k: 'radio', who: 'Voss', x: 656, y: 30, w: 140, t: 'Survivors are holding a farmhouse at the end of this road.', tail: [885, 160] }] },
+        { at: [[642, 288], [986, 288], [986, 548], [632, 548]], art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'speed', x: 0.8, turn: -0.2 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Moreno', x: 646, y: 304, w: 140, t: "Slow, loud and hungry. Light 'em up before they reach the fence.", tail: [880, 430] }] },
       ] },
       { music: 'tension', panels: [
         { at: R(14, 14, 986, 250), art: 'scope', snd: 'sniper', fx: 'slam', cam: [1.12, 1],
           text: [{ k: 'sfx', x: 640, y: 70, t: 'BLAM!', size: 74, rot: -0.1, col: 'amber' }] },
         { at: [[14, 262], [480, 262], [460, 548], [14, 548]], art: 'sniperRoof', cam: [1.1, 1, -0.03, 0],
           text: [{ k: 'cap', x: 30, y: 276, w: 260, t: 'Somebody had been holding the farmhouse.' }] },
-        { at: [[492, 262], [986, 262], [986, 548], [472, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'lines', x: 0.58, y: 0.5 }, fx: 'shake', cam: [1.1, 1],
-          text: [{ k: 'say', who: 'Laila', x: 492, y: 280, w: 150, t: "Took y'all long enough.", tail: [690, 410] }, { k: 'say', x: 492, y: 450, w: 190, t: "Forty days I've held this place alone. Try to keep up.", tail: [660, 440] }] },
+        { at: [[492, 262], [986, 262], [986, 548], [472, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'lines', x: 0.68, y: 0.5 }, fx: 'shake', cam: [1.1, 1],
+          text: [{ k: 'say', who: 'Laila', x: 492, y: 280, w: 150, t: "Took y'all long enough.", tail: [770, 420] }, { k: 'say', x: 492, y: 450, w: 190, t: "Forty days I've held this place alone. Try to keep up.", tail: [760, 455] }] },
       ] },
       { panels: [
         { at: R(14, 14, 400, 548), art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'speed', x: 0.55, turn: 0.2 }, cam: [1.08, 1],
@@ -153,8 +153,8 @@ return {
           text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'Somebody had reached the crypt first.' }] },
         { at: [[14, 312], [480, 312], [470, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', hat: true, bg: 'night', x: 0.4, y: 0.52 }, cam: [1.08, 1],
           text: [{ k: 'say', who: 'Laila', x: 270, y: 330, w: 160, t: "Those ain't army.", tail: [240, 440] }] },
-        { at: [[492, 312], [986, 312], [986, 548], [482, 548]], art: 'portrait', o: { who: 'moreno', mood: 'grim', bg: 'lines', x: 0.66 }, cam: [1.08, 1],
-          text: [{ k: 'say', who: 'Moreno', x: 500, y: 330, w: 200, t: "Kessler-Vane cleaners. They're hunting the doc too.", tail: [720, 420] }] },
+        { at: [[492, 312], [986, 312], [986, 548], [482, 548]], art: 'portrait', o: { who: 'moreno', mood: 'grim', bg: 'lines', x: 0.78 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Moreno', x: 500, y: 330, w: 190, t: "Kessler-Vane cleaners. They're hunting the doc too.", tail: [810, 445] }] },
       ] },
     ],
   },
@@ -162,9 +162,9 @@ return {
     title: 'North', kicker: 'Chapter 2', world: 1,
     pages: [{ panels: [
       { at: [[14, 14], [560, 14], [560, 548], [14, 548]], art: 'radio', o: { ch: 'CH 07  ·  OKAFOR, M.' }, snd: 'static', cam: [1.1, 1],
-        text: [{ k: 'radio', who: 'Okafor', x: 30, y: 30, w: 260, t: "Vane's cleaners are in the crypt. I can't stay.", tail: [170, 200] }, { k: 'radio', x: 280, y: 400, w: 260, t: "I'm heading north. Station Seven. The cold slows the strain.", tail: [260, 330] }] },
-      { at: R(572, 14, 986, 548), art: 'portrait', o: { who: 'moreno', mood: 'tired', bg: 'storm', x: 0.5 }, cam: [1.08, 1],
-        text: [{ k: 'say', who: 'Moreno', x: 600, y: 36, w: 140, t: 'North. Great.', tail: [740, 160] }, { k: 'say', x: 800, y: 420, w: 150, t: 'I hate the cold.', tail: [820, 340] }, { k: 'say', who: 'Laila', x: 590, y: 250, w: 170, t: "Quit whining. I'll keep you warm with gunfire.", tail: [572, 330] }] },
+        text: [{ k: 'radio', who: 'Okafor', x: 30, y: 30, w: 260, t: "Vane's cleaners are in the crypt. I can't stay.", tail: [170, 200] }, { k: 'radio', x: 232, y: 396, w: 236, t: "I'm heading north. Station Seven. The cold slows the strain.", tail: [260, 330] }] },
+      { at: R(572, 14, 986, 548), art: 'portrait', o: { who: 'moreno', mood: 'tired', bg: 'storm', x: 0.56, y: 0.47, zoom: 0.85 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Moreno', x: 596, y: 36, w: 140, t: 'North. Great.', tail: [742, 188] }, { k: 'say', x: 818, y: 112, w: 110, t: 'I hate the cold.', tail: [852, 200] }, { k: 'say', who: 'Laila', x: 618, y: 392, w: 170, t: "Quit whining. I'll keep you warm with gunfire.", tail: [572, 470] }] },
     ] }],
   },
   'w1-outro': {
@@ -174,8 +174,8 @@ return {
         text: [{ k: 'sfx', x: 360, y: 60, t: 'KRRAAASH', size: 60, rot: 0.1, col: 'purple', grow: 1 }, { k: 'cap', x: 30, y: 470, w: 300, t: 'The Grave Lord fell, and the rift above Blackwood sealed shut.' }] },
       { at: [[652, 14], [986, 14], [986, 276], [643, 276]], art: 'worldMap', o: { upto: 2 }, cam: [1.12, 1, 0.05, -0.02],
         text: [{ k: 'cap', x: 664, y: 26, w: 230, t: 'Okafor was already gone.' }] },
-      { at: [[642, 288], [986, 288], [986, 548], [632, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'night', x: 0.6, turn: 0.2 }, cam: [1.08, 1],
-        text: [{ k: 'say', who: 'Voss', x: 650, y: 300, w: 160, t: "She's gone north. Pack for the cold.", tail: [790, 390] }] },
+      { at: [[642, 288], [986, 288], [986, 548], [632, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'night', x: 0.78, turn: 0.2 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Voss', x: 646, y: 304, w: 140, t: "She's gone north. Pack for the cold.", tail: [875, 425] }] },
     ] }, { panels: [
       { at: [[14, 14], [640, 14], [620, 548], [14, 548]], art: 'cleaners', cam: [1.1, 1, -0.02, 0],
         text: [{ k: 'cap', x: 30, y: 30, w: 300, t: 'The cleaners were gone too. So were the crypt files.' }] },
@@ -191,7 +191,7 @@ return {
       { panels: [
         { at: [[14, 14], [986, 14], [986, 240], [14, 256]], art: 'snowstorm', cam: [1.1, 1, 0.03, 0],
           text: [{ k: 'loc', x: 30, y: 30, w: 300, t: 'Frostfall Tundra. Station Seven.' }] },
-        { at: [[14, 268], [420, 261], [420, 548], [14, 548]], art: 'portrait', o: { who: 'okafor', mood: 'tired', parka: true, bg: 'storm', x: 0.42 }, cam: [1.08, 1],
+        { at: [[14, 268], [420, 261], [420, 548], [14, 548]], art: 'portrait', o: { who: 'okafor', mood: 'tired', parka: true, bg: 'storm', x: 0.42, y: 0.38 }, cam: [1.08, 1],
           text: [{ k: 'say', who: 'Dr. Okafor', x: 236, y: 286, w: 170, t: 'You came. Good.', tail: [210, 380] }, { k: 'say', x: 196, y: 452, w: 190, t: 'Then you need to see what they built up here.', tail: [200, 400] }] },
         { at: [[432, 261], [986, 252], [986, 548], [432, 548]], art: 'frozenGiant', snd: 'freeze', cam: [1, 1.1, 0, 0.03],
           text: [{ k: 'say', x: 450, y: 276, w: 200, t: 'Their soldier. Lazarus, version two.', tail: [520, 470] }, { k: 'cap', x: 820, y: 276, w: 150, t: "It's waking up." }] },
@@ -200,7 +200,7 @@ return {
         { at: R(14, 14, 986, 250), art: 'radio', o: { ch: 'STATION 7 PA  ·  OVERRIDE', red: true }, snd: 'static', cam: [1.1, 1],
           text: [{ k: 'radio', who: 'Silas Vane', x: 330, y: 40, w: 380, t: 'Hello, Mara. You always were sentimental.', tail: [230, 150] }] },
         { at: [[14, 262], [480, 262], [460, 548], [14, 548]], art: 'portrait', o: { who: 'okafor', mood: 'shout', parka: true, bg: 'lines', x: 0.42 }, fx: 'shake', cam: [1.1, 1],
-          text: [{ k: 'shout', who: 'Okafor', x: 250, y: 280, w: 190, t: "He's waking it up from the tower!", tail: [210, 390] }] },
+          text: [{ k: 'shout', who: 'Okafor', x: 264, y: 280, w: 180, t: "He's waking it up from the tower!", tail: [215, 395] }] },
         { at: [[492, 262], [986, 262], [986, 548], [472, 548]], art: 'frozenGiant', snd: 'freeze', fx: 'slam', cam: [1.5, 1.35, 0, -0.22],
           text: [{ k: 'sfx', x: 520, y: 300, t: 'KRRRK', size: 54, rot: -0.12, col: 'ice' }, { k: 'radio', who: 'Silas Vane', x: 620, y: 430, w: 230, t: 'Lazarus Two. Bring me the core.', tail: [986, 510] }] },
       ] },
@@ -345,15 +345,42 @@ const Story = (() => {
   function bbox(pts) { const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]); const x0 = Math.min(...xs), y0 = Math.min(...ys); return [x0, y0, Math.max(...xs) - x0, Math.max(...ys) - y0]; }
   function renderPage(pg) {
     if (pg.art) return;
-    settle(pg.panels.flatMap((p) => p.text));
     pg.art = pg.panels.map((p) => {
       // panels the guided view zooms into are painted at that zoom so they stay sharp
       const [bx, by, bw, bh] = bbox(p.at), zf = Math.min(2.4, zoomFor(p)), w = Math.max(8, Math.round(bw * view.s * zf)), h = Math.max(8, Math.round(bh * view.s * zf));
       const c = document.createElement('canvas'); c.width = w; c.height = h;
       const g = c.getContext('2d'); g.fillStyle = PAPER; g.fillRect(0, 0, w, h);
-      try { SCENES[p.art].base(g, w, h, p.o || {}); } catch (e) { console.error(e); }
+      const faces = MANGA.recordFaces(() => { try { SCENES[p.art].base(g, w, h, p.o || {}); } catch (e) { console.error(e); } });
+      if (!p._faces) p._faces = facesIn(p, faces, w, h);
       return { c, bx, by, bw, bh, dw: w / zf, dh: h / zf };
     });
+    // lettering is laid out once the faces are known, so it can keep off them
+    settle(pg.panels.flatMap((p) => p.text), pg.panels);
+  }
+  // Faces noted while a panel's art was drawn, turned into sheet units. The panel's camera drifts
+  // and zooms as it is read, so each face covers everywhere it goes, clipped to the panel.
+  function facesIn(p, raw, w, h) {
+    const [bx, by, bw, bh] = bbox(p.at), [z0, z1, px = 0, py = 0] = p.cam || [1.06, 1];
+    return raw.map((f) => {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const k of [0, 1]) {
+        const z = lerp(z0, z1, k);
+        for (const [u, v] of [[f.x0, f.y0], [f.x1, f.y1]]) {
+          const sx = bx + bw / 2 + px * bw * k + z * ((u / w) * bw - bw / 2), sy = by + bh / 2 + py * bh * k + z * ((v / h) * bh - bh / 2);
+          x0 = Math.min(x0, sx); y0 = Math.min(y0, sy); x1 = Math.max(x1, sx); y1 = Math.max(y1, sy);
+        }
+      }
+      x0 = Math.max(x0, bx); y0 = Math.max(y0, by); x1 = Math.min(x1, bx + bw); y1 = Math.min(y1, by + bh);
+      return x1 - x0 > 4 && y1 - y0 > 4 ? { x0, y0, x1, y1 } : null;
+    }).filter(Boolean);
+  }
+  // the same, for a panel that has not been painted (the layout audit)
+  function facesOf(p) {
+    if (p._faces) return p._faces;
+    const [, , bw, bh] = bbox(p.at), w = Math.round(bw * 1.5), h = Math.round(bh * 1.5), c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const raw = MANGA.recordFaces(() => { try { SCENES[p.art].base(c.getContext('2d'), w, h, p.o || {}); } catch (e) { /* drawn without faces */ } });
+    return (p._faces = facesIn(p, raw, w, h));
   }
 
   // ---------- lettering ----------
@@ -453,13 +480,15 @@ const Story = (() => {
     }
     return out;
   }
-  function settle(texts) {
+  function settle(texts, panels = []) {
     for (const t of texts) t.off = null;
     const items = texts.flatMap((t) => {
       if (t.k === 'sfx') return sfxBoxes(t).map((b) => ({ t, fixed: true, ...b }));
       const B = boxOf(t), oval = t.k !== 'cap' && t.k !== 'loc', m = oval ? 0.02 : 0, tag = t.who ? layout(t).fs * 0.75 : 0;
       return [{ t, x: B.x + B.w * m, y: B.y + B.h * m - tag, w: B.w * (1 - 2 * m), h: B.h * (1 - 2 * m) + tag, ox: 0, oy: 0 }];
     });
+    // faces in the art stay put and the lettering moves off them, like sound effects
+    for (const p of panels) for (const f of p._faces || []) items.push({ t: { _p: p }, fixed: true, face: true, x: X(f.x0), y: Y(f.y0), w: (f.x1 - f.x0) * view.s, h: (f.y1 - f.y0) * view.s });
     const gap = 5 * dpr;
     // in the guided view each panel fills the screen, so its lettering must stay on its panel
     for (const it of items) {
@@ -665,7 +694,7 @@ const Story = (() => {
     if (p.fx === 'flash') st.flashUntil = T + 0.38;
     if (pg.music && typeof Sound !== 'undefined') Sound.setScene(pg.music, st.ch.world);
     const sr = $('#story-sr'); if (sr) sr.textContent = p.text.filter((t) => t.k !== 'sfx').map((t) => (t.who ? `${t.who}: ` : '') + t.t).join(' ');
-    if (i === 0 && st.pi + 1 < st.pages.length) setTimeout(() => st && renderPage(st.pages[st.pi + 1]), 350);
+    if (i === 0 && st.pi + 1 < st.pages.length) setTimeout(() => { const next = st && st.pages[st.pi + 1]; if (next) renderPage(next); }, 350);
   }
   function beatDone() { const p = st.pages[st.pi].panels[st.bi]; return !p || p.forced || now() >= p.end; }
   function advance() {
@@ -718,7 +747,7 @@ const Story = (() => {
 
   // Lays out every page at a given screen size and reports lettering that leaves the page,
   // collides with other lettering, spills out of its balloon or has a tail that goes nowhere.
-  function audit(vw, vh, pr = 1) {
+  function audit(vw, vh, pr = 1, o = {}) {
     const keep = { cv, ctx, dpr, view, guided, scr }, issues = [];
     cv = document.createElement('canvas'); ctx = cv.getContext('2d'); dpr = pr;
     const top = 52, bot = 18, sc = Math.min((vw - 24) / PW, (vh - top - bot) / PH);
@@ -726,7 +755,9 @@ const Story = (() => {
     const U = (v) => v / view.s;
     for (const id of STORY_ORDER) STORY[id].pages.forEach((pg, pi) => {
       const boxes = [], copies = pg.panels.map((p) => (p.text || []).map((t0) => ({ ...t0, _p: p })));
-      settle(copies.flat());
+      for (const p of pg.panels) facesOf(p);
+      settle(copies.flat(), o.noFaces ? [] : pg.panels);
+      const faces = pg.panels.flatMap((p, bi) => p._faces.map((f) => ({ ...f, bi })));
       pg.panels.forEach((p, bi) => (p.text || []).forEach((t0, ti) => {
         const t = copies[bi][ti], where = `${id} p${pi + 1} panel ${bi + 1} "${t.t.slice(0, 28)}"`;
         if (t.k === 'sfx') {
@@ -747,6 +778,11 @@ const Story = (() => {
           if (t.who) { ctx.font = `700 ${L.fs * 0.62}px "Barlow Condensed", sans-serif`; boxes.push({ where: where + ' (name tag)', x: U(B.cx - B.rx * 0.72), y: U(B.cy - B.ry - L.fs * 0.9 * 0.55), w: U(ctx.measureText(t.who.toUpperCase()).width + L.fs * 0.6), h: U(L.fs * 0.9), tag: 1 }); }
         }
         boxes.push({ where, x: bx, y: by, w: bw, h: bh, oval: t.k !== 'cap' && t.k !== 'loc' });
+        for (const f of faces) {
+          if (guided && f.bi !== bi) continue;
+          const ox = Math.min(bx + bw, f.x1) - Math.max(bx, f.x0), oy = Math.min(by + bh, f.y1) - Math.max(by, f.y0);
+          if (ox > 2 && oy > 2) issues.push(`${where}: covers a face (${Math.round((100 * ox * oy) / ((f.x1 - f.x0) * (f.y1 - f.y0)))}% of it)`);
+        }
       }));
       // shapes, not boxes: ovals are tested as ovals, with a little breathing room round each
       const inside = (o, x, y, pad) => o.oval ? (((x - o.x - o.w / 2) / (o.w / 2 + pad)) ** 2 + ((y - o.y - o.h / 2) / (o.h / 2 + pad)) ** 2 <= 1) : (x >= o.x - pad && x <= o.x + o.w + pad && y >= o.y - pad && y <= o.y + o.h + pad);
