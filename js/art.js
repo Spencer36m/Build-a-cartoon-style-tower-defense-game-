@@ -612,56 +612,224 @@ function pad(c, size = 36, top = '#8f918b', bottom = '#5a5c57') {
     circle(c, x * (h - 2.6), y * (h - 2.6), 1.3); c.fillStyle = radial(c, x * (h - 2.6), y * (h - 2.6), 1.3, '#c8c9c2', '#4a4c48'); c.fill();
   }
 }
-// A top-down trooper facing +x: backpack, vest with pouches, shoulders, arms reaching
-// forward to the weapon's grip and foregrip, and a covered helmet with its rim shadow.
-function soldier(c, helmet = '#4d5a3a', body = '#56603f') {
-  const vest = shade(body, -0.12), skin = '#c99a78', glove = '#2a2a24';
-  // backpack
-  rr(c, -10.5, -4.6, 5.5, 9.2, 2); c.fillStyle = linear(c, -10.5, -4.6, -5, 4.6, [[0, shade(body, 0.05)], [1, shade(body, -0.45)]]); c.fill();
-  c.fillStyle = shade(body, -0.5); c.fillRect(-10, -0.6, 4.6, 1.2);
-  // arms: upper arm from the shoulder, forearm to the hands on the weapon
-  c.lineCap = 'round';
-  for (const [sy, hx, hy] of [[-6, 7.5, -1.4], [6, 3.5, 1.6]]) {
-    const ex = 2.5, ey = sy * 0.95;
-    c.strokeStyle = shade(body, -0.3); c.lineWidth = 3.6; c.beginPath(); c.moveTo(-1, sy * 0.85); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
-    c.strokeStyle = shade(body, 0.08); c.lineWidth = 2.6; c.beginPath(); c.moveTo(-1, sy * 0.85); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
-    circle(c, hx, hy, 1.7); c.fillStyle = glove; c.fill();
-  }
-  // shoulders and vest
-  ellipse(c, -1.5, 0, 6.2, 8.6); c.fillStyle = radial(c, -2, -2, 9, shade(body, 0.22), shade(body, -0.4)); c.fill();
-  rr(c, -5.4, -5.4, 7, 10.8, 2.4); c.fillStyle = linear(c, -5, -5, 2, 5, [[0, shade(vest, 0.12)], [1, shade(vest, -0.35)]]); c.fill();
-  c.fillStyle = shade(vest, -0.45); for (const py of [-3.6, -1.1, 1.4]) c.fillRect(0, py, 1.8, 2.1);
-  c.strokeStyle = shade(vest, -0.55); c.lineWidth = 0.5; c.beginPath(); c.moveTo(-5, -4); c.lineTo(1.5, 4.5); c.stroke();
-  // neck and helmet
-  circle(c, 1.6, 0, 2.2); c.fillStyle = skin; c.fill();
-  circle(c, 1.4, 0.4, 5.6); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
-  circle(c, 1.2, 0, 5.3); c.fillStyle = radial(c, 1.2, 0, 5.3, shade(helmet, 0.35), shade(helmet, -0.42)); c.fill();
-  // scrim cover and strap
-  c.fillStyle = shade(helmet, -0.28);
-  for (const [px, py, pr] of [[-0.8, -2.2, 1.1], [2.8, 1.8, 1], [3, -2.6, 0.8], [-1.6, 2.4, 0.9], [0.6, 0.2, 0.7]]) { circle(c, px, py, pr); c.fill(); }
-  c.strokeStyle = shade(helmet, -0.55); c.lineWidth = 0.6; circle(c, 1.2, 0, 4.4); c.stroke();
-  c.fillStyle = 'rgba(255,250,230,0.45)'; ellipse(c, -0.4, -2.2, 2.2, 1.1, -0.6); c.fill();
+// ---------- people ----------
+// A hex-in, hex-out shade (shade() returns rgb(), which cannot be shaded again).
+function tint(h, k) {
+  const A = hexRgb(h), T = k >= 0 ? 255 : 0, a = Math.min(1, Math.abs(k));
+  return '#' + A.map((q) => Math.round(q + (T - q) * a).toString(16).padStart(2, '0')).join('');
 }
-// a prone marksman along +x: legs splayed behind, elbows planted, cheek on the stock
-function proneSoldier(c, helmet = '#6a7650', body = '#6d7a4c', ghillie = false) {
-  c.lineCap = 'round';
-  for (const sd of [-1, 1]) {
-    c.strokeStyle = shade(body, -0.35); c.lineWidth = 4.2; c.beginPath(); c.moveTo(-8, sd * 2); c.lineTo(-15, sd * 4.2); c.lineTo(-21, sd * 5.2); c.stroke();
-    c.strokeStyle = shade(body, -0.05); c.lineWidth = 3.2; c.beginPath(); c.moveTo(-8, sd * 2); c.lineTo(-15, sd * 4.2); c.lineTo(-21, sd * 5.2); c.stroke();
-    rr(c, -24, sd * 5.2 - 1.8, 4, 3.6, 1.2); c.fillStyle = '#2a2622'; c.fill();
+const SKINS = ['#c99a78', '#a8754f', '#e2b896', '#7a5236', '#b98a64', '#8f6244'];
+// Camouflage: soft blotches in three tones over whatever path is clipped.
+function camo(c, base, seed, x0, y0, w, h, scale = 1) {
+  const rng = mulberry32(seed), tones = [tint(base, 0.2), tint(base, -0.3), mix(base, '#8a7652', 0.45).replace(/rgb\((\d+),(\d+),(\d+)\)/, (m, r, g, b) => '#' + [r, g, b].map((v) => (+v).toString(16).padStart(2, '0')).join(''))];
+  for (let i = 0; i < 14; i++) {
+    c.fillStyle = tones[i % 3];
+    const bx = x0 + rng() * w, by = y0 + rng() * h, r = (0.9 + rng() * 1.5) * scale;
+    c.beginPath();
+    for (let k = 0; k < 6; k++) { const q = (k / 6) * TAU, rr2 = r * (0.65 + rng() * 0.5); c.lineTo(bx + Math.cos(q) * rr2 * 1.3, by + Math.sin(q) * rr2); }
+    c.closePath(); c.fill();
   }
-  for (const [sy, hx, hy] of [[-5.5, 12, -0.6], [5.5, 7, 1.4]]) {
-    c.strokeStyle = shade(body, -0.3); c.lineWidth = 3.4; c.beginPath(); c.moveTo(-2, sy * 0.8); c.lineTo(3, sy * 1.15); c.lineTo(hx, hy); c.stroke();
-    c.strokeStyle = shade(body, 0.08); c.lineWidth = 2.4; c.beginPath(); c.moveTo(-2, sy * 0.8); c.lineTo(3, sy * 1.15); c.lineTo(hx, hy); c.stroke();
-    circle(c, hx, hy, 1.6); c.fillStyle = '#2a2a24'; c.fill();
+}
+// A limb as a tapered, shaded tube from a to b through the joint j: dark edge, cloth, a lit seam.
+function limb(c, pts, w, cloth, seed) {
+  const path = () => { c.beginPath(); pts.forEach(([px, py], i) => (i ? c.lineTo(px, py) : c.moveTo(px, py))); };
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  path(); c.strokeStyle = rgba(tint(cloth, -0.55), 0.85); c.lineWidth = w + 0.7; c.stroke();
+  path(); c.strokeStyle = cloth; c.lineWidth = w; c.stroke();
+  // a fold at the joint and a few camouflage flecks along the sleeve
+  const rng = mulberry32(seed);
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+    for (let k = 0; k < 3; k++) { const f = 0.15 + rng() * 0.7; c.fillStyle = rng() < 0.5 ? tint(cloth, -0.2) : tint(cloth, 0.12); ellipse(c, ax + (bx - ax) * f + (rng() - 0.5) * w * 0.35, ay + (by - ay) * f + (rng() - 0.5) * w * 0.35, w * 0.22, w * 0.14, Math.atan2(by - ay, bx - ax)); c.fill(); }
   }
-  ellipse(c, -4, 0, 8.5, 6); c.fillStyle = radial(c, -5, -2, 9, shade(body, 0.22), shade(body, -0.42)); c.fill();
-  rr(c, -9, -3.4, 4, 6.8, 1.6); c.fillStyle = shade(body, -0.35); c.fill();
-  if (ghillie) { const rng = mulberry32(5); for (let i = 0; i < 26; i++) { const a = rng() * TAU, rr2 = rng() * 8; c.strokeStyle = rng() < 0.5 ? '#5a6a34' : '#7a7a44'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-4 + Math.cos(a) * rr2, Math.sin(a) * rr2 * 0.7); c.lineTo(-4 + Math.cos(a) * rr2 + Math.cos(a + 1) * 3, Math.sin(a) * rr2 * 0.7 + Math.sin(a + 1) * 3); c.stroke(); } }
-  circle(c, 4.4, 0.4, 4.9); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
-  circle(c, 4.2, 0, 4.6); c.fillStyle = radial(c, 4.2, 0, 4.6, shade(helmet, 0.35), shade(helmet, -0.42)); c.fill();
-  c.strokeStyle = shade(helmet, -0.55); c.lineWidth = 0.5; circle(c, 4.2, 0, 3.7); c.stroke();
-  c.fillStyle = 'rgba(255,250,230,0.45)'; ellipse(c, 2.8, -1.9, 1.9, 0.9, -0.6); c.fill();
+  path(); c.strokeStyle = rgba(tint(cloth, 0.4), 0.3); c.lineWidth = w * 0.3; c.save(); c.translate(-w * 0.15, -w * 0.18); c.stroke(); c.restore();
+}
+// A gloved (or bare) hand closed round a grip, pointing along (dx, dy).
+function hand(c, x, y, dx, dy, col) {
+  c.save(); c.translate(x, y); c.rotate(Math.atan2(dy, dx));
+  ellipse(c, 0.2, 0.3, 2.1, 1.7); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+  ellipse(c, 0, 0, 2.1, 1.65); c.fillStyle = radial(c, -0.6, -0.6, 2.4, tint(col, 0.28), tint(col, -0.35)); c.fill();
+  c.strokeStyle = rgba(tint(col, -0.55), 0.8); c.lineWidth = 0.35;
+  for (const k of [-0.7, 0, 0.7]) { c.beginPath(); c.moveTo(1, k); c.lineTo(1.9, k * 0.8); c.stroke(); }
+  c.restore();
+}
+// A helmet seen from above: a cloth cover in the helmet's camouflage, the rubber band with its
+// reflective tabs, rails down the sides, ear defenders, and a night-vision mount on the brow.
+function helmetTop(c, hx, hy, R, col, seed) {
+  for (const sd of [-1, 1]) { rr(c, hx - 1.6, hy + sd * R * 0.88 - 1.1, 3.4, 2.2, 1); c.fillStyle = '#25272a'; c.fill(); c.fillStyle = 'rgba(255,255,255,0.18)'; c.fillRect(hx - 1, hy + sd * R * 0.88 - 0.8, 2, 0.5); }
+  circle(c, hx + 0.3, hy + 0.5, R + 0.4); c.fillStyle = 'rgba(0,0,0,0.38)'; c.fill();
+  c.save(); circle(c, hx, hy, R); c.clip();
+  c.fillStyle = radial(c, hx - R * 0.3, hy - R * 0.35, R * 1.5, tint(col, 0.18), tint(col, -0.42), 0, 0); c.fillRect(hx - R, hy - R, R * 2, R * 2);
+  c.globalAlpha *= 0.5; camo(c, col, seed, hx - R, hy - R, R * 2, R * 2, R / 5.3); c.globalAlpha /= 0.5;
+  c.fillStyle = radial(c, hx, hy, R, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 0, 0); c.fillRect(hx - R, hy - R, R * 2, R * 2);
+  // stitched seams of the cover
+  c.strokeStyle = rgba(tint(col, -0.5), 0.5); c.lineWidth = 0.3; c.setLineDash([0.6, 0.5]);
+  c.beginPath(); c.moveTo(hx - R, hy); c.quadraticCurveTo(hx, hy - R * 0.25, hx + R, hy); c.stroke(); c.setLineDash([]);
+  c.restore();
+  // the rim, a rubber band with two reflective tabs at the back, side rails and the brow mount
+  circle(c, hx, hy, R - 0.2); c.strokeStyle = rgba(tint(col, -0.6), 0.7); c.lineWidth = 0.4; c.stroke();
+  circle(c, hx, hy, R * 0.74); c.strokeStyle = 'rgba(25,26,22,0.45)'; c.lineWidth = 0.55; c.stroke();
+  c.fillStyle = 'rgba(230,226,190,0.8)'; for (const sd of [-1, 1]) c.fillRect(hx - R * 0.76 - 0.3, hy + sd * 1.5 - 0.3, 0.6, 0.6);
+  c.fillStyle = '#2a2b27'; for (const sd of [-1, 1]) { c.save(); c.translate(hx, hy); c.rotate(sd * 1.35); c.fillRect(R - 1.1, -0.9, 0.8, 1.8); c.restore(); }
+  rr(c, hx + R * 0.66, hy - 1, 1.4, 2, 0.5); c.fillStyle = '#1b1c1a'; c.fill();
+  c.fillStyle = 'rgba(255,250,230,0.28)'; ellipse(c, hx - R * 0.32, hy - R * 0.4, R * 0.34, R * 0.16, -0.6); c.fill();
+}
+// A wide-brimmed straw hat seen from above: woven brim, crown and a band.
+function strawHat(c, hx, hy, R) {
+  circle(c, hx + 0.6, hy + 1, R); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
+  circle(c, hx, hy, R); c.fillStyle = radial(c, hx - R * 0.3, hy - R * 0.3, R * 1.3, '#ecd49a', '#a8864a', 0, 0); c.fill();
+  c.strokeStyle = 'rgba(110,80,36,0.4)'; c.lineWidth = 0.3;
+  for (let r2 = R * 0.62; r2 < R; r2 += 0.9) { circle(c, hx, hy, r2); c.stroke(); }
+  for (let i = 0; i < 28; i++) { const q = (i / 28) * TAU; c.beginPath(); c.moveTo(hx + Math.cos(q) * R * 0.6, hy + Math.sin(q) * R * 0.6); c.lineTo(hx + Math.cos(q) * R, hy + Math.sin(q) * R); c.stroke(); }
+  circle(c, hx, hy, R); c.strokeStyle = '#8a6a34'; c.lineWidth = 0.6; c.stroke();
+  circle(c, hx, hy, R * 0.58); c.strokeStyle = '#4a2e1a'; c.lineWidth = 0.9; c.stroke();
+  circle(c, hx, hy, R * 0.5); c.fillStyle = radial(c, hx - 1, hy - 1, R * 0.6, '#f2dca8', '#b8945a', 0, 0); c.fill();
+  c.strokeStyle = 'rgba(110,80,36,0.45)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(hx - R * 0.45, hy); c.lineTo(hx + R * 0.45, hy); c.stroke();
+}
+// A top-down trooper facing +x, about 22 by 17 units. From the ground up: boot heels, arms in
+// camouflage sleeves to gloved hands on the weapon, a pack with a rolled sleeping mat, camouflage
+// fatigues, a plate carrier with webbing, pouches and a radio whip, then the helmet.
+// o.hands: the two grip points [[x, y], [x, y]]. o.back(c): drawn on his back (the flamethrower's
+// tanks). o.pack: false for no pack. o.farmer: a straw hat, plaid shirt and overalls instead.
+// o.carry: 'shell' (a mortar round in both hands) or 'binoculars'. o.seed varies skin and pattern.
+function soldier(c, helmet = '#4d5a3a', body = '#56603f', o = {}) {
+  if (helmet[0] !== '#') helmet = '#4d5a3a';
+  if (body[0] !== '#') body = '#56603f';
+  const seed = o.seed || 7, skin = SKINS[seed % SKINS.length], farmer = !!o.farmer;
+  const glove = farmer ? skin : '#2c2b26', vest = farmer ? '#3d5a82' : tint(body, -0.14);
+  const carry = o.carry;
+  const hands = o.hands || (carry === 'shell' ? [[7, -1.7], [7, 1.7]] : carry === 'binoculars' ? [[5.6, -2], [5.6, 2]] : [[7.5, -1.4], [3.5, 1.6]]);
+  // boot heels just showing behind him
+  if (!farmer) for (const sd of [-1, 1]) { rr(c, -9.4, sd * 3 - 1.2, 2.6, 2.4, 1); c.fillStyle = '#2b2620'; c.fill(); }
+  // pack: side pouches, body, top flap with buckles, and a rolled mat strapped across the top
+  if (o.pack !== false && !farmer) {
+    const pk = tint(body, -0.08);
+    for (const sd of [-1, 1]) { rr(c, -10.2, sd * 5 - 1.2, 3.4, 2.4, 0.9); c.fillStyle = tint(pk, -0.22); c.fill(); }
+    rr(c, -10.8, -4.6, 6, 9.2, 2); c.fillStyle = linear(c, -10.8, -4.6, -4.8, 4.6, [[0, tint(pk, 0.12)], [1, tint(pk, -0.4)]]); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 0.4; c.stroke();
+    rr(c, -8.6, -4.1, 3.2, 8.2, 1.3); c.fillStyle = tint(pk, -0.16); c.fill();
+    c.fillStyle = '#16170f'; for (const sd of [-1, 1]) c.fillRect(-8.2, sd * 2.2 - 0.4, 2.6, 0.8);
+    c.fillStyle = '#8a8a7a'; for (const sd of [-1, 1]) c.fillRect(-7.6, sd * 2.2 - 0.5, 0.8, 1);
+    rr(c, -12.4, -5, 2.5, 10, 1.25); c.fillStyle = linear(c, -12.4, 0, -9.9, 0, [[0, '#3a4030'], [0.5, '#6a7058'], [1, '#2e3226']]); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.4)'; c.lineWidth = 0.3; for (const yy of [-3.4, -1.1, 1.1, 3.4]) { c.beginPath(); c.moveTo(-12.3, yy); c.lineTo(-10, yy + 0.4); c.stroke(); }
+    c.strokeStyle = '#1e1f18'; c.lineWidth = 0.7; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(-11.2, sd * 3.2); c.lineTo(-9.9, sd * 3.4); c.stroke(); }
+  }
+  // shoulders and back seen from above: wide across, shallow front to back
+  c.save(); ellipse(c, -2.4, 0, 4.9, 7.8); c.clip();
+  c.fillStyle = radial(c, -4, -3, 10, tint(body, 0.2), tint(body, -0.38), 0, 0); c.fillRect(-8, -9, 12, 18);
+  if (farmer) {
+    c.strokeStyle = 'rgba(160,40,30,0.55)'; c.lineWidth = 0.8; for (let k = -9; k < 9; k += 2.4) { c.beginPath(); c.moveTo(-8, k); c.lineTo(4, k); c.stroke(); c.beginPath(); c.moveTo(-7 + k * 0.7, -9); c.lineTo(-7 + k * 0.7, 9); c.stroke(); }
+    c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 0.3; for (let k = -8; k < 9; k += 2.4) { c.beginPath(); c.moveTo(-8, k); c.lineTo(4, k); c.stroke(); }
+  } else camo(c, body, seed + 11, -8, -9, 12, 18);
+  c.restore();
+  ellipse(c, -2.4, 0, 4.9, 7.8); c.strokeStyle = rgba(tint(body, -0.6), 0.5); c.lineWidth = 0.45; c.stroke();
+  if (farmer) {
+    // overall straps crossing on the back, the bib and its buttons
+    rr(c, -6.2, -2.4, 3.6, 4.8, 0.8); c.fillStyle = vest; c.fill();
+    c.strokeStyle = vest; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-4.4, -1.4); c.lineTo(-0.4, 5.4); c.moveTo(-4.4, 1.4); c.lineTo(-0.4, -5.4); c.stroke();
+    c.fillStyle = '#d8c070'; for (const sd of [-1, 1]) { circle(c, -0.5, sd * 5.1, 0.5); c.fill(); }
+  } else {
+    // plate carrier: back panel with rows of webbing, a pouch and a radio, a drag handle at the neck
+    rr(c, -6.4, -4.5, 6.6, 9, 1.8); c.fillStyle = linear(c, -6.4, -4.5, 0.2, 4.5, [[0, tint(vest, 0.14)], [1, tint(vest, -0.32)]]); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.4)'; c.lineWidth = 0.4; c.stroke();
+    c.strokeStyle = rgba(tint(vest, -0.5), 0.9); c.lineWidth = 0.4; c.setLineDash([1, 0.55]);
+    for (let yy = -3.3; yy <= 3.4; yy += 1.32) { c.beginPath(); c.moveTo(-5.9, yy); c.lineTo(-0.4, yy); c.stroke(); }
+    c.setLineDash([]);
+    for (const sd of [-1, 1]) { rr(c, -0.8, sd * 3.6 - 1.2, 2.6, 2.4, 0.9); c.fillStyle = tint(vest, -0.05); c.fill(); }
+    rr(c, -5.6, -4.3, 2.3, 2.2, 0.5); c.fillStyle = '#26282a'; c.fill();
+    c.strokeStyle = 'rgba(30,31,27,0.75)'; c.lineWidth = 0.32; c.beginPath(); c.moveTo(-4.9, -4); c.quadraticCurveTo(-7.5, -5.6, -10.5, -5.9); c.stroke();
+  }
+  if (o.back) o.back(c);
+  // arms over the shoulders: upper arm out to the elbow, forearm in to the hands
+  [[-1, hands[0]], [1, hands[1]]].forEach(([sy, [hx, hy]], i) => {
+    const sx = -1.8, syy = sy * 6, ex = (sx + hx) / 2 - 0.6, ey = (syy + hy) / 2 + sy * 1.5;
+    limb(c, [[sx, syy], [ex, ey]], 3.2, body, seed + i);
+    if (farmer) limb(c, [[ex, ey], [hx, hy]], 2.4, skin, seed + 5 + i);
+    else {
+      limb(c, [[ex, ey], [hx, hy]], 2.7, body, seed + 3 + i);
+      const fx = hx - (hx - ex) * 0.24, fy = hy - (hy - ey) * 0.24; circle(c, fx, fy, 1.3); c.fillStyle = tint(body, -0.32); c.fill();
+    }
+    // a shoulder patch on the right arm
+    if (!farmer && sy > 0) { c.save(); c.translate(sx + 0.6, syy + 0.2); c.rotate(Math.atan2(ey - syy, ex - sx)); c.fillStyle = tint(body, -0.25); c.fillRect(-0.2, -0.9, 1.8, 1.8); c.fillStyle = 'rgba(220,210,170,0.6)'; c.fillRect(0.3, -0.4, 0.8, 0.8); c.restore(); }
+    hand(c, hx, hy, hx - ex, hy - ey, glove);
+  });
+  if (carry === 'shell') {
+    c.save(); c.translate(7.4, 0);
+    c.beginPath(); c.moveTo(4.6, 0); c.quadraticCurveTo(3, -2.1, -1.5, -1.6); c.lineTo(-1.5, 1.6); c.quadraticCurveTo(3, 2.1, 4.6, 0); c.fillStyle = linear(c, 0, -2, 0, 2, [[0, '#7c8270'], [1, '#33352e']]); c.fill();
+    c.fillStyle = '#2a2c26'; c.fillRect(-3.6, -1, 2.2, 2); c.fillRect(-3.9, -1.7, 0.7, 3.4);
+    c.fillStyle = '#c9b13a'; c.fillRect(1.2, -1.8, 0.8, 3.6); circle(c, 4.4, 0, 0.6); c.fillStyle = '#9aa0a6'; c.fill();
+    c.restore();
+    for (const sd of [-1, 1]) hand(c, 7, sd * 1.7, 1, -sd * 0.6, glove);
+  } else if (carry === 'binoculars') {
+    for (const sd of [-1, 1]) { rr(c, 4.6, sd * 1.2 - 1.05, 3.6, 2.1, 0.8); c.fillStyle = '#1f201d'; c.fill(); circle(c, 8.2, sd * 1.2, 0.75); c.fillStyle = 'rgba(140,190,220,0.8)'; c.fill(); }
+    for (const sd of [-1, 1]) hand(c, 5.6, sd * 2, 1, 0, glove);
+  }
+  // neck, collar, head
+  circle(c, 1, 0, 2.2); c.fillStyle = skin; c.fill();
+  c.strokeStyle = tint(body, -0.25); c.lineWidth = 0.8; c.beginPath(); c.arc(0.9, 0, 2.4, Math.PI * 0.55, Math.PI * 1.45); c.stroke();
+  if (farmer) strawHat(c, 1.2, 0, 6.4);
+  else helmetTop(c, 1.6, 0, 4.6, helmet, seed + 3);
+}
+// A prone marksman along +x: legs apart behind him (one knee drawn up), boot soles to the sky,
+// knee and elbow pads, a plate carrier on his back and his cheek down on the stock.
+// ghillie: a suit of burlap strands and leaves over all of it.
+function proneSoldier(c, helmet = '#6a7650', body = '#6d7a4c', ghillie = false, seed = 4) {
+  if (helmet[0] !== '#') helmet = '#6a7650';
+  if (body[0] !== '#') body = '#6d7a4c';
+  const legs = [[[-10, -2.2], [-16, -3.6], [-22.5, -4.6]], [[-10, 2.2], [-14.5, 7.4], [-21, 7]]];
+  legs.forEach((pts, i) => {
+    const cloth = tint(body, -0.06);
+    limb(c, [pts[1], pts[2]], 3, cloth, seed + 22 + i);
+    limb(c, [pts[0], pts[1]], 3.9, cloth, seed + 20 + i);
+    const [kx, ky] = pts[1], ka = Math.atan2(pts[2][1] - pts[0][1], pts[2][0] - pts[0][0]);
+    ellipse(c, kx - 0.4, ky, 1.8, 1.45, ka); c.fillStyle = tint(body, -0.38); c.fill();
+    c.strokeStyle = rgba(tint(body, -0.6), 0.6); c.lineWidth = 0.3; c.stroke();
+    // the boot: upper, then the sole and heel facing up
+    const [ax, ay] = pts[2], [qx, qy] = pts[1], ang = Math.atan2(ay - qy, ax - qx);
+    c.save(); c.translate(ax, ay); c.rotate(ang);
+    rr(c, -0.5, -1.9, 5, 3.8, 1.4); c.fillStyle = '#3a3228'; c.fill();
+    rr(c, 1, -1.7, 3.8, 3.4, 1.2); c.fillStyle = '#1c1a17'; c.fill();
+    c.strokeStyle = '#3a3630'; c.lineWidth = 0.35; for (const k of [1.8, 2.6, 3.4]) { c.beginPath(); c.moveTo(k, -1.4); c.lineTo(k, 1.4); c.stroke(); }
+    c.fillStyle = '#2a2622'; c.fillRect(1, -1.5, 0.8, 3);
+    c.restore();
+  });
+  // hips and back in camouflage
+  c.save(); ellipse(c, -9.6, 0, 4.4, 4.8); ellipse(c, -3.6, 0, 8, 6.3); c.clip();
+  c.beginPath(); c.fillStyle = radial(c, -5, -3, 11, tint(body, 0.2), tint(body, -0.35), 0, 0); c.fillRect(-15, -8, 21, 16);
+  camo(c, body, seed + 9, -15, -7, 21, 14);
+  c.restore();
+  // arms: elbows planted, padded, hands on the rifle
+  [[-1, [12, -0.6]], [1, [7, 1.4]]].forEach(([sy, [hx, hy]], i) => {
+    const ex = 3.6, ey = sy * 7;
+    limb(c, [[-1.5, sy * 5], [ex, ey]], 3.2, body, seed + i); limb(c, [[ex, ey], [hx, hy]], 2.7, body, seed + 3 + i);
+    ellipse(c, ex, ey, 1.7, 1.35, sy * 0.6); c.fillStyle = tint(body, -0.38); c.fill();
+    hand(c, hx, hy, hx - ex, hy - ey, '#2c2b26');
+  });
+  // plate carrier and a hydration pack
+  rr(c, -9.4, -4.3, 9.6, 8.6, 2); c.fillStyle = linear(c, -9.4, -4.3, 0, 4.3, [[0, tint(body, -0.02)], [1, tint(body, -0.42)]]); c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 0.4; c.stroke();
+  c.strokeStyle = rgba(tint(body, -0.55), 0.9); c.lineWidth = 0.45; c.setLineDash([1.1, 0.6]);
+  for (let yy = -3; yy <= 3.1; yy += 1.5) { c.beginPath(); c.moveTo(-8.8, yy); c.lineTo(-0.6, yy); c.stroke(); }
+  c.setLineDash([]);
+  rr(c, -7.6, -2, 4.6, 4, 1.6); c.fillStyle = tint(body, -0.12); c.fill();
+  c.strokeStyle = '#1c1d18'; c.lineWidth = 0.7; c.beginPath(); c.arc(0.8, 0, 1.3, Math.PI * 0.6, Math.PI * 1.4); c.stroke();
+  if (ghillie) {
+    // burlap strands and scraps of leaf over the back, the legs and the hood
+    const rng = mulberry32(seed + 31), cols = ['#5a6a34', '#7a7a44', '#4a5a2c', '#8a8452', '#6a5a38'];
+    c.lineCap = 'round';
+    for (let i = 0; i < 90; i++) {
+      const f = rng(), along = -22 + f * 30, half = along > -9 ? 6.2 : 5.5 + (along < -14 ? 2 : 0);
+      const px = along, py = (rng() - 0.5) * 2 * half + (along < -12 ? (rng() < 0.5 ? -4 : 6) * 0.4 : 0), q = Math.PI + (rng() - 0.5) * 1.6, l = 1.6 + rng() * 2.6;
+      c.strokeStyle = cols[i % cols.length]; c.lineWidth = 0.55 + rng() * 0.5;
+      c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo(px + Math.cos(q) * l * 0.5, py + Math.sin(q) * l * 0.5 + (rng() - 0.5), px + Math.cos(q) * l, py + Math.sin(q) * l); c.stroke();
+    }
+    for (let i = 0; i < 12; i++) { c.fillStyle = cols[(i + 2) % cols.length]; ellipse(c, -18 + rng() * 22, (rng() - 0.5) * 10, 1.1, 0.6, rng() * 3); c.fill(); }
+  }
+  helmetTop(c, 4.2, 0, 4.7, helmet, seed + 5);
+  if (ghillie) {
+    const rng = mulberry32(seed + 47);
+    for (let i = 0; i < 26; i++) { const q = rng() * TAU, r0 = rng() * 3.5; c.strokeStyle = ['#5a6a34', '#7a7a44', '#4a5a2c', '#8a8452'][i % 4]; c.lineWidth = 0.5; c.beginPath(); c.moveTo(4.2 + Math.cos(q) * r0, Math.sin(q) * r0); c.lineTo(4.2 + Math.cos(q) * (r0 + 2.2) - 1, Math.sin(q) * (r0 + 2.2)); c.stroke(); }
+  }
 }
 // small props used by the upgrade cosmetics
 function crate(c, x, y, w, h, col = '#6b5330', stripe) {
@@ -729,7 +897,7 @@ function heaterBase(c, tiers, L) {
     c.restore();
     // a soldier sitting on it, turned to the fire
     c.save(); c.translate(bx * 0.82, by * 0.82); c.rotate(Math.atan2(-by, -bx)); c.scale(0.85, 0.85);
-    soldier(c, '#4d5a3a', '#56603f');
+    soldier(c, '#4d5a3a', '#56603f', { hands: [[6.8, -3.4], [6.8, 3.4]], seed: bx > 0 ? 2 : 9 });
     c.restore();
   }
   // Burner: a bed of coals, a ring of stones, more barrels, then a ring of gas jets
@@ -955,7 +1123,8 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
   if (part === 'turret') c.globalAlpha = 0;
   const sz = type === 'farm' ? Math.min(1.08, LOOK_SCALE[L.n]) : LOOK_SCALE[L.n];
   c.scale(sz, sz);
-  const helmet = (base = '#4d5a3a') => paint(base, L, 0.6), uniform = (base = '#56603f') => paint(base, L, 0.3);
+  // crews keep mostly natural colours; upgrade colour shows on the gear around them
+  const helmet = (base = '#4d5a3a') => paint(base, L, 0.3), uniform = (base = '#56603f') => paint(base, L, 0.12);
   if (part === 'over') {
     // the sniper's laser sight, drawn over everything
     if (type === 'sniper' && a >= 4 && tw.recoil < 0.5 && !opts.icon) {
@@ -1012,7 +1181,7 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
         for (let k = 0; k < 4; k++) { c.fillStyle = k % 2 ? '#c79a2e' : '#7d5a1e'; c.fillRect(8 + k * 5 - kick, -6.5, 2.5, 13); }
         c.beginPath(); c.moveTo(30 - kick, -6); c.lineTo(38 - kick, 0); c.lineTo(30 - kick, 6); c.closePath();
         c.fillStyle = '#9bff8a'; c.fill();
-        c.save(); c.translate(-8, 0); soldier(c, helmet('#2a3a2a'), uniform('#3e4a3a')); c.restore();
+        c.save(); c.translate(-8, 0); soldier(c, helmet('#2a3a2a'), uniform('#3e4a3a'), { seed: 3 }); c.restore();
         if (lights) lights.push({ x: x + Math.cos(ang) * 34, y: y + Math.sin(ang) * 34, r: 34, color: '120,255,110', a: 0.7 });
       } else if (mech) {
         // Siege Mech: armored body, cockpit and twin rocket pods
@@ -1079,7 +1248,7 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
           }
         }
         if (d >= 2 && !buck) { c.strokeStyle = '#2a2c28'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(4, 0); c.lineTo(-4, -6); c.moveTo(4, 0); c.lineTo(-4, 6); c.stroke(); }
-        soldier(c, helmet(laser ? '#2a2c30' : '#4d5a3a'), uniform(laser ? '#3a3e44' : '#56603f'));
+        soldier(c, helmet(laser ? '#2a2c30' : '#4d5a3a'), uniform(laser ? '#3a3e44' : '#56603f'), { seed: 7 });
         if (laser) { c.fillStyle = plasma ? '#7dd8ff' : '#ff6a5a'; c.fillRect(4, -2.5, 2, 5); }
       }
       break;
@@ -1112,7 +1281,7 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
         c.fillStyle = '#1b1d1a'; c.fillRect(5, -1.2 - 2.6, scope, 2.4);
         if (d >= 2) { circle(c, 5 + scope, -2.6, 1.4); c.fillStyle = '#7dff8a'; c.fill(); if (lights) lights.push({ x: x + Math.cos(ang) * 18, y: y + Math.sin(ang) * 18, r: 10, color: '120,255,140', a: 0.4 }); }
         if (a >= 4 && tw.recoil < 0.5 && !opts.icon && !part) { c.strokeStyle = 'rgba(255,60,50,0.35)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(len + 4, 0); c.lineTo(len + 70, 0); c.stroke(); }
-        proneSoldier(c, helmet(a >= 5 ? '#4c4c44' : '#6a7650'), uniform('#5d6a40'), d >= 3);
+        proneSoldier(c, helmet(a >= 5 ? '#4c4c44' : '#6a7650'), uniform('#5d6a40'), d >= 3, o > 0 ? 9 : 4);
         c.restore();
       }
       break;
@@ -1154,9 +1323,10 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
           c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 0.6; c.beginPath(); c.arc(mx, ty, R * 0.92, Math.PI * 1.1, Math.PI * 1.6); c.stroke();
         }
       }
-      c.save(); c.translate(-9, -11); soldier(c, helmet(), uniform()); c.restore();
-      if (b >= 2) { c.save(); c.translate(-9, 11); soldier(c, helmet(), uniform()); c.restore(); }
-      if (b >= 5) { c.save(); c.translate(-15, 0); soldier(c, helmet('#5a5a3a'), uniform()); c.restore(); }
+      // the crew turn to the tube: a gunner laying it, a loader with a round ready, a spotter
+      c.save(); c.translate(-9, -11); c.rotate(0.88); soldier(c, helmet(), uniform(), { hands: [[8.6, -1.6], [8.2, 2]], seed: 1 }); c.restore();
+      if (b >= 2) { c.save(); c.translate(-9, 11); c.rotate(-0.88); soldier(c, helmet(), uniform(), { carry: 'shell', seed: 4 }); c.restore(); }
+      if (b >= 5) { c.save(); c.translate(-15, 0); soldier(c, helmet('#5a5a3a'), uniform(), { carry: 'binoculars', seed: 2 }); c.restore(); }
       c.fillStyle = '#5a4428'; c.fillRect(8, 9, 6, 5);
       break;
     }
@@ -1209,10 +1379,22 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
         c.fillStyle = paint('#2a2c28', L, 0.6); c.fillRect(2 - kick, o - 1.6, nl, 3.2);
         if (b >= 4) { c.fillStyle = '#3a3c36'; c.beginPath(); c.moveTo(nl - kick, o - 1.6); c.lineTo(nl + 4 - kick, o - 3.5); c.lineTo(nl + 4 - kick, o + 3.5); c.lineTo(nl - kick, o + 1.6); c.fill(); }
       }
-      const tankCol = a >= 5 ? '#d8402a' : a >= 3 ? '#d8d4c8' : a >= 2 ? '#4e5a34' : '#c44a32';
-      const tanks = a >= 4 ? [-5.5, 0, 5.5] : [-3.5, 3.5], tw2 = a >= 1 ? 10 : 9;
-      for (const s of tanks) { rr(c, -12 - (a >= 1 ? 1 : 0), s - 3, tw2, 6, 3); c.fillStyle = linear(c, 0, s - 3, 0, s + 3, [[0, shade(paint(tankCol, L, 0.6), 0.15)], [1, shade(paint(tankCol, L, 0.6), -0.45)]]); c.fill(); if (a >= 3) { c.fillStyle = '#d8b23a'; c.fillRect(-9, s - 3, 1.5, 6); } }
-      soldier(c, helmet('#3c3f36'), uniform(d >= 3 ? '#6a6c70' : '#4b4a3a'));
+      const tankCol = paint(a >= 5 ? '#d8402a' : a >= 3 ? '#d8d4c8' : a >= 2 ? '#4e5a34' : '#c44a32', L, 0.6);
+      const tanks = a >= 4 ? [-3.9, 0, 3.9] : [-2.5, 2.5], th = a >= 4 ? 3.7 : 4.6, tw2 = a >= 1 ? 9.5 : 8.5;
+      // fuel and pressure tanks strapped to his back: domed cylinders with valves and a hose forward
+      const back = (c) => {
+        for (const s of tanks) {
+          rr(c, -12 + 0.6, s - th / 2 + 0.8, tw2, th, th / 2); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fill();
+          rr(c, -12, s - th / 2, tw2, th, th / 2); c.fillStyle = linear(c, 0, s - th / 2, 0, s + th / 2, [[0, tint(tankCol, 0.3)], [0.4, tankCol], [1, tint(tankCol, -0.5)]]); c.fill();
+          c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 0.4; c.stroke();
+          c.fillStyle = 'rgba(255,255,255,0.4)'; c.fillRect(-11, s - th * 0.3, tw2 - 3, 0.6);
+          if (a >= 3) { c.fillStyle = '#d8b23a'; c.fillRect(-9.5, s - th / 2, 1.4, th); }
+          circle(c, -2.8, s, 1); c.fillStyle = '#9a9c96'; c.fill(); c.fillStyle = '#2a2c28'; c.fillRect(-3.2, s - 0.3, 0.8, 0.6);
+        }
+        c.strokeStyle = '#1e1f1b'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-6.5, -6); c.lineTo(-6.5, 6); c.moveTo(-9.5, -5.6); c.lineTo(-9.5, 5.6); c.stroke();
+        c.strokeStyle = '#26271f'; c.lineWidth = 1.3; c.lineCap = 'round'; c.beginPath(); c.moveTo(-2, tanks[tanks.length - 1]); c.bezierCurveTo(1, 9, 4, 6.5, 4, 2); c.stroke();
+      };
+      soldier(c, helmet('#3c3f36'), uniform(d >= 3 ? '#8a8c8e' : '#6a6a4a'), { back, pack: false, hands: [[8.5, -0.6], [4, 1.8]], seed: 5 });
       const pilot = d >= 2 ? '#8fd0ff' : d >= 5 ? '#ffffff' : '#ffb347';
       for (const o of nozzles) { c.fillStyle = pilot; circle(c, nl + 3 - kick, o, d >= 5 ? 2.6 : 1.8); c.fill(); }
       if (lights) lights.push({ x: x + Math.cos(ang) * (nl + 3), y: y + Math.sin(ang) * (nl + 3), r: a >= 4 || d >= 5 ? 30 : 18, color: d >= 2 ? '150,200,255' : '255,150,60', a: 0.45 });
@@ -1302,8 +1484,8 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
         const shooters = d >= 4 ? [[0, -5], [-6, 6]] : [[0, -5]];
         for (const [sx, sy] of shooters) {
           c.save(); c.translate(sx, sy); turn();
-          c.fillStyle = '#1d1f1c'; c.fillRect(2 - kick, -1, 12, 2);
-          soldier(c, helmet('#a88a4a'), uniform('#5a6a8a'));
+          c.fillStyle = '#1d1f1c'; c.fillRect(2 - kick, -1, 12, 2); c.fillStyle = '#6a4a2a'; c.fillRect(-0.5 - kick, -1.3, 5, 2.6);
+          soldier(c, helmet('#a88a4a'), uniform('#5a6a8a'), { farmer: true, hands: [[9, -0.2], [3.6, 1.2]], seed: sx ? 3 : 0 });
           c.restore();
         }
       }
@@ -1345,7 +1527,9 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
       const cols = ['#a8452e', '#2f6f8a', '#c79a2e', '#4f7a3a', '#7a4a8a', '#a8452e'];
       for (let i = 0; i < boxes; i++) { const bx = -15 + (i % 3) * 4.2, by = i < 3 ? -5 : 1; c.fillStyle = cols[i]; c.fillRect(bx, by, 3.8, 4.4); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(bx, by + 3.4, 3.8, 1); }
       if (!boxes) { c.fillStyle = '#5f676c'; rr(c, -12, -5, 12, 10, 2); c.fill(); }
-      c.fillStyle = 'rgba(40,60,70,0.9)'; c.fillRect(-2, -4, 2, 8);
+      // the helmsman at the console, behind the windshield
+      c.save(); c.translate(-6.5, 0); c.scale(0.5, 0.5); soldier(c, paint('#3a4a58', L, 0.5), paint('#4a5a6a', L, 0.3), { hands: [[8, -2.8], [8, 2.8]], pack: false, seed: 8 }); c.restore();
+      c.fillStyle = 'rgba(40,60,70,0.9)'; c.fillRect(-2, -4, 2, 8); c.fillStyle = 'rgba(160,210,230,0.35)'; c.fillRect(-1.6, -3.6, 0.6, 7.2);
       if (d >= 1) { c.strokeStyle = '#2a2c28'; c.lineWidth = 1; c.beginPath(); c.moveTo(-4, 0); c.lineTo(-4, -1); c.stroke(); circle(c, -4, 0, 1.8); c.fillStyle = '#3a4045'; c.fill(); }
       if (d >= 2) { c.fillStyle = '#2a2a24'; for (const s of [-1, 1]) { circle(c, -16, s * 5, 1.6); c.fill(); circle(c, -13.5, s * 6, 1.6); c.fill(); } }
       if (d >= 4) { c.fillStyle = '#4a5054'; c.fillRect(-9, -8.5, 6, 3.5); c.fillStyle = '#c9483d'; c.fillRect(-9, -8.5, 1, 3.5); }
