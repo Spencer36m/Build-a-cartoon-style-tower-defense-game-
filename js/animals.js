@@ -64,16 +64,25 @@ const ANIMALS = (() => {
     if (hab === 'shore') return g === 0 || g === 3;
     return g === 0;
   }
+  // the ground itself, ignoring towers and the safehouse yard
+  function ground(x, y, hab) {
+    if (x < 6 || y < 6 || x > W - 6 || y > H - 6) return false;
+    const g = M.grid[Math.floor(y / TILE) * COLS + Math.floor(x / TILE)];
+    return hab === 'water' ? g === 3 : hab === 'shore' ? g === 0 || g === 3 : g === 0;
+  }
   function clearPath(x0, y0, x1, y1, hab, towers) {
     const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 7);
     for (let i = 1; i <= n; i++) if (!okAt(lerp(x0, x1, i / n), lerp(y0, y1, i / n), hab, towers)) return false;
     return true;
   }
-  // anyPath: skip the route check (for leaving a tile that has just become blocked)
+  // anyPath: skip the route check; 'ground': the route need only cross open ground (for leaving a
+  // tile that has just been built on, where the usual check fails at the very first step)
   function pickSpot(x, y, rmin, rmax, hab, towers, tries = 14, anyPath = false) {
     for (let i = 0; i < tries; i++) {
       const a = rng() * TAU, d = R(rmin, rmax), tx = x + Math.cos(a) * d, ty = y + Math.sin(a) * d;
-      if (okAt(tx, ty, hab, towers) && (anyPath || clearPath(x, y, tx, ty, hab, towers))) return [tx, ty];
+      if (!okAt(tx, ty, hab, towers)) continue;
+      if (anyPath === 'ground') { const n = Math.ceil(d / 6); let ok = true; for (let k = 1; k <= n && ok; k++) ok = ground(lerp(x, tx, k / n), lerp(y, ty, k / n), hab); if (ok) return [tx, ty]; continue; }
+      if (anyPath || clearPath(x, y, tx, ty, hab, towers)) return [tx, ty];
     }
     return null;
   }
@@ -710,6 +719,36 @@ const ANIMALS = (() => {
     }
     if (best) headFor(a, best[0], best[1], true);
   }
+  // Get off a spot that has just been built on, however this animal can: birds and owls take
+  // wing (they cannot run), everything else bolts to the nearest open ground.
+  function leave(a, towers) {
+    const Sp = SPECIES[a.kind];
+    if (Sp.flies) {
+      const hab = a.kind === 'heron' && hasWater ? 'water' : 'land';
+      const p = (Sp.perches && perches.length && perches.find((q) => dist2(q[0], q[1], a.x, a.y) > 90 * 90)) || pickSpot(a.x, a.y, 70, 170, hab, towers, 30, true) || pickSpot(a.x, a.y, 50, 260, 'land', towers, 60, true);
+      if (p) Object.assign(a, { perch: Sp.perches ? a.perch : false, state: 'fly', fx: a.x, fy: a.y, tx: p[0], ty: p[1], flyT: 0, flyDur: Math.hypot(p[0] - a.x, p[1] - a.y) / Sp.flySpeed, z0: a.z, z1: Sp.perches ? 7 : 0 });
+      return;
+    }
+    const p = pickSpot(a.x, a.y, 30, 90, habOf(a), towers, 40, 'ground') || pickSpot(a.x, a.y, 20, 160, habOf(a), towers, 60, 'ground') || pickSpot(a.x, a.y, 20, 160, habOf(a), towers, 60, true);
+    if (p) headFor(a, p[0], p[1], true);
+  }
+  // A tower going down right beside animals startles them at once: birds take off (an owl
+  // for another perch), the rest bolt away from it, swimmers too. Returns the kinds startled.
+  function disturb(x, y, towers) {
+    const kinds = new Set();
+    if (!M) return kinds;
+    for (const a of list) {
+      if (a.state === 'fly') continue;
+      const Sp = SPECIES[a.kind];
+      if (dist2(a.x, a.y, x, y) > (40 + Sp.len * 1.2) ** 2) continue;
+      kinds.add(a.kind);
+      a.wet = 0;
+      flee(a, { x, y }, towers);
+      if (a.state !== 'fly' && a.state !== 'run') leave(a, towers);
+      a.fearCd = 1.5;
+    }
+    return kinds;
+  }
   function choose(a, towers) {
     const Sp = SPECIES[a.kind];
     const [act, dur] = Sp.act(a);
@@ -757,7 +796,11 @@ const ANIMALS = (() => {
         if (Sp.hops) target *= Math.sin(a.gait) > 0 ? 1.7 : 0.15;
         a.speed += (target - a.speed) * Math.min(1, dt * (Sp.hops ? 12 : 3));
         const nx = a.x + Math.cos(a.ang) * a.speed * dt, ny = a.y + Math.sin(a.ang) * a.speed * dt;
-        if (okAt(nx, ny, hab, towers) || (!okAt(a.x, a.y, hab, towers) && okAt(nx, ny, hab, null))) { a.x = nx; a.y = ny; }
+        // escaping a spot it may not stand on (a tower was just built there): any open ground will do,
+        // and if it is facing a road or water it turns on the spot toward the way out
+        const escaping = !okAt(a.x, a.y, hab, towers);
+        if (okAt(nx, ny, hab, towers) || (escaping && ground(nx, ny, hab))) { a.x = nx; a.y = ny; }
+        else if (escaping || (run && a.actT < 1.5)) a.speed = Math.min(a.speed, 4); // a startled animal gets a moment to turn round
         else { a.state = 'look'; a.timer = R(0.5, 1.5); a.speed = 0; }
       }
     } else {
@@ -766,7 +809,7 @@ const ANIMALS = (() => {
       if (a.pounceNext && a.state === 'listen' && a.timer <= 0) { a.pounceNext = false; a.state = 'pounce'; a.timer = 1; a.actT = 0; }
       else if (a.timer <= 0) choose(a, towers);
       // shooed off a tile a tower now stands on
-      if (!a.perch && !okAt(a.x, a.y, habOf(a), towers)) { const p = pickSpot(a.x, a.y, 24, 70, habOf(a), towers, 30, true); if (p) headFor(a, p[0], p[1], true); }
+      if (!a.perch && !okAt(a.x, a.y, habOf(a), towers)) leave(a, towers);
     }
     a.gait += dt * (a.speed * (Sp.hops ? 0.5 : 0.75) / Math.max(1.5, Sp.len * 0.35) + (a.state === 'pounce' ? 0 : 0));
     a.wet = a.z < 1 && isWater(a.x, a.y) ? 1 : 0;
@@ -883,5 +926,5 @@ const ANIMALS = (() => {
   // ground animals take their place in the depth sort with towers and zombies
   function units() { return list.filter((a) => a.z <= 0.5 && !a.perch); }
 
-  return { start, update, units, draw: drawAnimal, drawAir, SPECIES, get list() { return list; } };
+  return { start, update, disturb, units, draw: drawAnimal, drawAir, SPECIES, get list() { return list; } };
 })();

@@ -597,6 +597,8 @@ function placeTower(type, col, row) {
   buzz(12);
   for (let i = 0; i < 8; i++) S.fx.push({ kind: 'smoke', x: t.x + rand(-14, 14), y: t.y + rand(-14, 14), vx: rand(-20, 20), vy: rand(-20, 20), r: rand(4, 7), grow: 10, life: 0.6, max: 0.6, color: '170,160,140' });
   Sound.play(TOWERS[type].place === 'water' ? 'splash' : 'place', t.x);
+  // animals right there scatter (a startled raven caws as it goes)
+  if (ANIMALS.disturb(t.x, t.y, S.towerAt).has('raven')) Sound.play('crow', t.x);
   if (type === 'jet') Sound.play('jet', t.x);
   if (type === 'heli') Sound.play('heli', t.x);
   return t;
