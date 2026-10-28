@@ -1883,16 +1883,22 @@ function drawTower(c, tw, t, lights, opts = {}) {
 function drawHeli(c, tw, t, ax, ay) {
   const [a, b, d] = tw.tiers || [0, 0, 0];
   const L = towerLook(tw);
-  const k = (a >= 5 ? 1.15 : 1) * LOOK_SCALE[L.n];
+  // a gentle hover: the body breathes in and out a touch and its shadow drifts with the height
+  const bob = Math.sin(t * 2.4 + (tw.x || 0) * 0.1);
+  const k = (a >= 5 ? 1.15 : 1) * LOOK_SCALE[L.n] * (1 + bob * 0.012);
   const raw = d >= 5 ? ['#4a4e50', '#1c1e20'] : d >= 4 ? ['#d8d8d0', '#8a8a84'] : ['#6b7a52', '#2e3622'];
   const body = [paint(raw[0], L, 0.85), paint(raw[1], L, 0.6)];
-  c.save(); c.translate(ax + 12, ay + 18); c.rotate(tw.angle); c.scale(k, k);
+  c.save(); c.translate(ax + 12 + bob * 1.2, ay + 18 + bob * 1.6); c.rotate(tw.angle); c.scale(k, k);
   ellipse(c, 0, 0, 14, 6); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fill();
   c.fillStyle = 'rgba(0,0,0,0.12)'; circle(c, 2, 0, 18); c.fill();
   c.restore();
   c.save(); c.translate(ax, ay); c.rotate(tw.angle); c.scale(k, k);
   c.fillStyle = shade(body[1], 0.15); c.fillRect(-22, -1.5, 14, 3);
   rr(c, -25, -4, 4, 8, 1); c.fill();
+  // tail rotor, seen edge-on: a blurred streak beside the fin
+  ellipse(c, -23, 5, 3.8, 1.1); c.fillStyle = 'rgba(20,22,20,0.28)'; c.fill();
+  c.strokeStyle = 'rgba(20,22,20,0.55)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-23 + Math.cos(t * 7) * 3.6, 5); c.lineTo(-23 - Math.cos(t * 7) * 3.6, 5); c.stroke();
+  circle(c, -23, 4.4, 0.8); c.fillStyle = '#2a2c28'; c.fill();
   // rocket pods and gun pods on stub wings
   if (b >= 1 || a >= 1) { c.fillStyle = '#2a2d26'; c.fillRect(-3, -11, 3, 22); }
   if (b >= 1) {
@@ -1919,16 +1925,26 @@ function drawHeli(c, tw, t, ax, ay) {
   c.fillStyle = 'rgba(255,255,255,0.75)'; ellipse(c, 9.5, -2.2, 2.2, 0.8, -0.3); c.fill();
   if (d >= 1) { circle(c, 13.6, 0, 1.5); c.fillStyle = '#7dff8a'; c.fill(); }
   c.fillStyle = '#1a1c18'; c.fillRect(12, -0.9, a >= 4 ? 8 : 5, 1.8);
-  // the rotor: a soft blur disc with faint blade streaks and a mast hub
-  const rg = c.createRadialGradient(0, 0, 2, 0, 0, 20); rg.addColorStop(0, 'rgba(20,22,20,0.05)'); rg.addColorStop(0.85, 'rgba(20,22,20,0.16)'); rg.addColorStop(1, 'rgba(20,22,20,0.02)');
+  // The main rotor: a soft disc where the blades blur, a bright rim where their tips catch the
+  // light, and each blade with a motion-blur sweep trailing behind it. A real rotor turns so fast
+  // that drawn frame by frame it strobes (stutters, or seems to run backwards), so these blades
+  // turn at a pace the eye can follow at any frame rate and the sweep sells the speed.
+  const rg = c.createRadialGradient(0, 0, 2, 0, 0, 20); rg.addColorStop(0, 'rgba(20,22,20,0.06)'); rg.addColorStop(0.8, 'rgba(20,22,20,0.13)'); rg.addColorStop(0.97, 'rgba(20,22,20,0.2)'); rg.addColorStop(1, 'rgba(20,22,20,0)');
   circle(c, 0, 0, 20); c.fillStyle = rg; c.fill();
-  c.rotate(t * 40);
-  const nb = a >= 2 ? 4 : 3;
+  circle(c, 0, 0, 19.2); c.strokeStyle = 'rgba(235,235,225,0.12)'; c.lineWidth = 0.7; c.stroke();
+  c.rotate(t * 11);
+  const nb = a >= 2 ? 4 : 3, sweep = 0.6, slices = 6;
   for (let i = 0; i < nb; i++) {
     c.save(); c.rotate((i / nb) * TAU);
-    c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 19.5, -0.32, 0.02); c.closePath();
-    const bg = c.createLinearGradient(0, 0, 19, 0); bg.addColorStop(0, 'rgba(15,16,15,0.05)'); bg.addColorStop(1, 'rgba(15,16,15,0.32)'); c.fillStyle = bg; c.fill();
-    c.strokeStyle = 'rgba(15,16,15,0.55)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(2, 0); c.lineTo(19, 0); c.stroke();
+    for (let s2 = 0; s2 < slices; s2++) {
+      const a0 = -sweep + (s2 / slices) * sweep, a1 = -sweep + ((s2 + 1) / slices) * sweep;
+      c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 19.5, a0, a1 + 0.01); c.closePath();
+      c.fillStyle = `rgba(15,16,15,${0.035 + (s2 / slices) * 0.13})`; c.fill();
+    }
+    c.lineCap = 'round';
+    c.strokeStyle = 'rgba(15,16,15,0.62)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(2.5, 0); c.lineTo(19, 0); c.stroke();
+    c.strokeStyle = 'rgba(230,230,215,0.35)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(3, -0.4); c.lineTo(18.5, -0.4); c.stroke();
+    c.fillStyle = 'rgba(240,200,80,0.7)'; c.fillRect(17.4, -0.75, 1.6, 1.5);
     c.restore();
   }
   circle(c, 0, 0, 2.2); c.fillStyle = radial(c, 0, 0, 2.2, '#8a8e88', '#1a1c18'); c.fill();
