@@ -908,6 +908,22 @@ const BUILDINGS = (() => {
     houseCache.set(key, data);
     return data;
   }
+  const FLAG_PLAIN = { cloth: ['#5e6a3a', '#76844a', '#48522c'], mark: 'star', ink: 'rgba(240,236,220,0.9)', beacon: '255,80,60' };
+  // the emblem on the flag, centred on x, y (the flag is about 9 × 5 units)
+  function flagMark(c, F, x, y) {
+    c.fillStyle = F.ink; c.strokeStyle = F.ink;
+    if (F.mark === 'star') { star(c, x, y, 1.5, 0.6); c.fill(); }
+    else if (F.mark === 'skull') {
+      circle(c, x, y - 0.3, 1.1); c.fill(); c.fillRect(x - 0.6, y + 0.4, 1.2, 0.7);
+      c.lineWidth = 0.35; c.beginPath(); c.moveTo(x - 1.7, y - 1); c.lineTo(x + 1.7, y + 1.6); c.moveTo(x + 1.7, y - 1); c.lineTo(x - 1.7, y + 1.6); c.stroke();
+      c.fillStyle = F.cloth[2]; circle(c, x - 0.4, y - 0.4, 0.3); c.fill(); circle(c, x + 0.4, y - 0.4, 0.3); c.fill();
+    } else if (F.mark === 'crown') {
+      c.beginPath(); c.moveTo(x - 1.6, y + 1); c.lineTo(x - 1.6, y - 0.8); c.lineTo(x - 0.8, y); c.lineTo(x, y - 1.2); c.lineTo(x + 0.8, y); c.lineTo(x + 1.6, y - 0.8); c.lineTo(x + 1.6, y + 1); c.closePath(); c.fill();
+    } else if (F.mark === 'hazard') {
+      circle(c, x, y, 0.45); c.fill();
+      for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + (i / 3) * TAU; c.beginPath(); c.arc(x, y, 1.7, a - 0.5, a + 0.5); c.arc(x, y, 0.8, a + 0.5, a - 0.5, true); c.closePath(); c.fill(); }
+    }
+  }
   function safehouse(c, x, y, t, hit, gap = Math.PI / 2) {
     const m = c.getTransform(), k = Math.hypot(m.a, m.b) || 1;
     const hs = houseSprite(k, gap);
@@ -923,10 +939,12 @@ const BUILDINGS = (() => {
     c.beginPath(); c.moveTo(fx, fy + 0.3);
     for (let i = 1; i <= 6; i++) c.lineTo(fx + i * 1.5, fy + 0.3 + Math.sin(t * 6 - i * 0.8) * 0.7 * (i / 6));
     for (let i = 6; i >= 0; i--) c.lineTo(fx + i * 1.5, fy + 5 + Math.sin(t * 6 - i * 0.8) * 0.7 * (i / 6));
-    c.closePath(); c.fillStyle = linear(c, fx, fy, fx + 9, fy, [[0, '#5e6a3a'], [0.5, wv > 0 ? '#76844a' : '#545f34'], [1, '#48522c']]); c.fill();
-    c.fillStyle = 'rgba(240,236,220,0.9)'; star(c, fx + 4.6, fy + 2.7 + Math.sin(t * 6 - 3) * 0.35, 1.5, 0.6); c.fill();
+    // a premium flag swaps the cloth, the emblem and the beacon's colour
+    const F = (typeof PREMIUM !== 'undefined' && PREMIUM.flag()) || FLAG_PLAIN;
+    c.closePath(); c.fillStyle = linear(c, fx, fy, fx + 9, fy, [[0, F.cloth[0]], [0.5, wv > 0 ? F.cloth[1] : F.cloth[2]], [1, F.cloth[2]]]); c.fill();
+    flagMark(c, F, fx + 4.6, fy + 2.7 + Math.sin(t * 6 - 3) * 0.35);
     // the beacon
-    if (Math.sin(t * 4) > 0.3) { const [bx, by] = hs.beacon; c.fillStyle = radial(c, bx, by, 5, 'rgba(255,80,60,0.7)', 'rgba(255,80,60,0)', 0, 0); circle(c, bx, by, 5); c.fill(); circle(c, bx, by, 0.8); c.fillStyle = '#ff6a50'; c.fill(); }
+    if (Math.sin(t * 4) > 0.3) { const [bx, by] = hs.beacon; c.fillStyle = radial(c, bx, by, 5, `rgba(${F.beacon},0.7)`, `rgba(${F.beacon},0)`, 0, 0); circle(c, bx, by, 5); c.fill(); circle(c, bx, by, 0.8); c.fillStyle = `rgb(${F.beacon})`; c.fill(); }
     c.restore();
   }
 
@@ -938,5 +956,5 @@ const BUILDINGS = (() => {
     else if (kind === 'crypt') crypt(c, rng, wide, out);
   }
 
-  return { draw, safehouse, P, box, southWall, westWall, slope, face, stone, tin, shingles, boards, clapboard, overlay, grime, rust, moss, grain, castShadow, windowAt, lantern, tone, jitter, wallLight };
+  return { draw, safehouse, flagMark, FLAG_PLAIN, P, box, southWall, westWall, slope, face, stone, tin, shingles, boards, clapboard, overlay, grime, rust, moss, grain, castShadow, windowAt, lantern, tone, jitter, wallLight };
 })();

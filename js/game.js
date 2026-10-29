@@ -315,6 +315,7 @@ function levelReward(stars, first) {
 // Towers earn XP for their kills; clearing a level adds a bonus for every kind of tower that fought in it.
 function addXp(type, n) {
   if (S.sandbox) return;
+  n *= PREMIUM.xpMult();
   meta.xp[type] = (meta.xp[type] || 0) + n;
   S.runXp[type] = (S.runXp[type] || 0) + n;
 }
@@ -342,9 +343,12 @@ function victory() {
   const k = S.lives / S.maxLives;
   const stars = k >= 0.85 ? 3 : k >= 0.4 ? 2 : 1;
   const prev = starsFor(S.levelIndex);
-  const reward = levelReward(stars, prev === 0);
+  const reward = levelReward(stars, prev === 0) * PREMIUM.coinMult();
   if (stars > prev) meta.stars[S.L.id] = stars;
   meta.coins += reward;
+  // the Quartermaster hands over a free supply after every win
+  const bonusItem = PREMIUM.has('quarter') ? Object.keys(SUPPLIES)[Math.floor(Math.random() * Object.keys(SUPPLIES).length)] : null;
+  if (bonusItem) meta.items[bonusItem] = (meta.items[bonusItem] | 0) + 1;
   const xp = xpBonus(true);
   const unlocked = prev === 0 ? TOWER_KEYS.filter((t) => TOWERS[t].unlock === S.levelIndex + 1 && !meta.owned[t]) : [];
   const beat = S.L.num === 25 ? 'mid' : S.L.num === LEVELS_PER_WORLD ? 'outro' : null;
@@ -358,6 +362,7 @@ function victory() {
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
   else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id}, ${missionFor(next).objective.toLowerCase()}.`;
   if (S.storyNext) text += ' A new story chapter is ready.';
+  if (bonusItem) text += ` The Quartermaster left you a free ${SUPPLIES[bonusItem].name}.`;
   const m = S.mission;
   const okWin = (C) => (C || []).filter(([w]) => speakerOK(S.L, w));
   const pool = okWin((CHATTER[S.L.world] || CHATTER[0]).winAny);
@@ -370,7 +375,7 @@ function gameOver() {
   S.state = 'over';
   S.placing = null; S.power = null; S.pending = null;
   store.remove(SAVE_KEY);
-  const reward = Math.round(S.wave * 2);
+  const reward = Math.round(S.wave * 2) * PREMIUM.coinMult();
   meta.coins += reward;
   const xp = xpBonus(false);
   saveMeta();
@@ -385,7 +390,7 @@ function showEnd(won, title, text, stars, reward, xp) {
   $('#end-reward').hidden = !!S.sandbox;
   $('#end-title').textContent = title;
   $('#end-text').textContent = text;
-  $('#end-reward').textContent = `+${reward} coins · +${xp} tower XP`;
+  $('#end-reward').textContent = `+${reward} coins${PREMIUM.coinMult() > 1 && reward > 0 ? ' (doubled)' : ''} · +${xp} tower XP`;
   $('.dialog-end').classList.toggle('lost', !won);
   const st = $('#end-stars');
   st.hidden = !won || !!S.sandbox;
@@ -1245,6 +1250,7 @@ function boltPath(c, a, b, rng, jag) {
 function drawArcs(c) {
   const arcs = S.fx.filter((f) => f.kind === 'arc');
   if (!arcs.length) return;
+  const [deep, mid, lite] = PREMIUM.bolt();
   c.save(); c.globalCompositeOperation = 'lighter'; c.lineJoin = 'round'; c.lineCap = 'round';
   for (const f of arcs) {
     const k = f.life / f.max, age = f.max - f.life, flick = 0.75 + Math.random() * 0.25;
@@ -1263,17 +1269,17 @@ function drawArcs(c) {
       }
     }
     const A = k * flick;
-    c.strokeStyle = `rgba(70,150,255,${0.2 * A})`; c.lineWidth = 9; c.stroke(main);
-    c.strokeStyle = `rgba(120,205,255,${0.55 * A})`; c.lineWidth = 3.6; c.stroke(main);
-    c.strokeStyle = `rgba(150,215,255,${0.45 * A})`; c.lineWidth = 2; c.stroke(forks);
+    c.strokeStyle = `rgba(${deep},${0.2 * A})`; c.lineWidth = 9; c.stroke(main);
+    c.strokeStyle = `rgba(${mid},${0.55 * A})`; c.lineWidth = 3.6; c.stroke(main);
+    c.strokeStyle = `rgba(${mid},${0.45 * A})`; c.lineWidth = 2; c.stroke(forks);
     c.strokeStyle = `rgba(250,253,255,${A})`; c.lineWidth = 1.8; c.stroke(main);
     c.strokeStyle = `rgba(240,250,255,${0.7 * A})`; c.lineWidth = 0.7; c.stroke(forks);
     // the coil's crown flares, and each zombie the bolt reaches is lit up with a ring and sparks
     for (let i = 0; i <= shown; i++) {
       const p = f.pts[i], hitAge = Math.max(0, age - (i - 1) * ARC_HOP), r = i === 0 ? 12 : 9;
-      c.fillStyle = radial(c, p.x, p.y, r, `rgba(200,232,255,${0.45 * A})`, 'rgba(100,180,255,0)', 0, 0); circle(c, p.x, p.y, r); c.fill();
+      c.fillStyle = radial(c, p.x, p.y, r, `rgba(${lite},${0.45 * A})`, `rgba(${deep},0)`, 0, 0); circle(c, p.x, p.y, r); c.fill();
       if (i === 0) continue;
-      c.strokeStyle = `rgba(150,215,255,${0.7 * k})`; c.lineWidth = 1.4; circle(c, p.x, p.y, 5 + hitAge * 60); c.stroke();
+      c.strokeStyle = `rgba(${mid},${0.7 * k})`; c.lineWidth = 1.4; circle(c, p.x, p.y, 5 + hitAge * 60); c.stroke();
       c.fillStyle = `rgba(235,248,255,${A})`;
       for (let q = 0; q < 5; q++) { const ang = rng() * TAU, dd = 4 + hitAge * 70 * (0.5 + rng() * 0.5); circle(c, p.x + Math.cos(ang) * dd, p.y + Math.sin(ang) * dd, 0.9); c.fill(); }
     }
@@ -1284,11 +1290,15 @@ function drawFx(c, f, lights) {
   const k = f.life / f.max; // 1 -> 0
   c.save();
   switch (f.kind) {
-    case 'tracer':
+    case 'tracer': {
+      // a premium tracer colour replaces every gun's own, with a soft glow around the streak
+      const col = PREMIUM.tracer() || f.color;
       c.globalAlpha = k; c.lineCap = 'round';
-      c.strokeStyle = `rgba(${f.color},0.9)`; c.lineWidth = f.width || 1.4;
-      c.beginPath(); c.moveTo(lerp(f.x1, f.x2, 0.15), lerp(f.y1, f.y2, 0.15)); c.lineTo(f.x2, f.y2); c.stroke();
+      c.beginPath(); c.moveTo(lerp(f.x1, f.x2, 0.15), lerp(f.y1, f.y2, 0.15)); c.lineTo(f.x2, f.y2);
+      if (col !== f.color) { c.strokeStyle = `rgba(${col},0.3)`; c.lineWidth = (f.width || 1.4) * 3; c.stroke(); }
+      c.strokeStyle = `rgba(${col},0.9)`; c.lineWidth = f.width || 1.4; c.stroke();
       break;
+    }
     case 'pillar': {
       // a column of light where a tower was just upgraded
       const w = (f.big ? 30 : 22) * (0.6 + k * 0.4), h = f.big ? 120 : 80;
@@ -1365,7 +1375,7 @@ function drawFx(c, f, lights) {
       circle(c, f.x, f.y, f.r * (1 + (1 - k) * 1.3)); c.stroke(); break;
     case 'arc': {
       // the bolt is drawn after the night and the weather (drawArcs); here it only lights things up
-      if (lights) for (const p of f.pts) lights.push({ x: p.x, y: p.y, r: 40, color: '130,210,255', a: 0.55 * k });
+      if (lights) { const col = PREMIUM.bolt()[1]; for (const p of f.pts) lights.push({ x: p.x, y: p.y, r: 40, color: col, a: 0.55 * k }); }
       break;
     }
     case 'text': {
@@ -2230,7 +2240,7 @@ function renderPowerbar() {
 // ============================================================
 // Menus: main, globe, level grid, store
 // ============================================================
-const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen', '#sandbox-screen'];
+const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen', '#sandbox-screen', '#customize-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
 function leaveGame() { COACH.stop(); if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; S.sandbox = null; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
@@ -2239,6 +2249,7 @@ function showMenu() {
   leaveGame();
   hideScreens();
   $('#menu-screen').hidden = false;
+  PREMIUM.applyLooks();
   MenuFX.start();
   $('#menu-coins').textContent = coinText();
   const ready = TOWER_KEYS.reduce((n, k) => n + (towerUnlocked(k) ? armoryReady(k) : 0), 0);
@@ -2499,10 +2510,12 @@ function showStore(tab = storeTab) {
     towers: 'Towers unlock for free as you clear levels. Buy one here to use it early.',
     perks: 'Permanent perks apply to every level. Tower upgrades are unlocked with XP in the Armory.',
     supplies: 'One-use supplies. Use them from the buttons at the bottom left of the battlefield.',
+    premium: 'Extras for real money. Everything in the game can still be earned by playing.',
   };
-  $('#store-note').textContent = `${notes[tab]} Earn coins by clearing levels.`;
+  $('#store-note').textContent = tab === 'premium' ? notes.premium : `${notes[tab]} Earn coins by clearing levels.`;
   const grid = $('#store-grid');
   grid.innerHTML = '';
+  if (tab === 'premium') { PREMIUM.renderStore(grid, () => { const y = $('#store-screen').scrollTop; showStore('premium'); $('#store-screen').scrollTop = y; }); return; }
   const card = (art, title, meta2, desc, btnText, can, onBuy, extra = '') => {
     const el = document.createElement('div'); el.className = 'store-card';
     el.append(art);
@@ -2726,7 +2739,7 @@ window.addEventListener('keydown', (ev) => {
   else if (S.selected && k === 't' && S.selected.type !== 'jet') cycleTarget(S.selected);
 });
 
-function cycleSpeed() { S.speed = S.speed === 3 ? 1 : S.speed + 1; $('#btn-speed').textContent = `${S.speed}×`; $('#btn-speed').setAttribute('aria-pressed', String(S.speed > 1)); Sound.play('speed', null, { pitch: S.speed }); }
+function cycleSpeed() { S.speed = S.speed >= PREMIUM.maxSpeed() ? 1 : S.speed + 1; $('#btn-speed').textContent = `${S.speed}×`; $('#btn-speed').setAttribute('aria-pressed', String(S.speed > 1)); Sound.play('speed', null, { pitch: S.speed }); }
 function toggleAuto() { S.auto = !S.auto; $('#btn-auto').setAttribute('aria-pressed', String(S.auto)); Sound.play('click'); }
 function toggleSound() {
   Sound.setMuted(!Sound.muted);
@@ -2766,6 +2779,8 @@ $('#btn-sandbox-back').addEventListener('click', showMenu);
 for (const id of ['#btn-sandbox-play', '#btn-sandbox-play2']) $(id).addEventListener('click', () => SANDBOX.play());
 $('#btn-chapters-back').addEventListener('click', () => { Sound.play('click'); showMenu(); });
 $('#btn-store').addEventListener('click', () => { Sound.init(); Sound.play('click'); showStore('towers'); });
+$('#btn-customize').addEventListener('click', () => { Sound.init(); Sound.play('click'); PREMIUM.showCustomize('menu'); });
+$('#btn-customize-back').addEventListener('click', () => { Sound.play('click'); PREMIUM.czBack(); });
 $('#btn-armory').addEventListener('click', () => { Sound.init(); Sound.play('click'); showArmory(); });
 $('#btn-armory-back').addEventListener('click', showMenu);
 $('#btn-world-back').addEventListener('click', showMenu);

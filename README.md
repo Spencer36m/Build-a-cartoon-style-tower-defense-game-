@@ -176,6 +176,19 @@ You earn coins by clearing levels. First clears pay the most, and replays pay a 
 - **Perks** (permanent): extra starting cash, extra lives, cheaper towers, better sell-back, more cash per kill.
 - **Supplies** (one use): Airstrike, Cryo Bomb, Supply Drop, Field Repairs.
 
+### Premium (test mode)
+
+The store's **Premium** tab sells extras for real money. Everything in the game can still be earned by playing, and nothing sold changes how strong a tower is.
+
+- **Starter Pack** ($1.99, once): 1,000 coins, the Cryo Cannon right away, 3 of every supply and a gold Machine Gunner skin you can only get here.
+- **Coins**: 1,000 for $0.99, 6,000 for $4.99, 15,000 for $9.99.
+- **Boosts** (bought once, kept for good): Coin Doubler ($2.99), Field Training for 50% more tower XP ($1.99), Quartermaster for a free supply after every win ($1.99), and Hyper Speed for a 4× game speed ($0.99).
+- **Cosmetics**, tried on and worn in **Customize** (from the main menu): tower skins (Gold Plated, Winter Camo, Neon, Scrapyard), tracer colours, Tesla lightning colours, zombie outfits (Pumpkin Heads, Santa Hats, Party Hats), safehouse flags, menu themes, and music packs that replay the whole soundtrack on a retro sound chip or analog synths. The Halloween and Winter packs bundle five each.
+- **Tips** ($0.99 to $9.99) change nothing in the game; they earn a Supporter badge on the menu.
+- **Restore purchases** brings back everything bought once.
+
+**No real money is taken yet.** Every purchase runs in test mode: a test sheet opens, nothing is charged, and the item is granted as if it had been bought ("Reset test purchases" clears them again). The web version always stays this way. To sell for real in the iOS app, a StoreKit plugin (for example a Capacitor in-app purchase plugin) registers itself with `PREMIUM.connect({ buy, restore, price })`, the products are created in App Store Connect with the ids in `js/premium.js`, and the app's privacy answers and `privacy.html` are updated to mention purchases.
+
 ### Sound
 
 Every sound is synthesized live with Web Audio, so the game ships no audio files. Weapons, upgrades, menus, the store and the Armory all have their own sounds, and every kind of zombie groans and dies differently (bones rattle, crows caw, wraiths wail, bloaters pop, bosses roar). Effects pan left or right with where they happen on the map.
@@ -241,6 +254,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/music.js`: the menu theme and each world's song, all synthesized
 - `js/audio.js`: synthesized sound effects, the music player and ambience
 - `js/coach.js`: the training mission and the new tower briefings
+- `js/premium.js`: the Premium store, test-mode purchases, Restore Purchases, and the Customize screen for cosmetics
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
 - `manifest.webmanifest`, `sw.js`, `icons/`: installable web app and offline support
@@ -248,4 +262,4 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `.github/workflows/ios-testflight.yml`, `store/`: cloud build to TestFlight, App Store guide, listing text and screenshots
 - `privacy.html`: the privacy policy (the game collects no data)
 
-Progress (coins, stars, unlocks, perks, tower XP, Armory unlocks, story chapters read and your current run) is saved on the device in `localStorage`.
+Progress (coins, stars, unlocks, perks, tower XP, Armory unlocks, story chapters read, premium items and the looks you wear, and your current run) is saved on the device in `localStorage`.

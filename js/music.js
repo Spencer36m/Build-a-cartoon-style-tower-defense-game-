@@ -59,6 +59,17 @@ const MUSIC = (() => {
     S.last = null;
   }
 
+  // ---------- premium music packs ----------
+  // A pack replays every song on other instruments: 'arcade' is an 8-bit chip, 'synth' an analog
+  // synthwave rig. Drums stay as they are.
+  let pack = null;
+  const setPack = (p) => { pack = p === 'arcade' || p === 'synth' ? p : null; };
+  function repack(dest, vol, o) {
+    const low = dest === ch.bass || dest === ch.dist;
+    if (pack === 'arcade') return { vol: vol * (low ? 0.9 : 0.36), o: { ...o, wave: low ? 'triangle' : 'square', cut: null, bp: null, det: 0 } };
+    return { vol: vol * (low ? 0.8 : 0.5), o: { ...o, wave: 'sawtooth', cut: Math.min(o.cut || 2600, low ? 900 : 2600), cutTo: null, det: o.det || 7, echo: Math.max(o.echo || 0, low ? 0 : 0.25) } };
+  }
+
   // ---------- instruments ----------
   function sends(g, o) {
     if (o.verb) { const s = ac.createGain(); s.gain.value = o.verb; g.connect(s); s.connect(verb); }
@@ -67,6 +78,7 @@ const MUSIC = (() => {
   // One oscillator note. o: wave, at (attack), rel (sustained, then this release), cut/cutTo (lowpass sweep),
   // q, bp (bandpass instead), vib (depth as a fraction of the pitch), vibRate, vibAt, glide (from midi), det, verb, echo.
   function note(dest, midi, t, len, vol, o = {}) {
+    if (pack && dest !== ch.drum && dest !== ch.hat) ({ vol, o } = repack(dest, vol, o));
     const osc = ac.createOscillator(), g = ac.createGain(), f = hz(midi);
     if (o.wave && typeof o.wave !== 'string') osc.setPeriodicWave(o.wave); else osc.type = o.wave || 'sine';
     if (o.glide != null && o.glide !== midi) { osc.frequency.setValueAtTime(hz(o.glide), t); osc.frequency.exponentialRampToValueAtTime(f, t + (o.glideT || 0.06)); } else osc.frequency.setValueAtTime(f, t);
@@ -152,6 +164,7 @@ const MUSIC = (() => {
     return (plucks[k] = buf);
   }
   function pluck(dest, kind, midi, t, vol, o = {}) {
+    if (pack) { note(dest, midi, t, pack === 'arcade' ? 0.2 : 0.4, vol * 2.6, { echo: o.echo, verb: o.verb, glide: o.slide ? midi - o.slide : null }); return; }
     const src = ac.createBufferSource(), g = ac.createGain(), m = Math.round(midi);
     const buf = src.buffer = stringBuf(kind, m), rate = buf.rate;
     if (o.slide) { src.playbackRate.setValueAtTime(rate * Math.pow(2, -o.slide / 12), t); src.playbackRate.exponentialRampToValueAtTime(rate, t + (o.slideT || 0.09)); } else src.playbackRate.setValueAtTime(rate, t);
@@ -529,5 +542,5 @@ const MUSIC = (() => {
     S.play({ t, dur, s, b, bar, phrase: Math.floor(bar / 8), lvl, root, chord: CHORDS[q], key: S.keys ? S.keys[world] || S.key : S.key, per, boss: mode === 'boss', mode }, S);
   }
 
-  return { attach, songFor, stepDur, change, step, sting, SONGS, LEVEL };
+  return { attach, setPack, songFor, stepDur, change, step, sting, SONGS, LEVEL };
 })();

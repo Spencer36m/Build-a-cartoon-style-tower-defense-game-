@@ -496,16 +496,26 @@ const LOOK_SCALE = [1, 1.04, 1.08, 1.13, 1.18, 1.25];
 function towerLook(tw) {
   let n = 0, p = 0;
   (tw.tiers || [0, 0, 0]).forEach((v, i) => { if (v > n) { n = v; p = i; } });
-  return { n, p, hue: n ? PAINT[tw.type][p] : null, k: LOOK_K[n], col: n ? PATH_COLORS[p] : null };
+  return { n, p, hue: n ? PAINT[tw.type][p] : null, k: LOOK_K[n], col: n ? PATH_COLORS[p] : null, skin: SKIN_LOOK[skinOf(tw.type)] || null };
 }
 const paintCache = new Map();
 // A base colour shifted toward the tower's path colour (returns hex so shade() still works).
+// A premium skin first repaints the colour along the skin's own ramp (dark to light, keeping how
+// light or dark it was); crews pass a low mult, so they keep most of their natural colours.
 function paint(base, L, mult = 1) {
-  if (!L || !L.hue) return base;
-  const k = Math.min(0.92, L.k * mult), key = base + L.hue + k;
+  if (!L || (!L.hue && !L.skin)) return base;
+  const k = L.hue ? Math.min(0.92, L.k * mult * (L.skin ? 0.5 : 1)) : 0, sk = L.skin;
+  const key = base + L.hue + k + (sk ? sk.id + mult : '');
   let v = paintCache.get(key);
   if (!v) {
-    const A = hexRgb(base), B = hexRgb(L.hue);
+    let A = hexRgb(base);
+    if (sk) {
+      const lum = (A[0] * 0.3 + A[1] * 0.59 + A[2] * 0.11) / 255, t = clamp(lum * sk.gain + sk.lift, 0, 1);
+      const R = sk.ramp.map(hexRgb), u = t < 0.5 ? t * 2 : (t - 0.5) * 2, [P0, P1] = t < 0.5 ? [R[0], R[1]] : [R[1], R[2]];
+      const s2 = Math.min(1, mult * 2.5);
+      A = A.map((q, i) => lerp(q, lerp(P0[i], P1[i], u), s2));
+    }
+    const B = L.hue ? hexRgb(L.hue) : A;
     v = '#' + A.map((q, i) => Math.round(lerp(q, B[i], k)).toString(16).padStart(2, '0')).join('');
     paintCache.set(key, v);
   }
@@ -1803,11 +1813,56 @@ function liveBase(tw) {
   const [a, , d] = tw.tiers || [0, 0, 0];
   return tw.type === 'tesla' || (tw.type === 'cryo' && d >= 2) || (tw.type === 'sniper' && d >= 5) || (tw.type === 'mortar' && d >= 4) || (tw.type === 'jet' && d >= 3) || a < 0;
 }
+// ---------- premium tower skins ----------
+// A skin recolours a finished layer: the shapes and shading stay, the paint changes.
+const skinOf = (type) => (typeof PREMIUM !== 'undefined' ? PREMIUM.skinOf(type) : null);
+const SKIN_LOOK = {
+  gold:   { id: 'gold', ramp: ['#5a3606', '#e8a820', '#ffe890'], gain: 1.05, lift: 0.02, sheen: 0.3 },
+  winter: { id: 'winter', ramp: ['#4e5e6c', '#bccad4', '#ffffff'], gain: 1, lift: 0.28, camo: ['rgba(252,253,255,0.5)', 'rgba(90,108,124,0.4)'] },
+  neon:   { id: 'neon', ramp: ['#1a0638', '#b02cff', '#3ef4ff'], gain: 1.15, lift: 0.05, edge: '#7ff6ff' },
+  scrap:  { id: 'scrap', ramp: ['#2e180a', '#8e4c24', '#d49a5c'], gain: 1, lift: 0.04, camo: ['rgba(160,74,26,0.4)', 'rgba(40,26,16,0.35)'] },
+};
+// what a skin adds on top of its colours: camouflage or rust blotches, a gold sheen, a neon outline
+function skinLayer(cv, n, k, skin, seed) {
+  const L = SKIN_LOOK[skin];
+  if (!L) return;
+  const g = cv.getContext('2d'), e = finScratch(5, n, n), eg = e.getContext('2d');
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
+  eg.setTransform(1, 0, 0, 1, 0, 0); eg.globalAlpha = 1;
+  if (L.camo) {
+    // blotches, the same on every copy of this tower
+    g.globalCompositeOperation = 'source-atop';
+    const rng = mulberry32(seed);
+    for (let i = 0; i < 30; i++) {
+      g.fillStyle = L.camo[i % L.camo.length];
+      g.beginPath(); g.ellipse(rng() * n, rng() * n, (1.5 + rng() * 3) * k, (1 + rng() * 2) * k, rng() * 3, 0, TAU); g.fill();
+    }
+  }
+  if (L.sheen) {
+    // a polished streak across gold
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = L.sheen;
+    const sg = g.createLinearGradient(0, 0, n, n);
+    sg.addColorStop(0.3, 'rgba(255,250,220,0)'); sg.addColorStop(0.42, 'rgba(255,250,220,0.9)'); sg.addColorStop(0.5, 'rgba(255,250,220,0)');
+    g.fillStyle = sg; g.fillRect(0, 0, n, n);
+  }
+  if (L.edge) {
+    // a glowing outline for neon
+    eg.globalCompositeOperation = 'copy'; eg.globalAlpha = 1; eg.drawImage(cv, 0, 0, n, n, 0, 0, n, n);
+    eg.globalCompositeOperation = 'destination-out'; eg.drawImage(cv, 0, 0, n, n, 1.2 * k, 1.2 * k, n, n);
+    eg.globalCompositeOperation = 'source-in'; eg.fillStyle = L.edge; eg.fillRect(0, 0, n, n);
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.95; g.drawImage(e, 0, 0, n, n, 0, 0, n, n);
+    g.drawImage(e, 0, 0, n, n, -0.6 * k, -0.6 * k, n, n);
+  }
+  eg.globalCompositeOperation = 'source-over'; eg.globalAlpha = 1;
+  g.restore();
+}
 function renderLayer(cv, tw, t, lights, part, k, R, opts) {
   const n = Math.ceil(R * 2 * k), g = cv.getContext('2d');
   g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, n, n);
   g.setTransform(k, 0, 0, k, (R - tw.x) * k, (R - tw.y) * k);
   drawTowerRaw(g, tw, t, lights, { ...opts, part, alpha: null });
+  const skin = skinOf(tw.type);
+  if (skin) skinLayer(cv, n, k, skin, tw.type.length * 131 + (part === 'base' ? 7 : 3));
   finishLayer(cv, n, n, k);
   if (opts.bakeShadow) {
     // cast the layer's soft shadow down and to the right, baked into the same bitmap
@@ -1836,7 +1891,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
     const cv = finScratch(0, Math.ceil(Rb * 2 * k), Math.ceil(Rb * 2 * k));
     blit(cv, renderLayer(cv, tw, t, null, 'base', k, Rb, opts), Rb);
   } else {
-    const key = `${tw.type}|${tw.tiers}|${k.toFixed(2)}`;
+    const key = `${tw.type}|${tw.tiers}|${k.toFixed(2)}|${skinOf(tw.type)}`;
     let e = TFIN.base.get(key);
     if (!e) {
       const cv = document.createElement('canvas'); cv.width = cv.height = Math.ceil(Rb * 2 * k);
@@ -1857,7 +1912,7 @@ function drawTower(c, tw, t, lights, opts = {}) {
       const cv = finScratch(1, Math.ceil(Rt * 2 * k), Math.ceil(Rt * 2 * k));
       blit(cv, renderLayer(cv, tw, t, null, 'turret', k, Rt, opts), Rt, true);
     } else {
-      const key = `${tw.type}|${tw.tiers}|${k.toFixed(2)}|${qi}|${rb}`;
+      const key = `${tw.type}|${tw.tiers}|${k.toFixed(2)}|${qi}|${rb}|${skinOf(tw.type)}`;
       let e = TFIN.turret.get(key);
       if (e) { TFIN.turret.delete(key); TFIN.turret.set(key, e); }
       else {

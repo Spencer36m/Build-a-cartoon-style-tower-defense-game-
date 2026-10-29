@@ -488,6 +488,7 @@ const ZART = (() => {
     drawHead(c, s, rng, hx, hr, r);
     if (!s.gear || s.gear === 'ice') drawHair(c, s, rng, hx, hr);
     drawGear(c, s, rng, hx, hr, r, ph);
+    if (OUTFIT && (!s.gear || s.gear === 'ice')) drawOutfit(c, OUTFIT, hx, hr);
     c.restore();
     if (s.frost) {
       // rime crusted on the shoulders and back
@@ -804,7 +805,43 @@ const ZART = (() => {
     }
   }
 
-  function build(type, variant) {
+  // ---------- premium holiday outfits, worn by the bare-headed zombies ----------
+  let OUTFIT = null;
+  function drawOutfit(c, kind, hx, hr) {
+    c.save(); c.translate(hx, 0);
+    if (kind === 'pumpkin') {
+      // a jack-o'-lantern for a head: ribbed, with a stem on top and a carved face glowing at the front
+      ellipse(c, 0.6, 0.8, hr * 1.3, hr * 1.38); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+      ellipse(c, 0, 0, hr * 1.28, hr * 1.36); c.fillStyle = rg(c, -hr * 0.4, -hr * 0.4, hr * 1.6, '#ffb24a', '#b4480c'); c.fill();
+      c.strokeStyle = 'rgba(110,36,4,0.55)'; c.lineWidth = hr * 0.09;
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(Math.cos(a + 0.3) * hr * 0.8, Math.sin(a + 0.3) * hr * 0.8, Math.cos(a) * hr * 1.26, Math.sin(a) * hr * 1.34); c.stroke(); }
+      c.fillStyle = '#ffd860';
+      for (const sy of [-1, 1]) { c.beginPath(); c.moveTo(hr * 0.75, sy * hr * 0.55); c.lineTo(hr * 1.12, sy * hr * 0.32); c.lineTo(hr * 1.1, sy * hr * 0.72); c.closePath(); c.fill(); }
+      c.beginPath(); c.moveTo(hr * 1.05, -hr * 0.22); c.lineTo(hr * 1.24, -hr * 0.1); c.lineTo(hr * 1.1, 0); c.lineTo(hr * 1.24, hr * 0.1); c.lineTo(hr * 1.05, hr * 0.22); c.closePath(); c.fill();
+      rr(c, -hr * 0.2, -hr * 0.14, hr * 0.4, hr * 0.28, hr * 0.08); c.fillStyle = '#4a6a24'; c.fill();
+      c.strokeStyle = '#2e4414'; c.lineWidth = hr * 0.06; c.stroke();
+    } else if (kind === 'santa') {
+      // a floppy red hat with a fur band and a pom-pom flopping behind
+      ellipse(c, 0.6, 0.8, hr * 1.12, hr * 1.12); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+      c.beginPath(); c.moveTo(-hr * 0.2, -hr * 0.75); c.quadraticCurveTo(-hr * 1.4, -hr * 0.2, -hr * 1.75, hr * 0.7); c.quadraticCurveTo(-hr * 1.1, hr * 0.5, -hr * 0.2, hr * 0.75); c.closePath();
+      c.fillStyle = '#a3141c'; c.fill();
+      circle(c, 0, 0, hr * 0.95); c.fillStyle = rg(c, -hr * 0.3, -hr * 0.3, hr * 1.3, '#f0444a', '#9a121a'); c.fill();
+      circle(c, 0, 0, hr * 0.98); c.strokeStyle = '#f4f2ec'; c.lineWidth = hr * 0.34; c.stroke();
+      circle(c, -hr * 1.75, hr * 0.7, hr * 0.36); c.fillStyle = rg(c, -hr * 1.85, hr * 0.6, hr * 0.5, '#ffffff', '#cfcac0'); c.fill();
+    } else if (kind === 'party') {
+      // a striped party cone, seen from above, with a pom-pom on its point
+      ellipse(c, 0.6, 0.8, hr * 0.92, hr * 0.92); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fill();
+      const cols = ['#ff4a8a', '#ffd23a', '#3ac8ff', '#7ae05a'];
+      for (let i = 0; i < 8; i++) {
+        c.beginPath(); c.moveTo(hr * 0.1, 0); c.arc(0, 0, hr * 0.88, (i / 8) * TAU, ((i + 1) / 8) * TAU); c.closePath();
+        c.fillStyle = cols[i % 4]; c.fill();
+      }
+      circle(c, 0, 0, hr * 0.88); c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = hr * 0.06; c.stroke();
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; circle(c, hr * 0.1 + Math.cos(a) * hr * 0.16, Math.sin(a) * hr * 0.16, hr * 0.14); c.fillStyle = cols[i % 4]; c.fill(); }
+    }
+    c.restore();
+  }
+  function build(type, variant, outfit) {
     const looks = LOOKS[type] || LOOKS.walker;
     const look = looks[variant % looks.length];
     const r = ZOMBIES[type].r;
@@ -817,7 +854,7 @@ const ZART = (() => {
       const c = cv.getContext('2d');
       c.setTransform(RES, 0, 0, RES, px / 2, px / 2);
       c.lineJoin = 'round';
-      paint(c, type, look, r, f / FRAMES, seed);
+      OUTFIT = outfit; paint(c, type, look, r, f / FRAMES, seed); OUTFIT = null;
       frames.push(cv);
       // soft silhouette for the ground shadow
       const sh = document.createElement('canvas'); sh.width = sh.height = px;
@@ -843,9 +880,10 @@ const ZART = (() => {
     return spr[kind][f];
   }
   function get(type, variant = 0) {
-    const key = type + ':' + variant;
+    const outfit = typeof PREMIUM !== 'undefined' ? PREMIUM.outfit() : null;
+    const key = type + ':' + variant + ':' + (outfit || '');
     let spr = cache.get(key);
-    if (!spr) { spr = build(type, variant); cache.set(key, spr); }
+    if (!spr) { spr = build(type, variant, outfit); cache.set(key, spr); }
     return spr;
   }
   const variants = (type) => (LOOKS[type] || LOOKS.walker).length;
