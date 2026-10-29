@@ -19,10 +19,12 @@ const upg = (k) => meta.upg[k] | 0;
 const starsFor = (i) => meta.stars[LEVEL_META[i].id] | 0;
 // the expansion world opens to its owners once the farmland is cleared, whatever comes before it
 const expansionOpen = (w) => PREMIUM.has(WORLDS[w].id) && starsFor(LEVELS_PER_WORLD - 1) > 0;
+// the first sector of a main world opens when the main world before it is cleared
 const levelUnlocked = (i) => {
   const L = LEVEL_META[i];
   if (WORLDS[L.world].expansion) return expansionOpen(L.world) && (L.num === 1 || starsFor(i - 1) > 0);
-  return i === 0 || starsFor(i - 1) > 0;
+  if (i === 0) return true;
+  return starsFor(L.num === 1 ? unlockFrom(L.world) : i - 1) > 0;
 };
 const worldUnlocked = (w) => levelUnlocked(w * LEVELS_PER_WORLD);
 const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
@@ -140,12 +142,14 @@ function buildLevel(L) {
       }
     }
   }
-  for (const d of L.decor) grid[d.r * COLS + d.c] = 2;
+  for (const d of L.decor) for (let x = d.c; x < d.c + (d.cw || 1); x++) for (let y = d.r - (d.ch || 1) + 1; y <= d.r; y++) grid[y * COLS + x] = 2;
   const end = paths[0].pts[paths[0].pts.length - 1];
   // buildings spread over a free tile beside them when there is one, so they can be drawn full size
   const endC = Math.floor(end.x / TILE), endR = Math.floor(end.y / TILE);
   const decor = L.decor.map((d) => {
     if (!BUILDING_KINDS.has(d.kind)) return d;
+    // city lots are laid out whole by the level generator
+    if (d.cw) return { ...d, wide: d.cw > 1, deep: d.ch > 1 };
     for (const dc of d.seed % 2 ? [1, -1] : [-1, 1]) {
       const c2 = d.c + dc;
       if (c2 < 0 || c2 >= COLS || grid[d.r * COLS + c2] !== 0) continue;
@@ -155,6 +159,25 @@ function buildLevel(L) {
     }
     return { ...d, y: d.r * TILE + TILE / 2, x: d.c * TILE + TILE / 2 };
   });
+  // how tall a building may be drawn: towers only rise where no road, water or safehouse lies
+  // just behind them (to the north), so they never hide the route; the free tiles a tall facade
+  // covers can't be built on. City windows light up after dark.
+  const night = L.look.time === 'night' || L.look.time === 'dusk';
+  const behind = (cc, rr) => grid[rr * COLS + cc] === 1 || grid[rr * COLS + cc] === 3 || (Math.abs(cc - endC) <= 1 && Math.abs(rr - endR) <= 1);
+  for (const d of decor) {
+    if (!BUILDING_KINDS.has(d.kind)) continue;
+    const cols = d.cw ? Array.from({ length: d.cw }, (_, i) => d.c + i) : d.wide ? [Math.round(d.x / TILE) - 1, Math.round(d.x / TILE)] : [d.c];
+    const top = d.r - (d.ch || 1) + 1;
+    let room = 0;
+    for (let k = 1; k <= 2; k++) { const rr = top - k; if (rr >= 0 && cols.some((cc) => behind(cc, rr))) break; room++; }
+    d.room = room; d.night = night;
+    const hs = BUILDING_HEIGHT[d.kind];
+    if (hs) {
+      d.hgt = hs[room];
+      const rows = Math.max(0, Math.ceil((d.hgt * 0.82 - 0.4 * TILE) / TILE));
+      for (let k = 1; k <= rows; k++) for (const cc of cols) { const rr = top - k; if (rr >= 0 && grid[rr * COLS + cc] === 0) grid[rr * COLS + cc] = 2; }
+    }
+  }
   // Flyers shadow the road but cut its corners, so they are quick yet still pass the defences.
   const flights = [];
   for (const p of paths) {
@@ -361,11 +384,11 @@ function victory() {
   S.storyNext = beat && !Story.seen(`w${S.L.world}-${beat}`) ? `w${S.L.world}-${beat}` : null;
   saveMeta();
   Sound.play('win');
-  const next = LEVEL_META[S.levelIndex + 1];
+  const next = LEVEL_META[campaignNext(S.levelIndex)];
   let text;
   if (unlocked.length) text = `New tower unlocked: ${unlocked.map((t) => TOWERS[t].name).join(', ')}. You get a briefing on it at the start of your next mission.`;
   else if (!next) text = 'Every sector is secure. Replay levels to earn all the stars.';
-  else if (next.world !== S.L.world && WORLDS[next.world].expansion) text = levelUnlocked(next.index) ? `Every main sector is secure. The ${WORLDS[next.world].name} is waiting.` : `Every main sector is secure. The ${WORLDS[next.world].name} expansion is in the store.`;
+  else if (next.world !== S.L.world && WORLDS[S.L.world].expansion) text = `The ${WORLDS[S.L.world].name} is secure.${levelUnlocked(next.index) ? ` Next stop: ${WORLDS[next.world].name}.` : ''}`;
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
   else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id}, ${missionFor(next).objective.toLowerCase()}.`;
   if (S.storyNext) text += ' A new story chapter is ready.';
@@ -405,7 +428,8 @@ function showEnd(won, title, text, stars, reward, xp) {
   st.setAttribute('aria-label', `${stars} of 3 stars`);
   for (let i = 0; i < stars; i++) setTimeout(() => Sound.play('star', null, { pitch: 1 + i * 0.25 }), 450 + i * 150);
   if (xp > 0) setTimeout(() => Sound.play('xp'), 450 + stars * 150 + 150);
-  $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1] || !levelUnlocked(S.levelIndex + 1) || !!S.sandbox;
+  const nx = campaignNext(S.levelIndex);
+  $('#btn-next').hidden = !won || nx < 0 || !levelUnlocked(nx) || !!S.sandbox;
   $('#btn-retry').textContent = won ? 'Replay' : 'Try again';
   // a character has the last word
   const q = S.endQuote, box = $('#end-quote');
@@ -2348,7 +2372,7 @@ function selectWorld(w) {
   const world = WORLDS[w], open = worldUnlocked(w);
   const stars = worldStars(w), cleared = worldCleared(w);
   const buyIt = world.expansion && !PREMIUM.has(world.id);
-  const lockNote = open ? '' : buyIt ? 'Expansion: 50 new levels, new zombies and a new boss' : world.expansion ? `Clear ${levelName(LEVELS_PER_WORLD - 1)} to open` : `Clear ${levelName(w * LEVELS_PER_WORLD - 1)} to unlock`;
+  const lockNote = open ? '' : buyIt ? 'Expansion: 50 new levels, new zombies and a new boss' : world.expansion ? `Clear ${levelName(LEVELS_PER_WORLD - 1)} to open` : `Clear ${levelName(unlockFrom(w))} to unlock`;
   const card = $('#world-card');
   card.innerHTML = `
     <span class="w-index">${world.expansion ? 'Expansion world' : `World ${w + 1} of ${WORLDS.length}`}</span>
@@ -2785,7 +2809,7 @@ $('#btn-to-menu').addEventListener('click', showMenu);
 function afterStory(fn) { const id = S.storyNext; S.storyNext = null; if (id) { leaveGame(); storyThen(id, fn); } else fn(); }
 $('#btn-retry').addEventListener('click', () => { const sb = S.sandbox; afterStory(() => startGame(S.levelIndex, null, sb)); });
 $('#btn-menu').addEventListener('click', () => { if (S.sandbox) { leaveGame(); SANDBOX.show(); return; } const w = S.L.world, f = S.levelIndex + (S.state === 'won' ? 1 : 0); afterStory(() => showLevels(w, f)); });
-$('#btn-next').addEventListener('click', () => { const i = S.levelIndex + 1; if (LEVEL_META[i]) afterStory(() => startGame(i)); });
+$('#btn-next').addEventListener('click', () => { const i = campaignNext(S.levelIndex); if (LEVEL_META[i]) afterStory(() => startGame(i)); });
 $('#btn-campaign').addEventListener('click', () => { Sound.init(); Sound.play('click'); let w = 0; while (w + 1 < WORLDS.length && worldUnlocked(w + 1)) w++; storyThen('prologue', () => showWorlds(w)); });
 $('#btn-story').addEventListener('click', () => { Sound.init(); Sound.play('click'); showChapters(); });
 $('#btn-sandbox').addEventListener('click', () => { Sound.init(); Sound.play('click'); SANDBOX.show(); });
@@ -2860,7 +2884,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
 {
   // show the furthest unlocked level behind the menus
   let furthest = 0;
-  while (furthest + 1 < TOTAL_LEVELS && levelUnlocked(furthest + 1)) furthest++;
+  while (campaignNext(furthest) >= 0 && levelUnlocked(campaignNext(furthest))) furthest = campaignNext(furthest);
   S.levelIndex = furthest; S.L = getLevel(furthest); S.M = buildLevel(S.L); S.worldSel = S.L.world;
   S.cash = S.L.gold; S.lives = maxLives(); S.maxLives = S.lives;
   $('#st-id').textContent = S.L.id; $('#st-name').textContent = S.L.name;

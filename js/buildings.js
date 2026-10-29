@@ -1,13 +1,15 @@
 'use strict';
 // ============================================================
-// Buildings: the farm barn, the log cabin, the bayou shack, the stone crypt and the desert's
-// abandoned army outpost.
+// Buildings: the farm barn, the log cabin, the bayou shack, the stone crypt, the desert's
+// abandoned army outpost, and the city's skyscrapers, offices, apartments, shops and gas station.
 // Drawn in a three-quarter view so the front walls show under the roofs: height goes straight
 // up the screen, foreshortened a little. Every surface is
 // built from its parts (boards, logs, clapboard, stone, shingles, tin), weathered with
 // tiling grime, rust and moss textures, and lit from the top left like the rest of the map.
 // ============================================================
-const BUILDING_KINDS = new Set(['barn', 'cabin', 'shack', 'crypt', 'outpost']);
+const BUILDING_KINDS = new Set(['barn', 'cabin', 'shack', 'crypt', 'outpost', 'skyscraper', 'office', 'apartment', 'shop', 'gasstation']);
+// how tall each city building is drawn with no, one or two rows of open ground behind it
+const BUILDING_HEIGHT = { skyscraper: [30, 58, 88], office: [20, 34, 34], apartment: [18, 28, 28], shop: [12, 12, 12] };
 
 const BUILDINGS = (() => {
   const ZX = 0, ZY = 0.82;
@@ -999,6 +1001,222 @@ const BUILDINGS = (() => {
     c.restore();
   }
 
+  // ============================================================ the city
+  // a brick wall: courses of bricks, each its own shade, mortar lines and soot
+  function bricks(c, w, h, col, rng) {
+    c.fillStyle = tone(col, -0.25); c.fillRect(0, 0, w, h);
+    for (let y = 0, row = 0; y < h; y += 0.9, row++) for (let x = row % 2 ? -0.9 : 0; x < w; x += 1.8) { c.fillStyle = jitter(col, rng, 0.1); c.fillRect(x + 0.1, y + 0.1, 1.6, 0.7); }
+    overlay(c, grime(), 0, 0, w, h, 0.5, rng);
+  }
+  // a glass curtain wall: the sky reflected down it, a grid of mullions and floor bands, and
+  // after dark a scatter of lit offices; some panes are smashed
+  function glassWall(c, w, h, o, rng) {
+    const g = c.createLinearGradient(0, 0, w * 0.3, h);
+    g.addColorStop(0, tone(o.glass, 0.35)); g.addColorStop(0.45, o.glass); g.addColorStop(1, tone(o.glass, -0.45));
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    const fh = 3.2, pw = 2.6, lobby = Math.min(6, h * 0.2);
+    for (let y = 0; y < h - lobby; y += fh) for (let x = 0; x < w; x += pw) {
+      const r = rng();
+      if (o.night && r < 0.22) { c.fillStyle = rng() < 0.7 ? 'rgba(255,214,140,0.85)' : 'rgba(200,230,255,0.75)'; c.fillRect(x + 0.2, y + 0.5, pw - 0.4, fh - 1.1); }
+      else if (r < 0.05) { c.fillStyle = 'rgba(8,10,14,0.9)'; c.fillRect(x + 0.2, y + 0.5, pw - 0.4, fh - 1.1); }
+      else if (r < 0.2) { c.fillStyle = 'rgba(255,255,255,0.09)'; c.fillRect(x + 0.2, y + 0.5, pw - 0.4, fh - 1.1); }
+    }
+    for (let y = 0; y < h - lobby; y += fh) { c.fillStyle = tone(o.frame, -0.1); c.fillRect(0, y, w, 0.55); c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(0, y + 0.55, w, 0.2); }
+    for (let x = 0; x <= w; x += pw) { c.fillStyle = o.frame; c.fillRect(x - 0.15, 0, 0.3, h - lobby); }
+    // reflections sliding diagonally across the glass
+    c.save(); c.beginPath(); c.rect(0, 0, w, h - lobby); c.clip();
+    for (let i = 0; i < 3; i++) { const x0 = rng() * w; c.fillStyle = 'rgba(255,255,255,0.1)'; poly(c, [[x0, 0], [x0 + 4 + rng() * 6, 0], [x0 - h * 0.4, h], [x0 - h * 0.4 - 3, h]]); c.fill(); }
+    c.restore();
+    // the lobby: a stone base with tall dark doors
+    c.fillStyle = tone(o.frame, 0.25); c.fillRect(0, h - lobby, w, lobby);
+    c.fillStyle = '#14181c'; for (let x = 2; x < w - 3; x += 6) c.fillRect(x, h - lobby + 1.2, 4, lobby - 1.2);
+    c.fillStyle = 'rgba(160,190,210,0.25)'; for (let x = 2; x < w - 3; x += 6) c.fillRect(x + 0.4, h - lobby + 1.4, 1, lobby - 1.6);
+    c.fillStyle = 'rgba(0,0,0,0.4)'; c.fillRect(0, h - lobby, w, 0.6);
+  }
+  // a flat roof: tar, gravel or membrane in its own colour, a parapet round the edge, and on
+  // bigger roofs skylights, a solar array or a little garden
+  const ROOFS = ['#7a7872', '#5a5a5c', '#8a8478', '#4a4c50', '#6a6a64', '#9a968c'];
+  function roofDeck(c, w, d, rng, col) {
+    col = col || ROOFS[Math.floor(rng() * ROOFS.length)];
+    c.fillStyle = col; c.fillRect(0, 0, w, d);
+    overlay(c, grime(), 0, 0, w, d, 0.22, rng);
+    for (let i = 0; i < w * d * 0.05; i++) { c.fillStyle = rng() < 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.1)'; c.fillRect(rng() * w, rng() * d, 0.5, 0.5); }
+    c.fillStyle = tone(col, 0.2); c.fillRect(0, 0, w, 1.2); c.fillRect(0, 0, 1.2, d);
+    c.fillStyle = tone(col, -0.3); c.fillRect(0, d - 1.2, w, 1.2); c.fillRect(w - 1.2, 0, 1.2, d);
+    if (w * d > 1400) {
+      const r = rng();
+      if (r < 0.3) { for (let x = w * 0.12; x < w * 0.55; x += 4.4) for (let y = d * 0.55; y < d * 0.85; y += 3) { c.fillStyle = '#22324a'; c.fillRect(x, y, 4, 2.6); c.fillStyle = 'rgba(160,200,255,0.25)'; c.fillRect(x, y, 4, 0.6); } }
+      else if (r < 0.5) { c.fillStyle = '#4a6a34'; c.fillRect(w * 0.1, d * 0.5, w * 0.35, d * 0.38); c.fillStyle = '#5a8a3a'; for (let i = 0; i < 6; i++) { circle(c, w * (0.14 + rng() * 0.28), d * (0.55 + rng() * 0.3), 1.5 + rng() * 1.5); c.fill(); } }
+      else if (r < 0.75) { for (let i = 0; i < 3; i++) { const x = w * (0.15 + i * 0.12), y = d * 0.62; c.fillStyle = '#2a3a48'; c.fillRect(x, y, 3.4, 5); c.fillStyle = 'rgba(200,230,255,0.35)'; c.fillRect(x, y, 3.4, 1.2); } }
+    }
+  }
+  // a little box on a roof: air handlers, stairheads, lift rooms
+  function roofBox(c, x, y, z, bw, bd, bh, col, rng) {
+    box(c, x, y, z, bw, bd, bh,
+      (w, h) => { c.fillStyle = tone(col, -0.15); c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(0,0,0,0.25)'; for (let i = 0.8; i < w; i += 1.2) c.fillRect(i, 0.6, 0.4, h - 1.2); },
+      (w, h) => { c.fillStyle = tone(col, -0.35); c.fillRect(0, 0, w, h); },
+      (w, h) => { c.fillStyle = tone(col, 0.12); c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 0.3; c.strokeRect(0.3, 0.3, w - 0.6, h - 0.6); });
+  }
+  const TOWER_NAMES = ['KESSLER-VANE', 'HARBOR TRUST', 'LIBERTY', 'FIRST NATIONAL', 'MERIDIAN', 'UNION BANK', 'GRAND CENTRAL'];
+  function skyscraper(c, rng, wide, out, d) {
+    const night = !!d.night;
+    const w = wide ? 88 : 40, dd = d.deep ? 84 : 38, hgt = d.hgt || 44;
+    const glass = ['#4a6a86', '#3a5a6a', '#5a6a7a', '#2e4a5e', '#6a6a58', '#4a5a74'][Math.floor(rng() * 6)], frame = ['#2a2e34', '#c8c6be', '#5a5e64'][Math.floor(rng() * 3)];
+    const o = { glass, frame, night };
+    c.save(); c.translate(0, 4);
+    groundShadow(c, w, dd, hgt, 1, [], 'rgba(0,0,0,0.32)');
+    // a setback: the top floors step in, so the tower reads as a skyscraper from above
+    const step = hgt >= 40 ? hgt * 0.72 : hgt;
+    box(c, 0, 0, 0, w, dd, step, (W2, H2) => {
+      glassWall(c, W2, H2, o, rng);
+      if (rng() < 0.6) { const nm = TOWER_NAMES[Math.floor(rng() * TOWER_NAMES.length)]; c.save(); c.font = `800 2.6px ${typeof FONT_DISPLAY !== 'undefined' ? FONT_DISPLAY : 'sans-serif'}`; c.textAlign = 'center'; c.textBaseline = 'top'; c.fillStyle = 'rgba(240,236,224,0.85)'; c.fillText(nm, W2 / 2, H2 - Math.min(6, H2 * 0.2) - 3.4); c.restore(); }
+    }, (D2, H2) => { glassWall(c, D2, H2, { ...o, glass: tone(glass, -0.35) }, rng); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, D2, H2); }, (bw, bd) => roofDeck(c, bw, bd, rng));
+    let top = step;
+    if (hgt > step) {
+      box(c, -w * 0.06, -dd * 0.08, step, w * 0.7, dd * 0.7, hgt - step, (W2, H2) => glassWall(c, W2, H2, o, rng),
+        (D2, H2) => { glassWall(c, D2, H2, { ...o, glass: tone(glass, -0.35) }, rng); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, D2, H2); },
+        (bw, bd) => {
+          roofDeck(c, bw, bd, rng);
+          // a helipad on a few of the big towers, painted H in a circle
+          if (d.deep && rng() < 0.15) { c.strokeStyle = 'rgba(240,236,220,0.85)'; c.lineWidth = 0.7; circle(c, bw * 0.6, bd * 0.5, bd * 0.3); c.stroke(); c.fillStyle = 'rgba(240,236,220,0.85)'; c.font = `800 ${bd * 0.34}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('H', bw * 0.6, bd * 0.52); }
+        });
+      top = hgt;
+    }
+    roofBox(c, w * 0.3 - (hgt > step ? w * 0.3 : 0), -dd * 0.2, top, 6, 5, 3, '#9a988e', rng);
+    // the tallest carry a mast with a red warning light
+    if (hgt >= 58 && rng() < 0.3) {
+      const m0 = P(-w * 0.25, -dd * 0.15, top), m1 = P(-w * 0.25, -dd * 0.15, top + 12);
+      c.strokeStyle = '#2a2a28'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(m0[0], m0[1]); c.lineTo(m1[0], m1[1]); c.stroke();
+      c.fillStyle = '#ff4a3a'; circle(c, m1[0], m1[1], 0.7); c.fill();
+      out.glows.push({ x: m1[0], y: m1[1] + 2, r: 14, color: '255,70,50', a: 0.5 });
+    }
+    if (night && rng() < 0.5) { const p = P((rng() - 0.5) * w * 0.6, dd / 2, rng() * step * 0.6); out.glows.push({ x: p[0], y: p[1] + 4, r: 18, color: '255,210,140', a: 0.25 }); }
+    c.restore();
+  }
+  function office(c, rng, wide, out, d) {
+    const night = !!d.night;
+    const w = wide ? 88 : 40, dd = 38, hgt = d.hgt || 26, col = ['#b8b0a0', '#9a8a78', '#c8c0b0', '#8a8a86'][Math.floor(rng() * 4)];
+    c.save(); c.translate(0, 4);
+    groundShadow(c, w, dd, hgt, 1);
+    box(c, 0, 0, 0, w, dd, hgt, (W2, H2) => {
+      c.fillStyle = col; c.fillRect(0, 0, W2, H2); overlay(c, grime(), 0, 0, W2, H2, 0.55, rng);
+      // rows of punched windows, a cornice and a columned entrance
+      for (let y = 2.4; y < H2 - 6; y += 4.2) for (let x = 1.6; x < W2 - 3; x += 4) windowAt(c, x, y, 2.4, 2.4, { style: night && rng() < 0.3 ? 'lit' : rng() < 0.12 ? 'broken' : 'plain', trim: tone(col, 0.2) }, rng);
+      c.fillStyle = tone(col, 0.25); c.fillRect(0, 0, W2, 1.2); c.fillStyle = 'rgba(0,0,0,0.3)'; c.fillRect(0, 1.2, W2, 0.4);
+      const ex = W2 / 2 - 5;
+      c.fillStyle = '#1a1c1e'; c.fillRect(ex, H2 - 5, 10, 5);
+      c.fillStyle = tone(col, 0.3); for (const px of [ex - 1, ex + 3, ex + 6.4, ex + 10]) c.fillRect(px, H2 - 5.6, 1, 5.6);
+      c.fillRect(ex - 1.5, H2 - 6.2, 13, 0.8);
+    }, (D2, H2) => { c.fillStyle = tone(col, -0.3); c.fillRect(0, 0, D2, H2); overlay(c, grime(), 0, 0, D2, H2, 0.5, rng); for (let y = 2.4; y < H2 - 4; y += 4.2) for (let x = 1.6; x < D2 - 3; x += 4) { c.fillStyle = 'rgba(20,26,32,0.8)'; c.fillRect(x, y, 2.2, 2.4); } }, (bw, bd) => {
+      roofDeck(c, bw, bd, rng);
+      c.fillStyle = 'rgba(30,30,28,0.3)'; for (let i = 0; i < 30; i++) c.fillRect(rng() * bw, rng() * bd, 0.4, 0.4);
+    });
+    roofBox(c, w * 0.22, -dd * 0.1, hgt, 7, 6, 2.6, '#a8a69c', rng);
+    if (wide || rng() < 0.4) roofBox(c, -w * 0.25, dd * 0.05, hgt, 5, 4, 2, '#8a8a84', rng);
+    // a billboard on the roof, its ad peeling
+    if (rng() < 0.5) {
+      const bx = -w * 0.15, by = -dd * 0.35, bw2 = Math.min(26, w * 0.6), z0 = hgt + 2;
+      for (const lx of [-bw2 * 0.35, bw2 * 0.35]) { const a = P(bx + lx, by, hgt), b = P(bx + lx, by, z0); c.fillStyle = '#2a2a28'; c.fillRect(a[0] - 0.4, b[1], 0.8, a[1] - b[1]); }
+      southWall(c, bx - bw2 / 2, bx + bw2 / 2, by, z0, z0 + 8, 0, (W2, H2) => {
+        c.fillStyle = ['#c8402a', '#2a5a9a', '#e8c040', '#3a8a5a'][Math.floor(rng() * 4)]; c.fillRect(0, 0, W2, H2);
+        c.fillStyle = 'rgba(255,255,255,0.9)'; c.font = `800 ${H2 * 0.32}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(['A CURE FOR EVERYTHING', 'DRINK FIZZ', 'LIVE FOREVER', 'GRAND OPENING', 'KESSLER-VANE'][Math.floor(rng() * 5)], W2 / 2, H2 * 0.5, W2 * 0.9);
+        overlay(c, grime(), 0, 0, W2, H2, 0.7, rng);
+        c.fillStyle = 'rgba(240,236,220,0.9)'; for (let i = 0; i < 3; i++) { const x = rng() * W2; poly(c, [[x, 0], [x + 3, 0], [x + 1, H2 * 0.6]]); c.fill(); }
+        c.strokeStyle = '#1a1a18'; c.lineWidth = 0.5; c.strokeRect(0, 0, W2, H2);
+      });
+    }
+    c.restore();
+  }
+  function apartment(c, rng, wide, out, d) {
+    const night = !!d.night;
+    const w = wide ? 88 : 40, dd = 36, hgt = d.hgt || 24, col = ['#8a4a36', '#7a3e2e', '#9a5a42', '#6a4a3a'][Math.floor(rng() * 4)];
+    c.save(); c.translate(0, 4);
+    groundShadow(c, w, dd, hgt, 1);
+    box(c, 0, 0, 0, w, dd, hgt, (W2, H2) => {
+      bricks(c, W2, H2, col, rng);
+      const cur = ['#c84a3a', '#e8d8a8', '#4a7aa8', '#7aa860'];
+      for (let y = 2.6; y < H2 - 4; y += 4.6) for (let x = 2; x < W2 - 3; x += 5.2) {
+        windowAt(c, x, y, 2.8, 3, { style: night && rng() < 0.35 ? 'lit' : rng() < 0.15 ? 'boarded' : rng() < 0.12 ? 'broken' : 'plain', trim: '#d8d0c0' }, rng);
+        if (rng() < 0.4) { c.fillStyle = cur[Math.floor(rng() * cur.length)]; c.fillRect(x, y, 0.7, 3); c.fillRect(x + 2.1, y, 0.7, 3); }
+      }
+      // the stoop and the front door
+      const dx = W2 * 0.3;
+      c.fillStyle = '#2a1e18'; c.fillRect(dx, H2 - 5, 3.4, 5); c.fillStyle = '#c8c0b0'; c.fillRect(dx - 1.5, H2 - 1, 6.4, 1); c.fillRect(dx - 1, H2 - 2, 5.4, 1);
+      // a black iron fire escape zigzagging down the front
+      const fx = W2 * 0.62, fw = Math.min(14, W2 * 0.3);
+      c.strokeStyle = '#141414'; c.lineWidth = 0.45;
+      for (let y = 6; y < H2 - 3; y += 4.6) {
+        c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(fx, y + 0.4, fw, 0.8);
+        c.fillStyle = '#1e1e1e'; c.fillRect(fx, y, fw, 0.6);
+        c.beginPath(); for (let x = fx; x <= fx + fw; x += 1) { c.moveTo(x, y); c.lineTo(x, y - 1.6); } c.moveTo(fx, y - 1.6); c.lineTo(fx + fw, y - 1.6); c.stroke();
+        c.beginPath(); const a = (Math.round(y / 4.6) % 2) ? [fx + 1, fx + fw - 1] : [fx + fw - 1, fx + 1]; c.moveTo(a[0], y); c.lineTo(a[1], y + 4.6); c.stroke();
+      }
+      c.fillStyle = tone(col, 0.2); c.fillRect(0, 0, W2, 1); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(0, 1, W2, 0.4);
+    }, (D2, H2) => { bricks(c, D2, H2, tone(col, -0.3), rng); c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, D2, H2); }, (bw, bd) => { roofDeck(c, bw, bd, rng); });
+    // a wooden water tank on legs
+    const tx = -w * 0.2, ty = -dd * 0.1, tz = hgt + 4;
+    for (const [lx, ly] of [[-2, -1.5], [2, -1.5], [-2, 1.5], [2, 1.5]]) { const a = P(tx + lx, ty + ly, hgt), b = P(tx + lx, ty + ly, tz); c.fillStyle = '#2a2420'; c.fillRect(a[0] - 0.3, b[1], 0.6, a[1] - b[1]); }
+    const t0 = P(tx, ty, tz), t1 = P(tx, ty, tz + 7);
+    c.fillStyle = linear(c, t0[0] - 3.4, 0, t0[0] + 3.4, 0, [[0, '#9a7a56'], [0.5, '#7a5e40'], [1, '#4a3826']]); c.fillRect(t0[0] - 3.4, t1[1], 6.8, t0[1] - t1[1]);
+    c.fillStyle = '#5a4630'; ellipse(c, t0[0], t0[1], 3.4, 1.2, 0); c.fill();
+    c.fillStyle = '#3a3a3c'; c.beginPath(); c.moveTo(t1[0] - 3.8, t1[1]); c.lineTo(t1[0], t1[1] - 3); c.lineTo(t1[0] + 3.8, t1[1]); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(30,24,16,0.6)'; for (const k of [0.3, 0.7]) c.fillRect(t0[0] - 3.4, lerp(t1[1], t0[1], k), 6.8, 0.4);
+    c.restore();
+  }
+  const SHOP_NAMES = ['DINER', 'PHARMACY', 'PIZZA', 'HARDWARE', 'LIQUOR', 'LAUNDRY', 'GROCERY', 'BOOKS', 'PAWN', 'DONUTS', 'GUNS'];
+  function shop(c, rng, wide, out, d) {
+    const night = !!d.night, w = wide ? 88 : 40, dd = 34, hgt = d.hgt || 12, col = ['#5a7a8a', '#8a3a3a', '#d8c8a0', '#3a5a4a', '#6a5a8a'][Math.floor(rng() * 5)];
+    const sign = SHOP_NAMES[Math.floor(rng() * SHOP_NAMES.length)], awn = ['#c83a2a', '#2a6a3a', '#2a4a8a', '#c88a2a'][Math.floor(rng() * 4)];
+    c.save(); c.translate(0, 4);
+    groundShadow(c, w, dd, hgt, 1);
+    box(c, 0, 0, 0, w, dd, hgt, (W2, H2) => {
+      c.fillStyle = col; c.fillRect(0, 0, W2, H2); overlay(c, grime(), 0, 0, W2, H2, 0.5, rng);
+      // the sign board, the striped awning and the shop windows under it
+      c.fillStyle = '#1a1a1c'; c.fillRect(1.5, 0.8, W2 - 3, 3);
+      c.fillStyle = night ? '#ffd27a' : '#f0e6cc'; c.font = `800 2.3px ${typeof FONT_DISPLAY !== 'undefined' ? FONT_DISPLAY : 'sans-serif'}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(sign, W2 / 2, 2.4);
+      for (let x = 0; x < W2; x += 2) { c.fillStyle = (x / 2) % 2 ? '#f2eee4' : awn; poly(c, [[x, 4.2], [x + 2, 4.2], [x + 2.3, 6.4], [x + 0.3, 6.4]]); c.fill(); }
+      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(0, 6.4, W2, 0.6);
+      for (let x = 1.2; x < W2 - 2; x += 7) {
+        c.fillStyle = night ? radial(c, x + 2.8, H2 - 1.5, 4, 'rgba(255,220,150,0.8)', 'rgba(60,40,20,0.9)', 0, 0) : linear(c, x, 7, x + 5.6, H2, [[0, '#8ea7b6'], [0.5, '#2a3a44'], [1, '#141c22']]); c.fillRect(x, 7.2, 5.6, H2 - 7.6);
+        if (rng() < 0.4) { c.fillStyle = '#0a0c0e'; poly(c, [[x + 1, 7.4], [x + 4, 8], [x + 3, 9.5], [x + 5, 10.4], [x + 1.6, 10.6]]); c.fill(); }
+        c.fillStyle = '#26282a'; c.fillRect(x - 0.4, 7, 0.4, H2 - 7);
+      }
+    }, (D2, H2) => { c.fillStyle = tone(col, -0.3); c.fillRect(0, 0, D2, H2); overlay(c, grime(), 0, 0, D2, H2, 0.5, rng); }, (bw, bd) => {
+      roofDeck(c, bw, bd, rng, '#4a4846');
+      if (rng() < 0.4) painted(c, 'HELP', bw * 0.15, bd * 0.25, bw * 0.5, bd * 0.4, rng);
+    });
+    roofBox(c, w * 0.2, -dd * 0.15, hgt, 6, 5, 2.4, '#a8a69c', rng);
+    if (night) { const p = P(0, dd / 2, hgt - 2); out.glows.push({ x: p[0], y: p[1] + 4, r: 26, color: '255,200,120', a: 0.45 }); }
+    c.restore();
+  }
+  function gasStation(c, rng, wide, out, d) {
+    const night = !!d.night, w = wide ? 88 : 42, dd = 38;
+    c.save(); c.translate(0, 4);
+    // the forecourt: oil-stained concrete
+    c.fillStyle = 'rgba(150,148,140,0.85)'; c.fillRect(-w / 2, -dd / 2, w, dd);
+    c.fillStyle = 'rgba(30,26,20,0.35)'; for (let i = 0; i < 6; i++) { ellipse(c, (rng() - 0.5) * w * 0.8, (rng() - 0.5) * dd * 0.6, 2 + rng() * 4, 1 + rng() * 2, rng()); c.fill(); }
+    // the shop at the back
+    const sx = wide ? w * 0.25 : 0, sw = wide ? w * 0.4 : w * 0.8;
+    groundShadow(c, sw, 10, 9, 0.6, [], 'rgba(0,0,0,0.45)');
+    box(c, sx, -dd / 2 + 5, 0, sw, 10, 9, (W2, H2) => {
+      c.fillStyle = '#e8e4da'; c.fillRect(0, 0, W2, H2); overlay(c, grime(), 0, 0, W2, H2, 0.5, rng);
+      c.fillStyle = '#c8302a'; c.fillRect(0, 0, W2, 2);
+      c.fillStyle = night ? 'rgba(255,230,170,0.9)' : '#3a4a56'; c.fillRect(2, 3.5, W2 - 4, H2 - 4);
+    }, (D2, H2) => { c.fillStyle = '#b8b4aa'; c.fillRect(0, 0, D2, H2); }, (bw, bd) => roofDeck(c, bw, bd, rng, '#6a6a66'));
+    // pumps under a canopy on four posts
+    const cx = wide ? -w * 0.2 : 0, cw = wide ? w * 0.5 : w * 0.8, cy = dd * 0.12, cz = 9;
+    for (const px of [-cw * 0.25, cw * 0.25]) { const p = P(cx + px, cy, 0); c.fillStyle = '#c8302a'; c.fillRect(p[0] - 1.2, p[1] - 4.5, 2.4, 4.5); c.fillStyle = '#f2eee4'; c.fillRect(p[0] - 0.8, p[1] - 3.8, 1.6, 1.2); }
+    for (const [px, py] of [[-cw / 2 + 1, -6], [cw / 2 - 1, -6], [-cw / 2 + 1, 6], [cw / 2 - 1, 6]]) { const a = P(cx + px, cy + py, 0), b = P(cx + px, cy + py, cz); c.fillStyle = '#d8d4cc'; c.fillRect(a[0] - 0.5, b[1], 1, a[1] - b[1]); }
+    castShadow(c, [[cx - cw / 2 + SUN[0] * cz, cy - 8 + SUN[1] * cz], [cx + cw / 2 + SUN[0] * cz, cy - 8 + SUN[1] * cz], [cx + cw / 2 + SUN[0] * cz, cy + 8 + SUN[1] * cz], [cx - cw / 2 + SUN[0] * cz, cy + 8 + SUN[1] * cz]], 4, 'rgba(0,0,0,0.35)');
+    box(c, cx, cy, cz, cw, 16, 1.6, (W2, H2) => { for (let x = 0; x < W2; x += 4) { c.fillStyle = (x / 4) % 2 ? '#f2eee4' : '#c8302a'; c.fillRect(x, 0, 4, H2); } }, null, (bw, bd) => {
+      c.fillStyle = '#e8e4dc'; c.fillRect(0, 0, bw, bd); overlay(c, grime(), 0, 0, bw, bd, 0.5, rng);
+      c.fillStyle = '#c8302a'; c.font = `800 ${bd * 0.3}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('GAS', bw / 2, bd / 2);
+    });
+    if (night) { const p = P(cx, cy, 2); out.glows.push({ x: p[0], y: p[1], r: 40, color: '230,240,255', a: 0.5 }); }
+    c.restore();
+  }
+
   function draw(kind, c, d, rng, out) {
     const wide = !!d.wide;
     if (kind === 'barn') barn(c, rng, wide, out);
@@ -1006,6 +1224,11 @@ const BUILDINGS = (() => {
     else if (kind === 'shack') shack(c, rng, wide, out);
     else if (kind === 'crypt') crypt(c, rng, wide, out);
     else if (kind === 'outpost') outpost(c, rng, wide, out);
+    else if (kind === 'skyscraper') skyscraper(c, rng, wide, out, d);
+    else if (kind === 'office') office(c, rng, wide, out, d);
+    else if (kind === 'apartment') apartment(c, rng, wide, out, d);
+    else if (kind === 'shop') shop(c, rng, wide, out, d);
+    else if (kind === 'gasstation') gasStation(c, rng, wide, out, d);
   }
 
   return { draw, safehouse, flagMark, FLAG_PLAIN, P, box, southWall, westWall, slope, face, stone, tin, shingles, boards, clapboard, overlay, grime, rust, moss, grain, castShadow, windowAt, lantern, tone, jitter, wallLight };

@@ -1,6 +1,7 @@
 'use strict';
 // ============================================================
-// Procedural levels: 50 per world, each with its own road layout, water and look.
+// Procedural levels: 50 per world, each with its own road layout, water and look. The campaign
+// runs through the main worlds in order; an expansion world sits to one side of it.
 // Generation is seeded by the level number, so every player gets the same levels.
 // ============================================================
 const TOTAL_LEVELS = WORLDS.length * LEVELS_PER_WORLD;
@@ -17,15 +18,34 @@ const PLACE_NAMES = [
    ['Landing', 'Marsh', 'Inlet', 'Slough', 'Delta', 'Bend', 'Pier', 'Channel', 'Hollow', 'Fen']],
   [['Red Mesa', 'Sandstone', 'Dry Wells', 'Bonefield', 'Scorpion', 'Sun Dog', 'Rust', 'Oilfield', 'Mirage', 'Dead Horse'],
    ['Canyon', 'Dunes', 'Airbase', 'Wash', 'Pumpworks', 'Gulch', 'Depot', 'Butte', 'Flats', 'Outpost']],
+  [['Fifth Street', 'Harbor', 'Union', 'Liberty', 'Grand', 'Midtown', 'Kessler', 'Lakeshore', 'Iron', 'Central'],
+   ['Plaza', 'Avenue', 'Station', 'Heights', 'Square', 'Overpass', 'Market', 'Terminal', 'Boulevard', 'Docks']],
 ];
+// how many main worlds come before world w (its place in the campaign)
+const mainBefore = (w) => WORLDS.slice(0, w).filter((x) => !x.expansion).length;
+// the level whose first clear opens world w (the end of the main world before it)
+function unlockFrom(w) {
+  for (let p = w - 1; p >= 0; p--) if (!WORLDS[p].expansion) return p * LEVELS_PER_WORLD + LEVELS_PER_WORLD - 1;
+  return -1;
+}
+// the next level along the campaign: the next sector, or the first sector of the next main world
+function campaignNext(i) {
+  const m = levelMetaCache[i];
+  if (!m) return -1;
+  if (m.num < LEVELS_PER_WORLD) return i + 1;
+  for (let w = m.world + 1; w < WORLDS.length; w++) if (!WORLDS[w].expansion) return w * LEVELS_PER_WORLD;
+  return -1;
+}
+const levelMetaCache = [];
 
 function levelMeta(index) {
   const world = Math.floor(index / LEVELS_PER_WORLD);
   const num = (index % LEVELS_PER_WORLD) + 1;
   // the desert expansion can be played once the farmland is cleared, so it starts about as hard
   // as the middle of the cemetery and climbs faster than the other worlds
-  const tier = WORLDS[world].expansion ? 2 : world;
-  const diff = WORLDS[world].expansion ? 2.2 + (num - 1) * 0.07 : world * 1.5 + (num - 1) * 0.04;
+  const tier = WORLDS[world].expansion ? 2 : mainBefore(world);
+  const [d0, dk] = WORLDS[world].diff || (WORLDS[world].expansion ? [2.2, 0.07] : [tier * 1.5, 0.04]);
+  const diff = d0 + (num - 1) * dk;
   const rng = mulberry32(index * 7919 + 17);
   const names = PLACE_NAMES[world];
   const name = `${names[0][Math.floor(rng() * 10)]} ${names[1][Math.floor(rng() * 10)]}`;
@@ -37,6 +57,7 @@ function levelMeta(index) {
   };
 }
 const LEVEL_META = Array.from({ length: TOTAL_LEVELS }, (_, i) => levelMeta(i));
+levelMetaCache.push(...LEVEL_META);
 
 // ---------- road layout ----------
 function shuffle(rng, a) {
@@ -200,7 +221,7 @@ function levelPool(meta, rng) {
   const skip = WORLDS[meta.world].skipOld || [];
   WORLDS.forEach((w, wi) => {
     for (const [type, at] of w.mobs) {
-      if (wi < meta.world && skip.includes(type)) continue;
+      if (wi < meta.world && (skip.includes(type) || w.expansion)) continue;
       if (wi < meta.world || (wi === meta.world && meta.num >= at)) avail.push({ type, home: wi === meta.world, at });
     }
   });
@@ -217,6 +238,34 @@ function levelPool(meta, rng) {
     const from = debut ? Math.max(3, Math.round(waves * 0.3)) : 1 + Math.floor((i / list.length) * waves * 0.55);
     return [m.type, clamp(from, 1, waves)];
   });
+}
+
+// ---------- city blocks ----------
+// The city fills every tile away from the road with buildings: big skyscrapers on two-by-two
+// lots, wide office blocks and apartments, shops and gas stations. The pavement along the road
+// stays mostly clear for towers, with a few street props and corner shops.
+const CITY_FAR = [['skyscraper', 5], ['office', 3], ['apartment', 3], ['shop', 1], ['gasstation', 0.6], ['parking', 0.6]];
+const CITY_NEAR = [['shop', 2], ['apartment', 1], ['hydrant', 1], ['streetlight', 1.4], ['planter', 1], ['dumpster', 0.8], ['taxi', 0.8], ['bus', 0.6], ['barricade', 0.6]];
+function cityBlocks(rng, onPath, water, end, decor) {
+  const at = (x, y) => y * COLS + x;
+  const near = new Uint8Array(COLS * ROWS), used = new Uint8Array(COLS * ROWS);
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (onPath[at(x, y)]) {
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < COLS && yy < ROWS) near[at(xx, yy)] = 1; }
+  }
+  const open = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS && !onPath[at(x, y)] && !water[at(x, y)] && !used[at(x, y)] && !(Math.abs(x - end[0]) <= 1 && Math.abs(y - end[1]) <= 1);
+  const far = (x, y) => open(x, y) && !near[at(x, y)];
+  const pick = (list) => { let t = 0; for (const [, w] of list) t += w; let r = rng() * t; for (const [k, w] of list) { r -= w; if (r <= 0) return k; } return list[0][0]; };
+  const put = (kind, c, r, cw, ch) => {
+    for (let x = c; x < c + cw; x++) for (let y = r - ch + 1; y <= r; y++) used[at(x, y)] = 1;
+    decor.push({ kind, c, r, cw, ch, x: (c + cw / 2) * TILE, y: (r + 1 - ch / 2) * TILE, s: 1, rot: rng() * TAU, seed: Math.floor(rng() * 1e6) });
+  };
+  const order = shuffle(rng, Array.from({ length: COLS * ROWS }, (_, i) => [i % COLS, Math.floor(i / COLS)]));
+  // two-by-two towers first, then wide blocks, then single lots
+  for (const [x, y] of order) if (far(x, y) && far(x + 1, y) && far(x, y - 1) && far(x + 1, y - 1) && rng() < 0.45) put('skyscraper', x, y, 2, 2);
+  for (const [x, y] of order) if (far(x, y) && far(x + 1, y) && rng() < 0.55) put(pick(CITY_FAR.filter(([k]) => k !== 'parking' && k !== 'gasstation')), x, y, 2, 1);
+  for (const [x, y] of order) if (far(x, y) && rng() < 0.85) put(pick(CITY_FAR), x, y, 1, 1);
+  // a few things along the pavement, so the streets feel lived in
+  for (const [x, y] of order) if (open(x, y) && near[at(x, y)] && rng() < 0.1) put(pick(CITY_NEAR), x, y, 1, 1);
 }
 
 // ---------- full level definition ----------
@@ -238,7 +287,8 @@ function getLevel(index) {
   }
   const paths = [toWaypoints(entry.off, main)];
   const pathTiles = [main];
-  if (meta.num >= 6 && rng() < 0.3 + meta.tier * 0.08) {
+  // a second entrance; the city's narrow streets get one less often
+  if (meta.num >= 6 && rng() < (world.id === 'city' ? 0.4 : 0.3 + meta.tier * 0.08)) {
     for (let k = 0; k < 6; k++) {
       const side = [1, 2, 0, 3][Math.floor(rng() * 4)];
       const sec = trySecondPath(rng, main, side);
@@ -255,8 +305,9 @@ function getLevel(index) {
 
   let water = new Uint8Array(COLS * ROWS);
   // the bayou is mostly water; the desert has only the odd oasis
-  const wetWorld = world.id === 'swamp' ? 0.75 : world.id === 'desert' ? 0.22 : 0.5;
-  if (meta.num >= 4 && rng() < wetWorld) water = makeWater(rng, rng() < 0.55 ? 'lake' : 'river');
+  // the bayou is mostly water, the desert has only the odd oasis, and the city a walled canal
+  const wetWorld = world.id === 'swamp' ? 0.75 : world.id === 'desert' ? 0.22 : world.id === 'city' ? 0.35 : 0.5;
+  if (meta.num >= 4 && rng() < wetWorld) water = makeWater(rng, world.id === 'city' || rng() >= 0.55 ? 'river' : 'lake');
   const [ex, ey] = main[main.length - 1];
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
     const x = ex + dx, y = ey + dy;
@@ -273,7 +324,8 @@ function getLevel(index) {
 
   const end = main[main.length - 1];
   const decor = [];
-  const nDecor = 10 + Math.floor(rng() * 12);
+  const nDecor = world.id === 'city' ? 0 : 10 + Math.floor(rng() * 12);
+  if (world.id === 'city') cityBlocks(rng, onPath, water, end, decor);
   let tries = 0;
   while (decor.length < nDecor && tries++ < 600) {
     const x = Math.floor(rng() * COLS), y = Math.floor(rng() * ROWS);
@@ -304,7 +356,7 @@ function makeWave(L, n) {
     count = Math.max(from === n ? 2 : 1, count);
     groups.push({ type, count, gap: GAP[type] * Math.max(0.55, 1 - e * 0.015), delay: groups.length ? 1 : 0 });
   }
-  if (n % 5 === 0 && n < L.waves) groups.push({ type: L.world === 3 ? 'imp' : L.world === 4 ? 'scorpion' : 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
+  if (n % 5 === 0 && n < L.waves) groups.push({ type: { swamp: 'imp', desert: 'scorpion', city: 'suit' }[WORLDS[L.world].id] || 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
   if (L.boss && n === L.waves) {
     const count = L.boss === 'juggernaut' ? 1 + Math.floor(L.num / 25) : 1;
     groups.push({ type: L.boss, count, gap: 3, delay: 2 });

@@ -151,8 +151,18 @@ const ZART = (() => {
         c.fillStyle = '#121416';
         for (const y of [-sw * 0.45, sw * 0.32]) for (const x of [-td * 0.5, td * 0.2]) { c.fillRect(x, y, td * 0.35, r * 0.18); }
         c.fillStyle = '#6b7078'; for (const [x, y] of [[-td * 0.7, -sw * 0.6], [td * 0.6, -sw * 0.6], [-td * 0.7, sw * 0.6], [td * 0.6, sw * 0.6]]) { c.beginPath(); c.arc(x, y, r * 0.04, 0, TAU); c.fill(); }
+        if (s.label) { c.save(); c.translate(-td * 0.45, 0); c.rotate(Math.PI / 2); c.fillStyle = '#e8e4d8'; c.font = `800 ${r * 0.17}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(s.label, 0, 0, sw * 1.4); c.restore(); }
         break;
       }
+      case 'suit':
+        // a dark jacket: a white collar round the neck, lapel creases, and the tie flapping out in front
+        c.fillStyle = '#e8e4da'; c.beginPath(); c.ellipse(td * 0.5, 0, r * 0.38, r * 0.36, 0, 0, TAU); c.fill();
+        c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 0.6;
+        c.beginPath(); c.moveTo(td * 0.1, -sw * 0.45); c.lineTo(td, -sw * 0.15); c.moveTo(td * 0.1, sw * 0.45); c.lineTo(td, sw * 0.15); c.stroke();
+        c.restore();
+        c.fillStyle = s.tie || '#a82a2a'; c.beginPath(); c.moveTo(td * 0.8, -r * 0.05); c.lineTo(td * 1.45, -r * 0.02 + (rng() - 0.5) * r * 0.1); c.lineTo(td * 0.8, r * 0.05); c.closePath(); c.fill();
+        c.save(); torsoPath(c, td, sw); c.clip();
+        break;
       case 'coat':
         c.strokeStyle = 'rgba(0,0,0,0.45)'; c.lineWidth = 0.6;
         c.beginPath(); c.moveTo(td * 0.1, -sw * 0.2); c.lineTo(td, -sw * 0.05); c.moveTo(td * 0.1, sw * 0.2); c.lineTo(td, sw * 0.05); c.stroke();
@@ -669,9 +679,24 @@ const ZART = (() => {
 
   // ---------- frost giant ----------
   function drawGiant(c, r, s, ph, seed) {
-    const s2 = { ...s, wide: 1.45, depth: 1.25, pattern: s.sand ? 'bare' : 'fur', sleeve: 'none', armThick: 1.9, handScale: 1.6, reach: 1.1, tears: 0, stains: 1, headScale: 0.9, hairStyle: 'bald', frost: !s.sand, limp: 0.8 };
+    const s2 = { ...s, wide: 1.45, depth: 1.25, pattern: s.sand ? 'bare' : s.mutant ? 'suit' : 'fur', sleeve: s.mutant ? 'short' : 'none', armThick: 1.9, handScale: 1.6, reach: 1.1, tears: s.mutant ? 3 : 0, stains: 1, headScale: 0.9, hairStyle: s.mutant ? 'short' : 'bald', frost: !s.sand && !s.mutant, limp: 0.8 };
     drawPerson(c, r, s2, ph, seed);
     const rng = mulberry32(seed + 3);
+    if (s.mutant) {
+      // Vane, swollen by the seed: violet growths bursting through the suit, tendrils trailing behind
+      c.lineCap = 'round';
+      for (let i = 0; i < 7; i++) {
+        const y0 = (rng() - 0.5) * r * 0.9, sw = Math.sin(ph * TAU + i) * r * 0.08;
+        c.strokeStyle = '#4a2a5a'; c.lineWidth = r * 0.07;
+        c.beginPath(); c.moveTo(-r * 0.4, y0); c.quadraticCurveTo(-r * 0.8, y0 + sw * 2, -r * (1 + rng() * 0.3), y0 * 1.4 + sw); c.stroke();
+        c.strokeStyle = '#b866ff'; c.lineWidth = r * 0.025; c.stroke();
+      }
+      for (let i = 0; i < 9; i++) {
+        const x = (rng() - 0.6) * r * 0.9, y = (rng() - 0.5) * r * 1.1, rr = r * (0.06 + rng() * 0.1);
+        c.fillStyle = g2(c, x - rr, y - rr, x + rr, y + rr, [[0, '#e8c8ff'], [0.5, '#9a4ad8'], [1, '#3a1a4a']]); c.beginPath(); c.arc(x, y, rr, 0, TAU); c.fill();
+      }
+      return;
+    }
     if (s.sand) {
       // a sandstone colossus: slabs of rock grown over its back and shoulders, cracks glowing like embers
       for (let i = 0; i < 9; i++) {
@@ -819,6 +844,17 @@ const ZART = (() => {
     ],
     scorpion: [{ kind: 'scorpion', box: 3.4, shell: '#c8a050' }, { kind: 'scorpion', box: 3.4, shell: '#a86a3a' }],
     vulture: [{ kind: 'crow', box: 4.6, wing: ['#6a5238', '#2e2216', '#4a3826'], body: '#4a3826', head: '#c88a78', beak: '#e0d2a8', ruff: true }],
+    suit: [
+      human({ skin: SKIN[0], shirt: '#2a2e36', pattern: 'suit', pants: '#24262c', shoes: '#111', hair: '#2a2420', sleeve: 'long', tie: '#a82a2a' }),
+      human({ skin: SKIN[2], shirt: '#4a4a52', pattern: 'suit', pants: '#3a3a42', shoes: '#111', hair: '#6a5a4a', hairStyle: 'long', sleeve: 'long', tie: '#2a4a8a', missingArm: 1 }),
+      human({ skin: SKIN[1], shirt: '#5a4a3a', pattern: 'suit', pants: '#3a3028', shoes: '#2a2018', hairStyle: 'bald', sleeve: 'long', tie: '#2a6a3a', stains: 2 }),
+    ],
+    swat: [
+      human({ skin: SKIN[4], shirt: '#1c1f24', pattern: 'armor', label: 'SWAT', pants: '#1e2024', shoes: '#111', gear: 'riot', sleeve: 'long', tears: 1, wide: 1.1 }),
+      human({ skin: SKIN[0], shirt: '#22262c', pattern: 'armor', label: 'POLICE', pants: '#1e2024', shoes: '#111', gear: 'riot', sleeve: 'long', tears: 1, wide: 1.1 }),
+    ],
+    drone: [{ kind: 'drone', box: 3.4, glow: [{ x: 0.3, y: 0, r: 16, color: '255,70,50', a: 0.45 }] }],
+    chairman: [{ kind: 'giant', mutant: true, box: 4.4, skin: '#b8a8c8', hair: '#d8d4cc', shoes: '#111', shirt: '#22252e', pants: '#1a1c22', eye: '#e8a8ff', tie: '#8a1a2a', glow: [{ x: 0.5, y: 0, r: 46, color: '184,102,255', a: 0.35 }] }],
     colossus: [{ kind: 'giant', sand: true, box: 4.2, skin: '#c9a46a', shirt: '#c9a46a', pants: '#7a5a3a', eye: '#ffb040', glow: [{ x: 0.5, y: 0, r: 46, color: '255,170,60', a: 0.3 }] }],
   };
 
@@ -894,8 +930,34 @@ const ZART = (() => {
     c.fillStyle = '#2a1a0a'; c.fill();
   }
 
+  // a Kessler-Vane security drone the hive has grown into: four rotors, a camera eye, green veins
+  function drawDrone(c, r, s, ph) {
+    const arm = r * 0.75;
+    c.lineCap = 'round';
+    for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const x = sx * arm * 0.72, y = sy * arm * 0.72;
+      c.strokeStyle = '#26282c'; c.lineWidth = r * 0.14; c.beginPath(); c.moveTo(0, 0); c.lineTo(x, y); c.stroke();
+      c.strokeStyle = '#5a5e64'; c.lineWidth = r * 0.05; c.beginPath(); c.moveTo(-r * 0.02, -r * 0.02); c.lineTo(x - r * 0.02, y - r * 0.02); c.stroke();
+      c.strokeStyle = '#52e07c'; c.lineWidth = r * 0.03; c.beginPath(); c.moveTo(x * 0.2, y * 0.25); c.quadraticCurveTo(x * 0.5 + sy * r * 0.08, y * 0.5 - sx * r * 0.08, x * 0.85, y * 0.85); c.stroke();
+      c.fillStyle = 'rgba(200,210,220,0.18)'; c.beginPath(); c.arc(x, y, r * 0.42, 0, TAU); c.fill();
+      c.strokeStyle = 'rgba(30,32,36,0.7)'; c.lineWidth = r * 0.05;
+      const a = ph * TAU * 3 + sx * sy;
+      c.beginPath(); c.moveTo(x + Math.cos(a) * r * 0.4, y + Math.sin(a) * r * 0.4); c.lineTo(x - Math.cos(a) * r * 0.4, y - Math.sin(a) * r * 0.4); c.stroke();
+      c.fillStyle = '#1a1c1e'; c.beginPath(); c.arc(x, y, r * 0.08, 0, TAU); c.fill();
+    }
+    c.fillStyle = g2(c, -r * 0.3, -r * 0.3, r * 0.3, r * 0.3, [[0, '#6a6e74'], [0.5, '#34383e'], [1, '#16181a']]);
+    c.beginPath(); c.roundRect(-r * 0.36, -r * 0.28, r * 0.72, r * 0.56, r * 0.12); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 0.4; c.stroke();
+    // a fleshy growth on its back, and the camera glaring forward
+    c.fillStyle = g2(c, -r * 0.2, -r * 0.1, r * 0.1, r * 0.2, [[0, '#9ad870'], [1, '#2a5a1a']]); c.beginPath(); c.ellipse(-r * 0.1, r * 0.02, r * 0.16, r * 0.12, 0.3, 0, TAU); c.fill();
+    c.fillStyle = '#0c0c0e'; c.beginPath(); c.arc(r * 0.3, 0, r * 0.12, 0, TAU); c.fill();
+    c.fillStyle = rg(c, r * 0.3, 0, r * 0.1, '#ffd0c0', '#e0302a'); c.beginPath(); c.arc(r * 0.3, 0, r * 0.075, 0, TAU); c.fill();
+    c.fillStyle = '#e8e4d8'; c.font = `800 ${r * 0.14}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('K-V', -r * 0.12, -r * 0.16);
+  }
+
   function paint(c, type, look, r, ph, seed) {
     switch (look.kind) {
+      case 'drone': return drawDrone(c, r, look, ph, seed);
       case 'scorpion': return drawScorpion(c, r, look, ph, seed);
       case 'person': return drawPerson(c, r, look, ph, seed);
       case 'skeleton': return drawSkeleton(c, r, look, ph, seed);

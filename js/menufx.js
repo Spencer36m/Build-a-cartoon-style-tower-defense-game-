@@ -196,6 +196,7 @@ const LevelFX = (() => {
     [[0, '#081424'], [0.55, '#1c3550'], [1, '#6d8aa0']],
     [[0, '#0c140e'], [0.5, '#24331f'], [1, '#5a6a3a']],
     [[0, '#3a1a2a'], [0.4, '#a0402a'], [0.72, '#f0904a'], [1, '#ffd890']],
+    [[0, '#06070e'], [0.5, '#1a1630'], [0.85, '#4a2a4a'], [1, '#7a3a3a']],
   ];
 
   function resize() {
@@ -208,7 +209,7 @@ const LevelFX = (() => {
   function build() {
     const rng = mulberry32(17 + world * 101);
     parts = [];
-    const n = world === 2 ? 120 : world === 3 ? 40 : world === 4 ? 60 : world === 1 ? 14 : 10;
+    const n = world === 2 ? 120 : world === 3 ? 40 : world === 4 ? 60 : world === 5 ? 140 : world === 1 ? 14 : 10;
     for (let i = 0; i < n; i++) parts.push({ x: rng() * w, y: rng() * h, s: 0.5 + rng(), ph: rng() * TAU });
     props = { rng: Array.from({ length: 80 }, () => rng()) };
   }
@@ -368,12 +369,56 @@ const LevelFX = (() => {
     for (const p of parts) { const x = (p.x + t * 90 * p.s) % (w + 40) - 20, y = h * 0.7 + p.y * 0.3 + Math.sin(t * 2 + p.ph) * 4; c.fillRect(x, y, 3 * p.s, 1); }
   }
 
+  function city() {
+    // a night skyline in layers, windows flickering, Kessler-Vane Tower glowing violet at its centre,
+    // searchlights sweeping, a helicopter crossing, fires on the horizon and rain
+    glowAt(w * 0.6, h * 0.9, Math.min(w, h) * 0.6, '200,80,60', 0.35);
+    const towers = (y0, hmin, hmax, col, seed, lit) => {
+      c.fillStyle = col;
+      for (let x = -10, i = 0; x < w + 20; i++) {
+        const bw = 26 + R(i + seed) * 50, bh = hmin + R(i * 3 + seed) * (hmax - hmin);
+        c.fillStyle = col; c.fillRect(x, y0 - bh, bw, bh);
+        if (R(i + seed * 2) < 0.3) c.fillRect(x + bw * 0.45, y0 - bh - 18, 2, 18);
+        if (lit) for (let wy = y0 - bh + 6; wy < y0 - 6; wy += 9) for (let wx = x + 4; wx < x + bw - 5; wx += 7) {
+          const k = R(Math.floor(wx * 0.37 + wy * 0.71) + seed);
+          if (k < lit) { c.fillStyle = `rgba(255,${200 + Math.floor(k * 300) % 40},120,${0.55 + Math.sin(t * 0.7 + wx + wy) * 0.1})`; c.fillRect(wx, wy, 3, 4); }
+        }
+        x += bw + 2;
+      }
+    };
+    towers(h * 0.86, h * 0.25, h * 0.55, '#141626', 11, 0);
+    // the tower
+    const tx = w * 0.62, tw = Math.max(40, w * 0.06);
+    c.fillStyle = '#0a0a14'; c.fillRect(tx - tw / 2, h * 0.12, tw, h * 0.8);
+    c.beginPath(); c.moveTo(tx - tw / 2, h * 0.12); c.lineTo(tx, h * 0.04); c.lineTo(tx + tw / 2, h * 0.12); c.fill();
+    c.fillStyle = `rgba(184,102,255,${0.5 + Math.sin(t * 2) * 0.15})`;
+    for (let y = h * 0.15; y < h * 0.8; y += 12) c.fillRect(tx - tw / 2 + 4, y, tw - 8, 2);
+    glowAt(tx, h * 0.06, 60, '184,102,255', 0.4 + Math.sin(t * 2) * 0.1);
+    towers(h * 0.94, h * 0.12, h * 0.36, '#0a0b14', 23, 0.12);
+    // searchlights
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 2; i++) {
+      const bx = w * (0.25 + i * 0.5), a = -Math.PI / 2 + Math.sin(t * 0.4 + i * 2) * 0.6, L = h * 1.1;
+      const g = c.createLinearGradient(bx, h, bx + Math.cos(a) * L, h + Math.sin(a) * L); g.addColorStop(0, 'rgba(220,230,255,0.16)'); g.addColorStop(1, 'rgba(220,230,255,0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(bx - 4, h); c.lineTo(bx + Math.cos(a - 0.05) * L, h + Math.sin(a - 0.05) * L); c.lineTo(bx + Math.cos(a + 0.05) * L, h + Math.sin(a + 0.05) * L); c.lineTo(bx + 4, h); c.fill();
+    }
+    c.restore();
+    // a helicopter crossing, its light blinking
+    const hx = ((t * 40) % (w + 200)) - 100, hy = h * 0.22 + Math.sin(t * 0.6) * 10;
+    c.fillStyle = '#05060a'; c.beginPath(); c.ellipse(hx, hy, 14, 5, 0, 0, TAU); c.fill(); c.fillRect(hx - 30, hy - 1.5, 18, 3);
+    c.fillRect(hx - 20, hy - 9, 40, 1.5);
+    if (Math.sin(t * 8) > 0) glowAt(hx + 12, hy + 3, 10, '255,80,60', 0.8);
+    // rain
+    c.strokeStyle = 'rgba(180,190,220,0.25)'; c.lineWidth = 1;
+    c.beginPath(); for (const p of parts) { const y = (p.y + t * 420 * p.s) % h, x = (p.x + t * 40) % w; c.moveTo(x, y); c.lineTo(x - 3, y + 12); } c.stroke();
+  }
+
   function draw() {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     const g = c.createLinearGradient(0, 0, 0, h);
     for (const [k, col] of SKIES[world] || SKIES[0]) g.addColorStop(k, col);
     c.fillStyle = g; c.fillRect(0, 0, w, h);
-    [farmland, cemetery, tundra, bayou, desert][world]();
+    [farmland, cemetery, tundra, bayou, desert, city][world]();
     // darken the middle so the mission map stays readable
     const v = c.createRadialGradient(w * 0.4, h * 0.55, h * 0.1, w * 0.4, h * 0.55, w * 0.7);
     v.addColorStop(0, 'rgba(6,8,10,0.45)'); v.addColorStop(1, 'rgba(6,8,10,0.2)');

@@ -3,7 +3,7 @@
 // Music: a main theme for the menus and a theme of its own for each world, every one with
 // its own instruments, tempo and feel. Farmland is a bluegrass hoedown, the cemetery a
 // skeleton waltz, the tundra an icy echo, the bayou a swamp-blues shuffle and the desert a
-// snaking oud tune over darbuka drums. Within a
+// snaking oud tune over darbuka drums, and the city a film-noir jazz walk. Within a
 // song the arrangement thins out or fills in with the action:
 // story < calm < tension < battle. A boss gets a theme of its own, fast and frightening.
 // Everything is made from oscillators, noise and plucked-string buffers (Karplus-Strong),
@@ -13,7 +13,7 @@ const MUSIC = (() => {
   const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
   const LEVEL = { story: 0, calm: 1, tension: 2, battle: 3, boss: 4, menu: 3 };
   const CHORDS = { m: [0, 3, 7], M: [0, 4, 7], m7: [0, 3, 7, 10], 7: [0, 4, 7, 10] };
-  const WORLD_SONGS = ['farm', 'grave', 'tundra', 'swamp', 'desert'];
+  const WORLD_SONGS = ['farm', 'grave', 'tundra', 'swamp', 'desert', 'city'];
 
   let ac = null, out = null, mixer = null, verb = null, noise = null, ch = {}, echo = null, waves = {}, plucks = {}, held = [];
 
@@ -527,8 +527,53 @@ const MUSIC = (() => {
         if (lvl === 1 && s === 0) wood(t, 0.06, 2200);
       },
     },
+    // The city: film-noir jazz. A walking bass, piano comping on the off-beats, a muted trumpet
+    // with the melody and brushes on the snare, swinging harder when the shooting starts.
+    city: {
+      key: 46, bpm: 126, beats: 4, spb: 2, swing: 0.3, echo: 0.75, gain: 0.78,
+      prog: [[0, 'm7'], [5, 'm7'], [0, 'm7'], [0, 'm7'], [5, 'm7'], [5, 'm7'], [8, '7'], [7, '7']],
+      tune: [
+        [[0, 7, 3], [3, 10, 1], [4, 12, 2], [6, 10, 2]],
+        [[0, 8, 4], [4, 7, 2], [6, 5, 2]],
+        [[0, 3, 2], [2, 5, 1], [3, 6, 1], [4, 7, 4]],
+        [[0, 0, 6], [6, 3, 2]],
+        [[0, 10, 3], [3, 12, 1], [4, 15, 2], [6, 12, 2]],
+        [[0, 13, 4], [4, 12, 2], [6, 10, 2]],
+        [[0, 8, 2], [2, 7, 2], [4, 6, 2], [6, 5, 2]],
+        [[0, 7, 6], [6, 2, 2]],
+      ],
+      walk: [0, 3, 7, 10],
+      play(x, S) {
+        const { t, dur, s, b, lvl, root, chord, key, boss, per } = x, R = key + root;
+        const beat = s % 2 === 0;
+        // the walking bass: a note on every beat climbing the chord, an approach note into the next bar
+        if (beat && (lvl >= 1 || s === 0 || s === 4)) {
+          const nb = S.prog[(b + 1) % 8][0], m = s === 6 ? key + nb - 1 : R + S.walk[s / 2];
+          pluck(ch.bass, 'bass', m - 12, t, lvl ? 0.55 : 0.4, { len: dur * 2.2 });
+        }
+        if (boss && beat) note(ch.bass, R - 12, t, dur * 1.6, 0.06, { wave: 'sawtooth', cut: 500, q: 3 });
+        // piano: Charleston stabs in a fight, a soft held chord when it is quiet
+        const voicing = chord.map((iv) => R + 12 + iv);
+        if (lvl >= 2 && (s === 3 || (s === 6 && b % 2))) strum(ch.comp, 'harpsi', voicing, t, lvl >= 3 ? 0.12 : 0.08, { len: dur * 1.5 }, 0.006);
+        if (lvl <= 1 && s === 0) for (const m of voicing) note(ch.comp, m, t, dur * per * 0.9, 0.014, { wave: wave('organ'), at: 0.2, rel: 0.4, cut: 1600, verb: 0.35, held: true });
+        // the muted trumpet carries the tune; when it is tense it falls silent and the bass prowls
+        const n = tuneAt(S, b, s);
+        if (n && lvl !== 2) {
+          const m = key + 12 + n[0], len = n[1] * dur;
+          note(ch.lead, m, t, len * 0.9, lvl >= 3 ? 0.06 : 0.045, { wave: wave('horn'), bp: hz(m) * 2.4, q: 1.6, at: 0.03, rel: 0.12, vib: 0.008, vibRate: 5.5, vibAt: 0.25, glide: n[1] >= 3 ? m - 1 : null, glideT: 0.07, verb: 0.35, echo: 0.15 });
+          if (boss) note(ch.lead, m + 7, t, len * 0.85, 0.03, { wave: wave('horn'), bp: hz(m + 7) * 2, q: 1.2, at: 0.02, rel: 0.1 });
+        }
+        // drums: the ride's spang-a-lang, brushes or a snare on two and four, a kick in a fight
+        if (lvl >= 1 && (beat || s === 3 || s === 7)) noiseHit(ch.hat, t, beat ? 0.32 : 0.14, beat ? 0.045 : 0.03, 'bandpass', 6800, { q: 0.8, verb: 0.2 });
+        if (lvl >= 1 && lvl < 3 && (s === 2 || s === 6)) brush(t, 0.05);
+        if (lvl >= 3 && (s === 2 || s === 6)) snare(t, 0.09, { len: 0.12 });
+        if (lvl >= 3 && (s === 0 || (s === 5 && b % 2))) kick(t, 0.26, 90, 40, 0.24);
+        if (lvl >= 2 && !beat && Math.sin(b * 7 + s) > 0.6) snare(t, 0.035, { len: 0.06 });
+        if (lvl >= 3 && b === 7 && s >= 4) tom(t, 45 - (s - 4) * 2, 0.16, 0.2);
+      },
+    },
     boss: {
-      keys: [45, 50, 52, 43, 50], key: 45, bpm: 152, beats: 4, spb: 4, swing: 0, echo: 0.5, gain: 1.35,
+      keys: [45, 50, 52, 43, 50, 46], key: 45, bpm: 152, beats: 4, spb: 4, swing: 0, echo: 0.5, gain: 1.35,
       prog: [[0, 'm'], [0, 'm'], [1, 'M'], [0, 'm'], [8, 'M'], [6, 'M'], [7, 'M'], [7, '7']],
       tune: [
         [[0, 0, 3], [3, 1, 1], [4, 0, 2], [6, 3, 2], [8, 7, 4], [12, 6, 4]],

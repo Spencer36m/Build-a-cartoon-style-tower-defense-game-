@@ -290,11 +290,69 @@ return {
       { panels: [{ at: FULL, art: 'titleCard', o: { title: 'HOLD THE LINE', sub: 'TO BE CONTINUED', spot: 'green' }, fx: 'flash', snd: 'impact', cam: [1.06, 1] }] },
     ],
   },
+  // ---------------------------------------------------------------- the city
+  'w5-intro': {
+    title: 'Skyline', kicker: 'Chapter 5', world: 5,
+    pages: [
+      { panels: [{ at: FULL, art: 'chapter', o: { world: 5, kicker: 'CHAPTER 5', title: 'SKYLINE', place: 'THE FALLEN CITY', spot: 'purple' }, cam: [1.08, 1] }] },
+      { music: 'tension', panels: [
+        { at: R(14, 14, 986, 300), art: 'burningCity', cam: [1.1, 1, -0.03, 0],
+          text: [{ k: 'loc', x: 30, y: 30, w: 330, t: 'The city. Kessler-Vane Tower still has its lights on.' }, { k: 'cap', x: 640, y: 236, w: 320, t: 'The seeds were falling on every city on Earth.' }] },
+        { at: [[14, 312], [500, 312], [480, 548], [14, 548]], art: 'portrait', o: { who: 'okafor', mood: 'grim', glasses: '#52e07c', bg: 'lab', x: 0.7 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Okafor', x: 30, y: 330, w: 200, t: 'Vane is calling them home. All of them, to his tower.', tail: [300, 420] }] },
+        { at: [[512, 312], [986, 312], [986, 548], [492, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'fire', x: 0.32, y: 0.52 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Laila', x: 760, y: 340, w: 200, t: 'Then we go knock on his door.', tail: [700, 430] }] },
+      ] },
+      { panels: [
+        { at: [[14, 14], [480, 14], [460, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.45 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Voss', x: 260, y: 40, w: 170, t: 'Every block between us and that tower is his.', tail: [230, 170] }] },
+        { at: [[492, 14], [986, 14], [986, 548], [472, 548]], art: 'vaneClose', o: { spot: 'red' }, cam: [1.12, 1],
+          text: [{ k: 'radio', who: 'Silas Vane', x: 510, y: 452, w: 190, t: "Come on up, Commander. I'll leave the lights on.", tail: [760, 380] }] },
+      ] },
+    ],
+  },
+  'w5-mid': {
+    title: 'Street by Street', kicker: 'Chapter 5', world: 5,
+    pages: [{ music: 'tension', panels: [
+      { at: R(14, 14, 986, 320), art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.05],
+        text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 340, t: 'Office workers, riot cops, his drones. The whole city came out for us.', tail: [14, 120] }, { k: 'radio', who: 'Silas Vane', x: 600, y: 200, w: 300, t: 'Every employee answers to me. Even now.', tail: [986, 280] }] },
+      { at: R(14, 332, 500, 548), art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'fire', x: 0.32, turn: 0.25 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Moreno', x: 250, y: 350, w: 190, t: 'And this is why I never took an office job.', tail: [220, 430] }] },
+      { at: R(512, 332, 986, 548), art: 'portrait', o: { who: 'okafor', mood: 'grim', bg: 'lab', glasses: '#52e07c', x: 0.7 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Okafor', x: 540, y: 350, w: 190, t: 'The signal is coming from inside him. He took a seed himself.', tail: [790, 430] }] },
+    ] }],
+  },
+  'w5-outro': {
+    title: 'The Chairman', kicker: 'Chapter 5', world: 5,
+    pages: [
+      { music: 'boss', panels: [
+        { at: R(14, 14, 986, 330), art: 'chairmanRise', fx: 'shake', snd: 'roar', cam: [1.1, 1, 0, 0.03],
+          text: [{ k: 'radio', who: 'Voss', x: 640, y: 250, w: 300, t: 'That... is Vane?', tail: [986, 300] }] },
+        { at: [[14, 342], [520, 342], [500, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', hat: true, bg: 'lines', x: 0.4, y: 0.52, zoom: 1.15 }, cam: [1.12, 1],
+          text: [{ k: 'say', who: 'Laila', x: 330, y: 360, w: 160, t: 'He still has a heart. Aim for it.', tail: [260, 450] }] },
+        { at: [[532, 342], [986, 342], [986, 548], [512, 548]], art: 'explosion', o: { spot: 'purple' }, fx: 'flash', snd: 'boom', cam: [1.15, 1.02],
+          text: [{ k: 'sfx', x: 570, y: 380, t: 'KRA-THOOOM!', size: 54, rot: -0.08, col: 'paper', grow: 1 }] },
+      ] },
+      { panels: [
+        { at: R(14, 14, 500, 548), art: 'injection', snd: 'pulse', cam: [1.1, 1],
+          text: [{ k: 'cap', x: 30, y: 30, w: 260, t: 'Okafor gave the last of the cure to the man who made the plague.' }] },
+        { at: R(512, 14, 986, 548), art: 'sunrise', cam: [1, 1.08, 0, -0.02],
+          text: [{ k: 'cap', x: 528, y: 30, w: 300, t: 'At dawn the tower went dark, and the city lay down to sleep.' }] },
+      ] },
+      { panels: [
+        { at: [[14, 14], [480, 14], [460, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.45 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Voss', x: 260, y: 40, w: 170, t: 'Commander. Now it really is over.', tail: [230, 170] }] },
+        { at: [[492, 14], [986, 14], [986, 548], [472, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'tone', glow: 'amber', x: 0.5, y: 0.52 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Laila', x: 520, y: 420, w: 200, t: "Let's go home. Whatever's left of it.", tail: [700, 360] }] },
+      ] },
+      { panels: [{ at: FULL, art: 'titleCard', o: { title: 'HOLD THE LINE', sub: 'THE END', spot: 'amber' }, fx: 'flash', snd: 'impact', cam: [1.06, 1] }] },
+    ],
+  },
   // ---------------------------------------------------------------- the desert expansion
   'w4-intro': {
-    title: 'Phase Two', kicker: 'Chapter 5', world: 4,
+    title: 'Phase Two', kicker: 'Side story', world: 4,
     pages: [
-      { panels: [{ at: FULL, art: 'chapter', o: { world: 4, kicker: 'CHAPTER 5', title: 'PHASE TWO', place: 'RED MESA WASTELAND', spot: 'orange' }, cam: [1.08, 1] }] },
+      { panels: [{ at: FULL, art: 'chapter', o: { world: 4, kicker: 'SIDE STORY', title: 'PHASE TWO', place: 'RED MESA WASTELAND', spot: 'orange' }, cam: [1.08, 1] }] },
       { music: 'tension', panels: [
         { at: R(14, 14, 986, 300), art: 'desertBase', cam: [1.1, 1, -0.03, 0],
           text: [{ k: 'loc', x: 30, y: 30, w: 330, t: 'Red Mesa, New Mexico. Three weeks after the bayou.' }, { k: 'cap', x: 30, y: 236, w: 300, t: 'One of the seeds came down on an old airbase.' }] },
@@ -312,7 +370,7 @@ return {
     ],
   },
   'w4-mid': {
-    title: 'Site Zero', kicker: 'Chapter 5', world: 4,
+    title: 'Site Zero', kicker: 'Side story', world: 4,
     pages: [{ music: 'tension', panels: [
       { at: R(14, 14, 986, 320), art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.05],
         text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 340, t: 'They are crawling up out of the sand, Commander. Thousands.', tail: [14, 120] }, { k: 'radio', who: 'Silas Vane', x: 600, y: 200, w: 300, t: 'My little garden is blooming.', tail: [986, 280] }] },
@@ -323,7 +381,7 @@ return {
     ] }],
   },
   'w4-outro': {
-    title: 'Sandstorm', kicker: 'Chapter 5', world: 4,
+    title: 'Sandstorm', kicker: 'Side story', world: 4,
     pages: [
       { music: 'boss', panels: [
         { at: R(14, 14, 986, 330), art: 'colossusRise', fx: 'shake', snd: 'roar', cam: [1.1, 1, 0, 0.03],
@@ -350,7 +408,7 @@ return {
   },
 };
 })();
-const STORY_ORDER = ['prologue', 'w0-intro', 'w0-mid', 'w0-outro', 'w1-intro', 'w1-mid', 'w1-outro', 'w2-intro', 'w2-mid', 'w2-outro', 'w3-intro', 'w3-mid', 'w3-outro', 'w4-intro', 'w4-mid', 'w4-outro'];
+const STORY_ORDER = ['prologue', 'w0-intro', 'w0-mid', 'w0-outro', 'w1-intro', 'w1-mid', 'w1-outro', 'w2-intro', 'w2-mid', 'w2-outro', 'w3-intro', 'w3-mid', 'w3-outro', 'w5-intro', 'w5-mid', 'w5-outro', 'w4-intro', 'w4-mid', 'w4-outro'];
 
 // ---------- the player ----------
 const Story = (() => {
@@ -780,7 +838,7 @@ const Story = (() => {
     if (!ch) { if (done) done(); return; }
     cv = cv || $('#story-cv'); ctx = cv.getContext('2d');
     const pages = ch.pages.map((pg) => ({ ...pg, art: null, panels: pg.panels.map((p) => { const q = { ...p }; q.text = (p.text || []).map((t) => ({ ...t, _p: q })); return q; }) }));
-    st = { id, ch, done, pages, pi: 0, bi: 0, turn: null, ending: 0, shake: { x: 0, y: 0 }, shakeUntil: 0, flashUntil: 0, lastType: 0, spot: ['amber', 'purple', 'ice', 'green', 'orange'][ch.world] || 'red' };
+    st = { id, ch, done, pages, pi: 0, bi: 0, turn: null, ending: 0, shake: { x: 0, y: 0 }, shakeUntil: 0, flashUntil: 0, lastType: 0, spot: ['amber', 'purple', 'ice', 'green', 'orange', 'purple'][ch.world] || 'red' };
     if (id === 'prologue') st.spot = 'green';
     $('#story-screen').hidden = false;
     $('#story-tag').innerHTML = `<b>${ch.kicker}</b> ${ch.title}`;

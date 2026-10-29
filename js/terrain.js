@@ -10,6 +10,7 @@ const TERRAIN = (() => {
     graveyard: { lo: '#1b241a', mid: '#2b3626', hi: '#414c36', patchA: '#4a4130', patchB: '#232c20', dirt: '#3a3024', tuft: ['#1f2a1b', '#3a4630', '#55603e'] },
     tundra: { lo: '#c4d0dd', mid: '#d5dfe8', hi: '#f4f7fa', patchA: '#9fb3c4', patchB: '#e9eef3', dirt: '#8a8f94', tuft: ['#8a8466', '#a89e78', '#6f6a54'] },
     swamp: { lo: '#262e16', mid: '#424e27', hi: '#5d6833', patchA: '#352f1c', patchB: '#56702a', dirt: '#3d3420', tuft: ['#34401e', '#56662c', '#748238'] },
+    city: { lo: '#5c5c58', mid: '#6e6d68', hi: '#82817a', patchA: '#6e6656', patchB: '#5a5a58', dirt: '#55524c', tuft: ['#4a5a30', '#62743a', '#3e4a28'] },
     desert: { lo: '#b07c46', mid: '#cd9e62', hi: '#ecca8a', patchA: '#c06e40', patchB: '#e8d4a4', dirt: '#9a7246', tuft: ['#7a6634', '#a48c4a', '#6a5226'] },
   };
   const pal = (world) => PAL[world.id] || PAL.farmland;
@@ -53,6 +54,7 @@ const TERRAIN = (() => {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       let v = 0.5 + (fbm(n1, x / 35, y / 35, 4) - 0.5) * 0.7;
       if (snow) v += Math.sin((x * 0.82 + y * 0.42) / 2.75 + fbm(n3, x / 20, y / 20, 2) * 9) * 0.012;
+      else if (world.id === 'city') v = 0.5 + (v - 0.5) * 0.35 + (fbm(n3, x / 3, y / 3, 2) - 0.5) * 0.04;
       else if (sand) {
         // long dunes, with wind ripples running across them
         v += Math.sin((x * 0.55 + y * 0.32) / 26 + fbm(n3, x / 60, y / 60, 2) * 5) * 0.09;
@@ -89,6 +91,34 @@ const TERRAIN = (() => {
     const world = M.world, P = pal(world), rng = mulberry32(M.L.look.seed + 41);
     const paths = P.tuft.map(() => new Path2D());
     c.lineCap = 'round';
+    if (world.id === 'city') {
+      // pavement: concrete slabs in a grid, cracked and stained, weeds in the joints, manholes,
+      // storm drains, litter and the odd painted parking bay
+      const S = TILE / 2, joints = new Path2D(), cracks = new Path2D(), weeds = new Path2D();
+      for (let x = 0; x <= W; x += S) { joints.moveTo(x, 0); joints.lineTo(x, H); }
+      for (let y = 0; y <= H; y += S) { joints.moveTo(0, y); joints.lineTo(W, y); }
+      c.strokeStyle = 'rgba(30,30,28,0.35)'; c.lineWidth = 0.7; c.stroke(joints);
+      c.save(); c.translate(0.7, 0.7); c.strokeStyle = 'rgba(255,255,250,0.1)'; c.lineWidth = 0.5; c.stroke(joints); c.restore();
+      for (let i = 0; i < 70; i++) {
+        let x = rng() * W, y = rng() * H, a = rng() * TAU; if (!free(M, x, y)) continue;
+        cracks.moveTo(x, y); for (let k = 0; k < 4; k++) { a += (rng() - 0.5) * 1.4; x += Math.cos(a) * 4; y += Math.sin(a) * 4; cracks.lineTo(x, y); }
+      }
+      c.strokeStyle = 'rgba(20,20,18,0.5)'; c.lineWidth = 0.5; c.stroke(cracks);
+      for (let i = 0; i < 160; i++) {
+        const x = Math.round(rng() * W / S) * S + (rng() - 0.5) * S, y = Math.round(rng() * H / S) * S; if (!free(M, x, y)) continue;
+        for (let k = 0; k < 4; k++) { const a = -Math.PI / 2 + (rng() - 0.5) * 2, l = 1.4 + rng() * 2.6; weeds.moveTo(x, y); weeds.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); }
+      }
+      c.strokeStyle = '#5a7032'; c.lineWidth = 0.6; c.stroke(weeds);
+      for (let i = 0; i < 14; i++) { const x = rng() * W, y = rng() * H; if (!free(M, x, y)) continue; ellipse(c, x, y, 4 + rng() * 9, 2.5 + rng() * 5, rng() * 3); c.fillStyle = 'rgba(20,18,16,0.22)'; c.fill(); }
+      for (let i = 0; i < 70; i++) { const x = rng() * W, y = rng() * H; if (!free(M, x, y)) continue; c.save(); c.translate(x, y); c.rotate(rng() * 3); c.fillStyle = ['#e8e4d8', '#c8c0a8', '#d84a3a', '#4a7ab8'][Math.floor(rng() * 4)]; c.fillRect(-1, -0.7, 2, 1.4); c.restore(); }
+      for (let i = 0; i < 5; i++) {
+        const x = rng() * W, y = rng() * H; if (!free(M, x, y)) continue;
+        circle(c, x + 0.4, y + 0.6, 3.4); c.fillStyle = 'rgba(0,0,0,0.4)'; c.fill();
+        circle(c, x, y, 3.2); c.fillStyle = radial(c, x - 1, y - 1, 4, '#5a5a56', '#2a2a28', 0, 0); c.fill();
+        c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 0.3; for (let k = -2; k <= 2; k += 1) { c.beginPath(); c.moveTo(x - 2.4, y + k); c.lineTo(x + 2.4, y + k); c.stroke(); }
+      }
+      return;
+    }
     if (world.id === 'desert') {
       // a dry land: sparse wiry grass, pebbles, sun-cracked clay pans and the odd bleached bone
       const tufts = P.tuft.map(() => new Path2D());
@@ -210,15 +240,15 @@ const TERRAIN = (() => {
       const q = pointOn(p, d), nx = -q.dy, ny = q.dx;
       for (const sd of [-1, 1]) { const off = sd * (pw / 2 - 1 + (rng() - 0.4) * 3), x = q.x + nx * off, y = q.y + ny * off, r = 1.5 + rng() * 2.6; rag.moveTo(x + r, y); rag.arc(x, y, r, 0, TAU); }
     }
-    mg.fill(rag);
+    if (id !== 'city') mg.fill(rag);
     // grass biting into the edges
-    mg.globalCompositeOperation = 'destination-out';
+    mg.globalCompositeOperation = id === 'city' ? 'source-over' : 'destination-out';
     const bite = new Path2D();
     for (const p of M.paths) for (let d = 0; d < p.total; d += 9) {
       const q = pointOn(p, d), nx = -q.dy, ny = q.dx;
       if (rng() < 0.5) { const sd = rng() < 0.5 ? -1 : 1, off = sd * (pw / 2 + 1), x = q.x + nx * off, y = q.y + ny * off, r = 1.5 + rng() * 2.5; bite.moveTo(x + r, y); bite.arc(x, y, r, 0, TAU); }
     }
-    mg.fill(bite);
+    if (id !== 'city') mg.fill(bite);
     mg.globalCompositeOperation = 'source-over';
     // 2. the worn verge round it and its soft shadow on the ground
     c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
@@ -226,8 +256,14 @@ const TERRAIN = (() => {
       for (const [wd, col] of [[20, 'rgba(110,135,165,0.1)'], [14, 'rgba(120,145,175,0.14)']]) { c.save(); c.translate(1.5, 2.5); c.strokeStyle = col; c.lineWidth = pw + wd; for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); } c.restore(); }
       for (const [wd, col] of [[16, 'rgba(250,252,255,0.22)'], [11, 'rgba(250,252,255,0.4)']]) { c.strokeStyle = col; c.lineWidth = pw + wd; for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); } }
     }
+    if (id === 'city') {
+      // the curb: a raised concrete edge with a dark gutter along it
+      c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = pw + 9; c.save(); c.translate(0.8, 1.4); for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); } c.restore();
+      c.strokeStyle = '#a6a49c'; c.lineWidth = pw + 7; for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); }
+      c.strokeStyle = '#c8c6be'; c.lineWidth = pw + 4; for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); }
+    }
     const vc = id === 'tundra' ? [150, 165, 180] : hexRgb(P.dirt);
-    for (const [wd, a] of id === 'tundra' ? [] : [[18, 0.12], [13, 0.16], [8, 0.2]]) {
+    for (const [wd, a] of id === 'tundra' || id === 'city' ? [] : [[18, 0.12], [13, 0.16], [8, 0.2]]) {
       c.strokeStyle = `rgba(${vc[0]},${vc[1]},${vc[2]},${id === 'tundra' ? a * 0.8 : a})`; c.lineWidth = pw + wd;
       for (const p of M.paths) { tracePts(c, p.pts); c.stroke(); }
     }
@@ -235,12 +271,12 @@ const TERRAIN = (() => {
 
     // 3. the surface
     const surf = layer(c), sg = surf.g;
-    const base = id === 'graveyard' ? '#77736b' : id === 'tundra' ? '#c9d2da' : id === 'swamp' ? '#4e3f2a' : id === 'desert' ? '#a88a62' : '#7e6446';
+    const base = id === 'graveyard' ? '#77736b' : id === 'tundra' ? '#c9d2da' : id === 'swamp' ? '#4e3f2a' : id === 'desert' ? '#a88a62' : id === 'city' ? '#3e4044' : '#7e6446';
     sg.fillStyle = base; sg.fillRect(0, 0, W, H);
     const pat = sg.createPattern(roadNoise(world), 'repeat'); pat.setTransform(new DOMMatrix().scale(0.6)); sg.fillStyle = pat; sg.fillRect(0, 0, W, H);
 
     stones(sg, id);
-    ruts(sg, M, pw, rng, id);
+    if (id === 'city') lanes(sg, M, pw, rng); else ruts(sg, M, pw, rng, id);
     // inner edge shade so the surface sits down into the ground
     sg.save(); sg.lineJoin = 'round'; sg.lineCap = 'round';
     for (const p of M.paths) for (const sd of [-1, 1]) {
@@ -289,10 +325,10 @@ const TERRAIN = (() => {
         });
       }
     } else {
-      const cols = id === 'tundra' ? ['#9aa6b2', '#e8eef3', '#7e8a96'] : id === 'swamp' ? ['#2e2618', '#6a5a3e', '#3e3422'] : id === 'desert' ? ['#8a6a44', '#c8a878', '#a07a50', '#dcc08e'] : ['#5a4530', '#a88c66', '#6e5640', '#c2a884'];
-      const n = id === 'tundra' ? 260 : 620;
+      const cols = id === 'tundra' ? ['#9aa6b2', '#e8eef3', '#7e8a96'] : id === 'swamp' ? ['#2e2618', '#6a5a3e', '#3e3422'] : id === 'desert' ? ['#8a6a44', '#c8a878', '#a07a50', '#dcc08e'] : id === 'city' ? ['#2a2c30', '#56585c', '#46484c', '#6a6a6a'] : ['#5a4530', '#a88c66', '#6e5640', '#c2a884'];
+      const n = id === 'tundra' ? 260 : id === 'city' ? 900 : 620;
       for (let i = 0; i < n; i++) {
-        const x = rng() * TS, y = rng() * TS, r = 0.5 + rng() * rng() * (id === 'tundra' ? 1.2 : 2.2), a = rng() * 3, col = cols[Math.floor(rng() * cols.length)];
+        const x = rng() * TS, y = rng() * TS, r = 0.5 + rng() * rng() * (id === 'tundra' ? 1.2 : id === 'city' ? 0.7 : 2.2), a = rng() * 3, col = cols[Math.floor(rng() * cols.length)];
         wrap(x, y, 4, (px, py) => {
           ellipse(g, px + 0.4, py + 0.6, r, r * 0.7, a); g.fillStyle = 'rgba(0,0,0,0.3)'; g.fill();
           ellipse(g, px, py, r, r * 0.7, a); g.fillStyle = col; g.fill();
@@ -342,8 +378,30 @@ const TERRAIN = (() => {
     }
     g.restore();
   }
+  // city streets: a dashed yellow centre line, white edge lines, patched asphalt, potholes,
+  // skid marks and zebra crossings at the corners
+  function lanes(g, M, pw, rng) {
+    g.save(); g.lineJoin = 'round'; g.lineCap = 'butt';
+    for (const p of M.paths) {
+      for (let i = 0; i < Math.floor(p.total / 50); i++) { const q = pointOn(p, rng() * p.total), a = Math.atan2(q.dy, q.dx); g.save(); g.translate(q.x + (rng() - 0.5) * 10, q.y + (rng() - 0.5) * 10); g.rotate(a); g.fillStyle = rng() < 0.5 ? 'rgba(20,22,26,0.5)' : 'rgba(90,92,96,0.45)'; g.fillRect(-6 - rng() * 6, -3 - rng() * 3, 12 + rng() * 8, 6 + rng() * 4); g.restore(); }
+      for (const sd of [-1, 1]) { smooth(g, offsetPolyline(p.pts, sd * pw * 0.4), 14); g.strokeStyle = 'rgba(232,230,220,0.75)'; g.lineWidth = 0.9; g.stroke(); }
+      smooth(g, p.pts, 16); g.setLineDash([7, 6]); g.strokeStyle = 'rgba(232,190,60,0.85)'; g.lineWidth = 1.1; g.stroke(); g.setLineDash([]);
+      for (let i = 0; i < Math.floor(p.total / 140); i++) { const q = pointOn(p, rng() * p.total); circle(g, q.x + (rng() - 0.5) * 14, q.y + (rng() - 0.5) * 14, 1.5 + rng() * 2); g.fillStyle = 'rgba(12,12,14,0.8)'; g.fill(); }
+      g.strokeStyle = 'rgba(10,10,12,0.35)'; g.lineWidth = 1.4;
+      for (let i = 0; i < Math.floor(p.total / 180); i++) { const d0 = rng() * p.total; for (const off of [-3.5, 3.5]) { g.beginPath(); for (let d = d0; d < Math.min(p.total, d0 + 40); d += 4) { const q = pointOn(p, d); g.lineTo(q.x - q.dy * off, q.y + q.dx * off); } g.stroke(); } }
+      // zebra crossings just before each bend
+      for (let i = 1; i < p.pts.length - 1; i += 2) {
+        const a = p.pts[i - 1], b = p.pts[i], ang = Math.atan2(b.y - a.y, b.x - a.x), L2 = Math.hypot(b.x - a.x, b.y - a.y);
+        if (L2 < TILE * 2) continue;
+        g.save(); g.translate(b.x - Math.cos(ang) * TILE * 0.9, b.y - Math.sin(ang) * TILE * 0.9); g.rotate(ang);
+        g.fillStyle = 'rgba(236,234,226,0.8)'; for (let k = -pw / 2 + 2; k < pw / 2 - 2; k += 4) g.fillRect(-4, k, 8, 2.2);
+        g.restore();
+      }
+    }
+    g.restore();
+  }
   function edgeTufts(c, M, pw, rng, world) {
-    if (world.id === 'tundra') return;
+    if (world.id === 'tundra' || world.id === 'city') return;
     const P = pal(world), ps = P.tuft.map(() => new Path2D());
     for (const p of M.paths) for (let d = 0; d < p.total; d += 2.2) {
       if (rng() < 0.35) continue;
@@ -392,9 +450,9 @@ const TERRAIN = (() => {
         }
       }
     };
-    const deep = id === 'tundra' ? '#5f7f99' : id === 'swamp' ? '#1f2a16' : id === 'graveyard' ? '#141c1c' : id === 'desert' ? '#14555a' : '#1d3f4e';
-    const shallow = id === 'tundra' ? '#b9d2e2' : id === 'swamp' ? '#4a5a2a' : id === 'graveyard' ? '#2f3d3a' : id === 'desert' ? '#4ab0a4' : '#4f8290';
-    const bank = id === 'tundra' ? 'rgba(150,170,190,0.55)' : id === 'swamp' ? 'rgba(30,26,12,0.7)' : id === 'desert' ? 'rgba(70,90,40,0.6)' : 'rgba(60,46,28,0.65)';
+    const deep = id === 'tundra' ? '#5f7f99' : id === 'swamp' ? '#1f2a16' : id === 'graveyard' ? '#141c1c' : id === 'desert' ? '#14555a' : id === 'city' ? '#16262e' : '#1d3f4e';
+    const shallow = id === 'tundra' ? '#b9d2e2' : id === 'swamp' ? '#4a5a2a' : id === 'graveyard' ? '#2f3d3a' : id === 'desert' ? '#4ab0a4' : id === 'city' ? '#34525e' : '#4f8290';
+    const bank = id === 'tundra' ? 'rgba(150,170,190,0.55)' : id === 'swamp' ? 'rgba(30,26,12,0.7)' : id === 'desert' ? 'rgba(70,90,40,0.6)' : id === 'city' ? 'rgba(180,178,170,0.95)' : 'rgba(60,46,28,0.65)';
     // wet, darkened bank
     c.save(); c.shadowColor = bank; c.shadowBlur = 5 * k; blob(c, TILE * 0.8); c.fillStyle = bank; c.fill(); c.restore();
     // water: shallow at the edge, deepening to the middle
@@ -468,6 +526,15 @@ const TERRAIN = (() => {
       softShadow(c, () => { c.beginPath(); c.rect(-len / 2, -wid / 2, len, wid); }, 4, 7, 5, 'rgba(0,0,0,0.5)');
       // piles under the deck
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) { circle(c, sx * len * 0.38, sy * (wid / 2 + 1), 2.4); c.fillStyle = '#3a2a1a'; c.fill(); }
+      if (M.world.id === 'city') {
+        // a concrete span with an asphalt deck and steel railings
+        c.fillStyle = '#9a9890'; c.fillRect(-len / 2, -wid / 2 - 2, len, wid + 4);
+        c.fillStyle = '#3e4044'; c.fillRect(-len / 2, -wid / 2 + 1, len, wid - 2);
+        c.setLineDash([7, 6]); c.strokeStyle = 'rgba(232,190,60,0.85)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-len / 2, 0); c.lineTo(len / 2, 0); c.stroke(); c.setLineDash([]);
+        for (const sd of [-1, 1]) { c.fillStyle = '#5a5e64'; c.fillRect(-len / 2, sd * (wid / 2 + 1) - 0.8, len, 1.6); for (let i = -len / 2 + 2; i < len / 2; i += 6) { c.fillStyle = '#3a3e44'; c.fillRect(i, sd * (wid / 2 + 1) - 1.2, 1, 2.4); } }
+        c.restore();
+        continue;
+      }
       // planks across the span, each its own shade, with gaps and nails
       for (let i = -len / 2; i < len / 2; i += 4.6) {
         const pc = jit(M.world.id === 'tundra' ? '#6e5a44' : '#7a5c3c', rng, 0.16), wob = (rng() - 0.5) * 1.2;
@@ -562,8 +629,8 @@ const TERRAIN = (() => {
     if (mossy || (!snow && rng() < 0.6)) { c.fillStyle = 'rgba(110,130,60,0.6)'; for (let i = 0; i < 8; i++) { const p = pts[Math.floor(rng() * n)]; circle(c, p[0] * (0.5 + rng() * 0.4), p[1] * (0.5 + rng() * 0.4), 0.8 + rng() * 1.4); c.fill(); } }
     if (snow) { c.fillStyle = 'rgba(248,251,255,0.95)'; polyPath(c, [top, pts[Math.floor(n * 0.55)], pts[Math.floor(n * 0.7)], pts[Math.floor(n * 0.85)]]); c.fill(); c.fillStyle = 'rgba(200,215,230,0.6)'; ellipse(c, top[0] + 2, top[1] + 2, 3, 1.5); c.fill(); }
   }
-  function car(c, rng, rusted) {
-    const kinds = rusted ? [['#7a4a2a', 'pickup'], ['#8a5a36', 'sedan'], ['#6a3e24', 'sedan'], ['#9a6a40', 'pickup']]
+  function car(c, rng, rusted, taxi) {
+    const kinds = taxi ? [['#e8b820', 'sedan']] : rusted ? [['#7a4a2a', 'pickup'], ['#8a5a36', 'sedan'], ['#6a3e24', 'sedan'], ['#9a6a40', 'pickup']]
       : [['#6d2a24', 'sedan'], ['#3f4f5f', 'sedan'], ['#7d7462', 'pickup'], ['#2f3a2a', 'pickup'], ['#8a8a86', 'sedan'], ['#c8b070', 'sedan']];
     const [col, kind] = kinds[Math.floor(rng() * kinds.length)];
     const L2 = 20, W2 = 9;
@@ -603,6 +670,71 @@ const TERRAIN = (() => {
       c.fillStyle = linear(c, 0, W2 - 4, 0, W2 + 5, [[0, 'rgba(220,180,120,0)'], [1, 'rgba(220,180,120,0.95)']]); ellipse(c, (rng() - 0.5) * 8, W2 + 1.5, L2 * 0.9, 4.5); c.fill();
     }
   }
+  // ---------- city props ----------
+  // a city bus slewed across the pavement, windows smashed, its roof vents and route number showing
+  function bus(c, rng) {
+    const L2 = 30, W2 = 9.5;
+    softShadow(c, () => { c.beginPath(); c.roundRect(-L2, -W2, L2 * 2, W2 * 2, 3); }, 3, 5, 4, 'rgba(0,0,0,0.6)');
+    for (const wx of [L2 - 8, -L2 + 9]) for (const sd of [-1, 1]) { c.fillStyle = '#141414'; c.fillRect(wx - 3.5, sd * W2 - 1.3, 7, 2.6); }
+    c.beginPath(); c.roundRect(-L2, -W2, L2 * 2, W2 * 2, 3);
+    const col = ['#2a6a9a', '#c8a020', '#3a8a5a', '#c84030'][Math.floor(rng() * 4)];
+    c.fillStyle = linear(c, 0, -W2, 0, W2, [[0, shade(col, 0.3)], [0.5, col], [1, shade(col, -0.35)]]); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.6; c.stroke();
+    c.fillStyle = '#d8d8d0'; c.fillRect(-L2 + 2, -W2 + 2.4, L2 * 2 - 6, W2 * 2 - 4.8);
+    c.fillStyle = 'rgba(0,0,0,0.2)'; for (const vx of [-L2 * 0.5, 0, L2 * 0.5]) c.fillRect(vx - 3, -2.5, 6, 5);
+    c.fillStyle = '#26323a'; c.fillRect(L2 - 3.4, -W2 + 1.2, 2.4, W2 * 2 - 2.4);
+    c.fillStyle = 'rgba(120,64,28,0.45)'; for (let i = 0; i < 6; i++) { ellipse(c, (rng() - 0.5) * L2 * 1.8, (rng() - 0.5) * W2 * 1.6, 1 + rng() * 2.4, 0.8 + rng(), rng() * 3); c.fill(); }
+    c.fillStyle = '#1a1a1a'; c.font = '800 5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(10 + Math.floor(rng() * 90)), -L2 * 0.6, 0);
+  }
+  function hydrant(c, rng) {
+    softShadow(c, () => { c.beginPath(); c.arc(0, 0, 3, 0, TAU); }, 1.5, 2.5, 1.5, 'rgba(0,0,0,0.5)');
+    circle(c, 0, 0, 3); c.fillStyle = radial(c, -1, -1, 3.6, '#e85a3a', '#7a1a10', 0, 0); c.fill();
+    c.fillStyle = '#c8c0b0'; c.fillRect(-4.2, -0.8, 8.4, 1.6); circle(c, 0, 0, 1.4); c.fillStyle = '#a82a1a'; c.fill();
+    if (rng() < 0.4) { ellipse(c, 8, 4, 9, 4, 0.4); c.fillStyle = 'rgba(120,150,170,0.4)'; c.fill(); }
+  }
+  // a street lamp from above: the arm reaching out over the pavement, a pool of light at night
+  function streetlight(c, rng) {
+    const a = rng() * TAU;
+    softShadow(c, () => { c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 12, Math.sin(a) * 12); c.lineWidth = 1.4; }, 4, 6, 1.5, 'rgba(0,0,0,0.4)');
+    c.strokeStyle = '#2a2c30'; c.lineWidth = 1.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a) * 12, Math.sin(a) * 12); c.stroke();
+    circle(c, 0, 0, 1.8); c.fillStyle = '#3a3c40'; c.fill();
+    ellipse(c, Math.cos(a) * 12, Math.sin(a) * 12, 2.6, 1.6, a); c.fillStyle = '#5a5c60'; c.fill();
+    ellipse(c, Math.cos(a) * 12, Math.sin(a) * 12, 1.6, 0.9, a); c.fillStyle = '#f2e6b8'; c.fill();
+  }
+  // police sawhorses and traffic cones, left where a checkpoint fell
+  function barricade(c, rng) {
+    for (const x of [-9, 9]) {
+      softShadow(c, () => { c.beginPath(); c.rect(x - 7, -1.5, 14, 3); }, 2, 3, 1.5, 'rgba(0,0,0,0.45)');
+      for (let k = 0; k < 7; k++) { c.fillStyle = k % 2 ? '#f2eee4' : '#d84a2a'; c.fillRect(x - 7 + k * 2, -1.5, 2, 3); }
+      c.fillStyle = '#2a2a28'; c.fillRect(x - 7, -2.2, 1, 4.4); c.fillRect(x + 6, -2.2, 1, 4.4);
+    }
+    for (let i = 0; i < 3; i++) { const x = (rng() - 0.5) * 30, y = 6 + rng() * 6; circle(c, x, y, 2.6); c.fillStyle = '#e8702a'; c.fill(); circle(c, x, y, 1.4); c.fillStyle = '#f2eee4'; c.fill(); circle(c, x, y, 0.6); c.fillStyle = '#e8702a'; c.fill(); }
+  }
+  // a dumpster with its lid thrown back, trash bags heaped beside it
+  function dumpster(c, rng) {
+    softShadow(c, () => { c.beginPath(); c.rect(-10, -6, 20, 12); }, 3, 4, 2, 'rgba(0,0,0,0.55)');
+    const col = ['#2a5a3a', '#2a4a7a', '#5a5a5a'][Math.floor(rng() * 3)];
+    c.fillStyle = linear(c, 0, -6, 0, 6, [[0, shade(col, 0.25)], [1, shade(col, -0.35)]]); c.fillRect(-10, -6, 20, 12);
+    c.fillStyle = '#121412'; c.fillRect(-8.5, -4.5, 17, 9);
+    c.fillStyle = 'rgba(80,70,50,0.8)'; for (let i = 0; i < 6; i++) { circle(c, -6 + rng() * 12, -3 + rng() * 6, 1 + rng() * 1.6); c.fill(); }
+    c.fillStyle = shade(col, -0.2); c.fillRect(-10, -9.5, 20, 3.5);
+    c.fillStyle = 'rgba(120,64,28,0.5)'; for (let i = 0; i < 4; i++) { ellipse(c, (rng() - 0.5) * 18, (rng() - 0.5) * 10, 1.4, 0.7, rng()); c.fill(); }
+    for (let i = 0; i < 4; i++) { const x = 12 + rng() * 6, y = (rng() - 0.5) * 12, r = 2.2 + rng() * 1.4; circle(c, x, y, r); c.fillStyle = radial(c, x - r * 0.3, y - r * 0.3, r * 1.3, '#4a4a50', '#0e0e10', 0, 0); c.fill(); }
+  }
+  // a street tree in a square concrete planter
+  function planter(c, rng) {
+    softShadow(c, () => { c.beginPath(); c.rect(-7, -7, 14, 14); }, 2, 3, 2, 'rgba(0,0,0,0.45)');
+    c.fillStyle = '#a8a69e'; c.fillRect(-7, -7, 14, 14); c.fillStyle = '#4a3a28'; c.fillRect(-5.5, -5.5, 11, 11);
+    crown(c, 11, ['#1f3416', '#2f4a1e', '#46672a', '#628a36'], rng, { lumps: 5 });
+  }
+  // a parking lot: painted bays and a few abandoned cars
+  function parking(c, rng) {
+    c.fillStyle = 'rgba(50,52,56,0.9)'; c.fillRect(-22, -22, 44, 44);
+    c.strokeStyle = 'rgba(236,234,226,0.7)'; c.lineWidth = 0.8;
+    for (let x = -22; x <= 22; x += 11) { c.beginPath(); c.moveTo(x, -22); c.lineTo(x, -6); c.moveTo(x, 6); c.lineTo(x, 22); c.stroke(); }
+    for (let i = 0; i < 2; i++) { c.save(); c.translate(-16.5 + Math.floor(rng() * 4) * 11, i ? 14 : -14); c.rotate(Math.PI / 2); c.scale(0.5, 0.55); car(c, rng); c.restore(); }
+  }
+
   // ---------- desert props ----------
   // a saguaro seen from above: a ribbed round crown with arms reaching out, and spines catching the light
   function cactus(c, rng) {
@@ -815,6 +947,14 @@ const TERRAIN = (() => {
       case 'pumpjack': c.rotate(quarter); c.scale(1.4, 1.4); pumpjack(c, rng); break;
       case 'drums': drums(c, rng); break;
       case 'palm': palm(c, 16, rng); break;
+      case 'bus': c.rotate(quarter); c.scale(0.78, 0.78); bus(c, rng); break;
+      case 'taxi': c.rotate(d.rot); car(c, rng, false, true); break;
+      case 'hydrant': hydrant(c, rng); break;
+      case 'streetlight': streetlight(c, rng); break;
+      case 'barricade': c.rotate(d.rot); barricade(c, rng); break;
+      case 'dumpster': c.rotate(quarter); dumpster(c, rng); break;
+      case 'planter': planter(c, rng); break;
+      case 'parking': c.rotate(quarter); parking(c, rng); break;
     }
     c.restore();
   }

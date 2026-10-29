@@ -102,6 +102,18 @@ const WORLDS = [
     skipOld: ['frosty'],
     boss: 'colossus',
   },
+  // the campaign's last world, after the bayou: Kessler-Vane's home city
+  {
+    id: 'city', name: 'Fallen City', short: 'City', lat: -30, lon: 15, snapLand: true,
+    blurb: 'Kessler-Vane Tower still stands over the dead city. Fight block by block, street by street, to the man who started it all.',
+    ground: ['#6e6e6a', '#7a7a76', '#62625e'], road: '#3c3e42', roadEdge: '#8a8a86', water: '#2c4a58',
+    decor: ['skyscraper', 'skyscraper', 'skyscraper', 'office', 'office', 'shop', 'shop', 'apartment', 'apartment', 'gasstation', 'parking', 'bus', 'taxi', 'hydrant', 'streetlight', 'barricade', 'dumpster', 'planter'],
+    // starts a little below where the bayou ends: the streets leave less room to build
+    diff: [5, 0.03],
+    times: ['night', 'dusk', 'night', 'day', 'dawn'], weather: ['rain', 'clear', 'fog', 'rain'],
+    mobs: [['suit', 1], ['swat', 4], ['drone', 10]],
+    boss: 'chairman',
+  },
 ];
 
 // ============================================================
@@ -163,6 +175,15 @@ const ZOMBIES = {
   vulture:  { name: 'Vulture', hp: 48, speed: 64, reward: 7, r: 13, fly: true,
     desc: 'Circles over the dead and dives across the road\'s corners. Only anti-air towers can hit it.',
     look: { kind: 'crow' } },
+  suit:     { name: 'Office Worker', hp: 40, speed: 56, reward: 5, r: 12,
+    desc: 'Still in a suit and tie. Pours out of the towers in fast, packed crowds.',
+    look: { kind: 'human', skin: '#9aa080', shirt: '#2a2e36' } },
+  swat:     { name: 'SWAT Zombie', hp: 150, speed: 36, armor: 7, reward: 11, r: 13,
+    desc: 'Body armor and a helmet. Snipers, Tesla, fire and armor-piercing rounds get through.',
+    look: { kind: 'human', skin: '#7f8d68', shirt: '#1c1f24', gear: 'riot' } },
+  drone:    { name: 'Hunter Drone', hp: 42, speed: 70, armor: 1, reward: 7, r: 11, fly: true,
+    desc: 'A Kessler-Vane security drone the hive has taken over. It flies the corners; only anti-air towers can hit it.',
+    look: { kind: 'drone' } },
   juggernaut: { name: 'Juggernaut', hp: 700, speed: 26, armor: 6, reward: 70, r: 22, lives: 8, boss: true, mini: true,
     desc: 'Wrapped in scrap armor plating. Shows up every tenth level.',
     look: { kind: 'human', skin: '#76835c', shirt: '#55585e', gear: 'plate', wide: true } },
@@ -186,13 +207,17 @@ const ZOMBIES = {
     summon: { type: 'scorpion', n: 2, every: 5 }, stomp: { every: 8, radius: 2.4, dur: 1.6, sand: true },
     desc: 'A giant of living sandstone. Scorpions pour out of its cracks, and its stomp buries nearby towers.',
     look: { kind: 'giant', skin: '#c9a46a' } },
+  chairman: { name: 'The Chairman', hp: 3800, speed: 18, armor: 8, reward: 340, r: 33, lives: 15, boss: true,
+    heal: { every: 4, pct: 0.08, radius: 2.6 }, summon: { type: 'swat', n: 1, every: 6 },
+    desc: 'Silas Vane, grown into a giant by a seed of his own. Heals the horde around him and calls in his SWAT guard.',
+    look: { kind: 'giant', skin: '#b8a8c8' } },
 };
 
 // How many of each zombie a wave holds, and how tightly they bunch up.
 const WEIGHT = { walker: 1, runner: 0.6, cone: 0.4, digger: 0.3, carrion: 0.25, skeleton: 0.55, bucket: 0.25, ghost: 0.35,
-  necro: 0.1, bats: 0.3, brute: 0.12, frosty: 0.35, medic: 0.09, bloater: 0.18, imp: 0.5, mummy: 0.4, scorpion: 0.45, vulture: 0.25 };
+  necro: 0.1, bats: 0.3, brute: 0.12, frosty: 0.35, medic: 0.09, bloater: 0.18, imp: 0.5, mummy: 0.4, scorpion: 0.45, vulture: 0.25, suit: 0.6, swat: 0.22, drone: 0.2 };
 const GAP = { walker: 0.8, runner: 0.45, cone: 0.95, digger: 1.1, carrion: 0.6, skeleton: 0.5, bucket: 1.3, ghost: 0.8,
-  necro: 3, bats: 0.3, brute: 2.6, frosty: 0.9, medic: 3, bloater: 1.8, imp: 0.35, mummy: 1.1, scorpion: 0.5, vulture: 0.6 };
+  necro: 3, bats: 0.3, brute: 2.6, frosty: 0.9, medic: 3, bloater: 1.8, imp: 0.35, mummy: 1.1, scorpion: 0.5, vulture: 0.6, suit: 0.45, swat: 1.4, drone: 0.55 };
 
 // ============================================================
 // Towers

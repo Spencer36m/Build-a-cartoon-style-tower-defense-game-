@@ -316,7 +316,7 @@ const Sound = {
     this.amb = null;
   },
   // occasional creatures: crickets at night, frogs in the bayou, owls and crows in the cemetery,
-  // a hawk's cry over the desert
+  // a hawk's cry over the desert, sirens in the city
   ambEvents(dt) {
     const a = this.amb, bus = this.ambBus, r = Math.random();
     if ((a.time === 'night' || a.time === 'dusk') && a.weather !== 'rain' && a.world !== 2 && r < dt * 1.6) {
@@ -327,6 +327,8 @@ const Sound = {
     if (a.world === 1 && Math.random() < dt * 0.06) { this.tone(380, 0.35, 'sine', 0.06, 340, 0, bus, 0.05, 0.6); this.tone(360, 0.5, 'sine', 0.06, 320, 0.45, bus, 0.05, 0.6); }
     if (a.world === 0 && Math.random() < dt * 0.04) for (const d of [0, 0.25]) this.voice(800, 560, 0.16, 0.04, 1500, bus, d);
     if (a.world === 4 && a.time !== 'night' && Math.random() < dt * 0.03) this.voice(2300, 1300, 0.7, 0.03, 3200, bus, 0);
+    // a siren wailing somewhere across the city
+    if (a.world === 5 && Math.random() < dt * 0.025) for (let i = 0; i < 3; i++) { this.tone(680, 0.55, 'sine', 0.016, 940, i * 1.1, bus); this.tone(940, 0.55, 'sine', 0.016, 680, i * 1.1 + 0.55, bus); }
   },
 };
 

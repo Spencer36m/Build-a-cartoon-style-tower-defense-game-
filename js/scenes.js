@@ -881,6 +881,16 @@ const SCENES = (() => {
         c.fillStyle = tone(c, 0.45, k); poly(c, [[w * 0.2, hy - h * 0.38], [w * 0.28, hy], [w * 0.36, hy - h * 0.2], [w * 0.55, hy - h * 0.5], [w * 0.64, hy], [w * 0.78, hy - h * 0.22], [w, hy - h * 0.1], [w, hy]]); c.fill();
         c.strokeStyle = INK; c.lineWidth = u * 0.4; for (const [px, py] of [[0.2, 0.38], [0.55, 0.5], [0.78, 0.22], [1, 0.34]]) for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * px, hy - h * py); c.lineTo(w * px + (i - 2) * u * 5 + u * 3, hy - h * py * (0.4 + i * 0.08)); c.stroke(); }
         c.fillStyle = INK; c.fillRect(0, hy, w, h); station(c, w * 0.3, hy, h * 0.22, u);
+      } else if (o.world === 5) {
+        // the dead city: a wall of towers with a few lit windows, Kessler-Vane Tower in the middle
+        c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.78, h * 0.22, h * 0.1, 0, TAU); c.fill();
+        skyline(c, w, hy, h * 0.42, 31, tone(c, 0.6, k), 0);
+        const wins = skyline(c, w, hy, h * 0.3, 37, INK, 0.08);
+        c.fillStyle = INK; c.fillRect(w * 0.66, hy - h * 0.62, w * 0.07, h * 0.62); poly(c, [[w * 0.66, hy - h * 0.62], [w * 0.695, hy - h * 0.72], [w * 0.73, hy - h * 0.62]]); c.fill();
+        c.fillRect(w * 0.693, hy - h * 0.82, u * 0.5, h * 0.1);
+        c.fillStyle = SPOT.purple; for (let y = hy - h * 0.58; y < hy - h * 0.05; y += h * 0.05) c.fillRect(w * 0.672, y, w * 0.058, u * 0.6);
+        c.fillStyle = SPOT.amber; for (const [x, y, ww, hh] of wins) c.fillRect(x, y, ww, hh);
+        c.fillStyle = INK; c.fillRect(0, hy, w, h);
       } else if (o.world === 4) {
         // a huge low sun behind flat-topped mesas, dunes in tone and a pumpjack nodding
         c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.7, hy - h * 0.06, h * 0.24, 0, TAU); c.fill(); rays(c, w * 0.7, hy - h * 0.06, 30, w, 0.2, 13, PAPER, Math.PI, TAU);
@@ -913,6 +923,7 @@ const SCENES = (() => {
       if (o.world === 2) motes(c, w, h, t, 70, 3, PAPER, 0.8, u * 0.4, u * 8, -u * 6);
       else if (o.world === 3) motes(c, w, h, t, 26, 5, '#c8ffd8', 0.9, u * 0.35, -u * 0.8, u * 0.8, u * 4);
       else if (o.world === 4) motes(c, w, h, t, 60, 9, '#ffd8a0', 0.7, u * 0.3, u * 0.4, u * 9, u * 2);
+      else if (o.world === 5) { motes(c, w, h, t, 80, 13, '#d8e0f0', 0.5, u * 0.15, u * 30, -u * 4); glow(c, w * 0.695, h * 0.28, unit(w, h) * (6 + 3 * pulse(t, 3)), SPOT.purple, 0.6); }
       else if (o.world === 1) { for (let i = 0; i < 3; i++) fog(c, ((t * u * (2 + i) + i * w * 0.45) % (w * 1.4)) - w * 0.2, h * (0.72 + i * 0.03), w * 0.25, h * 0.05, 0.3); }
       else motes(c, w, h, t, 30, 6, '#ffd890', 0.8, u * 0.3, -u * 2, u * 1.5, u * 3);
     },
@@ -1453,6 +1464,45 @@ const SCENES = (() => {
       vignette(c, w, h, 0.6, k);
     },
     anim(c, w, h, t) { const u = unit(w, h); glow(c, w * 0.56, h * 0.3, u * (24 + 8 * pulse(t, 2)), SPOT.orange, 0.3); motes(c, w, h * 0.85, t, 40, 23, '#ffd8a0', 0.7, u * 0.3, u * 5, u * 3); },
+  };
+
+  // ============================================================ CHAPTER 6 · SKYLINE (the city)
+  // Silas Vane, swollen into a giant by a seed, climbing out of the top of his own tower
+  S.chairmanRise = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h), cx = w * 0.56, gy = h * 0.86;
+      nightSky(c, w, h, k, 0.8, 0.45, 40, 71);
+      glow(c, cx, h * 0.35, w * 0.6, SPOT.purple, 0.55);
+      skyline(c, w, gy, h * 0.5, 61, tone(c, 0.7, k), 0);
+      // the tower itself, and the giant bursting from its crown
+      const s = Math.min(h / 100 * 0.6, w / 320);
+      c.fillStyle = INK; c.fillRect(cx - 26 * s, h * 0.3, 52 * s, gy - h * 0.3 + 2);
+      c.fillStyle = SPOT.purple; for (let y = h * 0.34; y < gy; y += u * 3.2) c.fillRect(cx - 22 * s, y, 44 * s, u * 0.5);
+      c.save(); c.translate(cx, h * 0.32);
+      const body = () => {
+        c.beginPath();
+        c.moveTo(-50 * s, 0); c.lineTo(-46 * s, -40 * s); c.lineTo(-30 * s, -60 * s); c.lineTo(-10 * s, -66 * s); c.lineTo(-8 * s, -80 * s); c.lineTo(8 * s, -82 * s); c.lineTo(10 * s, -66 * s); c.lineTo(30 * s, -60 * s); c.lineTo(46 * s, -42 * s); c.lineTo(50 * s, 0); c.closePath();
+        sub(c, [[-44 * s, -46 * s], [-96 * s, -20 * s], [-110 * s, 10 * s], [-86 * s, 6 * s], [-40 * s, -24 * s]]);
+        sub(c, [[44 * s, -48 * s], [92 * s, -30 * s], [104 * s, 6 * s], [82 * s, 4 * s], [40 * s, -26 * s]]);
+      };
+      c.save(); c.translate(-1.5 * s, -1.2 * s); body(); c.fillStyle = SPOT.purple; c.fill(); c.restore();
+      body(); c.fillStyle = INK; c.fill();
+      // the torn suit: a white collar and a tie, growths glowing through the cloth
+      c.fillStyle = PAPER; poly(c, [[-9 * s, -64 * s], [0, -54 * s], [9 * s, -64 * s], [4 * s, -66 * s], [0, -60 * s], [-4 * s, -66 * s]]); c.fill();
+      c.fillStyle = SPOT.red; poly(c, [[-2 * s, -58 * s], [2 * s, -58 * s], [3 * s, -36 * s], [0, -32 * s], [-3 * s, -36 * s]]); c.fill();
+      const rng = mulberry32(73);
+      for (let i = 0; i < 12; i++) { const x = (rng() - 0.5) * 80 * s, y = -6 * s - rng() * 50 * s, r = (2 + rng() * 4) * s; glow(c, x, y, r * 3, SPOT.purple, 0.8); c.fillStyle = '#f0d8ff'; c.beginPath(); c.arc(x, y, r * 0.6, 0, TAU); c.fill(); }
+      for (const ex of [-4, 4]) { glow(c, ex * s, -74 * s, 4 * s, SPOT.purple, 0.9); c.fillStyle = '#ffffff'; c.beginPath(); c.arc(ex * s, -74 * s, 1.2 * s, 0, TAU); c.fill(); }
+      // tendrils wrapping down the tower
+      c.strokeStyle = INK; c.lineCap = 'round';
+      for (let i = 0; i < 6; i++) { const x0 = (i - 2.5) * 12 * s; c.lineWidth = u * (1 + rng()); c.beginPath(); c.moveTo(x0, 0); c.bezierCurveTo(x0 + (rng() - 0.5) * 40 * s, 30 * s, x0 + (rng() - 0.5) * 50 * s, 60 * s, x0 + (rng() - 0.5) * 30 * s, 110 * s); c.stroke(); }
+      c.restore();
+      // the street below, and the squad
+      c.fillStyle = INK; c.fillRect(0, gy, w, h - gy);
+      figure(c, w * 0.1, gy, h * 0.13, 'voss', { pose: 'point', rim: SPOT.purple }); figure(c, w * 0.18, gy, h * 0.125, 'laila', { rim: SPOT.purple }); figure(c, w * 0.26, gy, h * 0.135, 'moreno', { pose: 'gun', rim: SPOT.purple });
+      vignette(c, w, h, 0.6, k);
+    },
+    anim(c, w, h, t) { const u = unit(w, h); glow(c, w * 0.56, h * 0.15, u * (24 + 8 * pulse(t, 2)), SPOT.purple, 0.3); motes(c, w, h * 0.9, t, 40, 29, '#e8d0ff', 0.6, u * 0.3, -u * 3, u * 2); },
   };
 
   S.trio = {

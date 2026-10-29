@@ -32,6 +32,7 @@ const WEATHER = (() => {
     tundra: { clear: 2, snow: 4, blizzard: 2.2, fog: 1.4 },
     swamp: { clear: 1.4, mist: 3, rain: 2.4, storm: 2, acid: 1.6 },
     desert: { clear: 2.4, heat: 3, sandstorm: 2.4, dust: 1, storm: 0.5 },
+    city: { clear: 2, rain: 3, storm: 2, fog: 1.6, embers: 1.4, acid: 0.6 },
   };
   const LAST = { clear: [30, 55], rain: [40, 65], storm: [35, 55], tornado: [34, 42], dust: [35, 50], fog: [40, 65], mist: [45, 75], snow: [50, 80], blizzard: [30, 45], embers: [35, 50], acid: [35, 50], sandstorm: [32, 48], heat: [45, 70] };
   const LINES = {

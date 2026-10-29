@@ -3,7 +3,8 @@
 // Wildlife: animals that live on each map and go about their business while the battle rages.
 // Farmland has cows, sheep, chickens and butterflies; the cemetery owls, ravens, a black cat and
 // rats; the tundra caribou, arctic foxes and snow hares; the bayou alligators, herons, frogs,
-// turtles and dragonflies; the desert camels, fennec foxes and lizards. Flocks cross overhead now and then. They keep off the roads and the
+// turtles and dragonflies; the desert camels, fennec foxes and lizards; the city pigeons, rats
+// and stray cats. Flocks cross overhead now and then. They keep off the roads and the
 // towers, herds stay together, swimmers keep to the water, and everything scatters when zombies
 // come near.
 // Each animal is drawn from above in its own frame (x forward, y to its right), lit from the top
@@ -304,25 +305,29 @@ const ANIMALS = (() => {
   };
 
   // ---------- raven ----------
+  // feathers: wings, tail, body light and dark, head, beak; a pigeon is a grey raven with a green neck
+  const RAVEN = { wing: '#121216', tail: '#16161c', lite: '#3a4258', dark: '#0a0a0e', head: '#121216', beak: '#222228', sheen: 'rgba(120,140,200,0.35)' };
+  const PIGEON = { wing: '#6a6e78', tail: '#3a3e48', lite: '#b0b6c0', dark: '#5a5e68', head: '#4a6a62', beak: '#c8a8a0', sheen: 'rgba(140,220,170,0.5)' };
   SPECIES.raven = {
     hab: 'land', walk: 9, run: 0, fear: 70, turn: 6, len: 3, flies: true, flySpeed: 75,
     act(a) { const r = rng(); return r < 0.35 ? ['peck', R(1.2, 3)] : r < 0.5 ? ['look', R(0.8, 2)] : r < 0.6 ? ['flyoff'] : ['walk']; },
     draw(c, a, t) {
+      const F = a.pal || RAVEN;
       const fly = a.z > 0.5, flap = fly ? Math.sin(t * 13 + a.seed) : 0;
       if (fly) {
         // wings spread, beating, with fingered primaries
         for (const s of [-1, 1]) {
           const span = 6.5 + flap * 1.2;
-          c.fillStyle = '#121216'; c.beginPath(); c.moveTo(1, s * 0.8); c.quadraticCurveTo(0, s * span * 0.6, -1.5 + flap * 0.8, s * span); c.lineTo(-2.2 + flap * 0.8, s * (span - 0.6)); c.lineTo(-2.4, s * (span - 1.6)); c.quadraticCurveTo(-2.4, s * 2, -2, s * 0.8); c.fill();
+          c.fillStyle = F.wing; c.beginPath(); c.moveTo(1, s * 0.8); c.quadraticCurveTo(0, s * span * 0.6, -1.5 + flap * 0.8, s * span); c.lineTo(-2.2 + flap * 0.8, s * (span - 0.6)); c.lineTo(-2.4, s * (span - 1.6)); c.quadraticCurveTo(-2.4, s * 2, -2, s * 0.8); c.fill();
         }
       }
-      c.fillStyle = '#16161c'; c.beginPath(); c.moveTo(-2, -0.9); c.lineTo(-5, -1.3); c.lineTo(-5.4, 0); c.lineTo(-5, 1.3); c.lineTo(-2, 0.9); c.fill();
-      c.fillStyle = lit(c, a, 3, '#3a4258', '#0a0a0e'); ellipse(c, 0, 0, 3, 1.7, 0); c.fill(); rim(c, a);
-      c.strokeStyle = 'rgba(120,140,200,0.35)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(-2, -0.8); c.lineTo(1.4, -0.6); c.stroke();
+      c.fillStyle = F.tail; c.beginPath(); c.moveTo(-2, -0.9); c.lineTo(-5, -1.3); c.lineTo(-5.4, 0); c.lineTo(-5, 1.3); c.lineTo(-2, 0.9); c.fill();
+      c.fillStyle = lit(c, a, 3, F.lite, F.dark); ellipse(c, 0, 0, 3, 1.7, 0); c.fill(); rim(c, a);
+      c.strokeStyle = F.sheen; c.lineWidth = 0.3; c.beginPath(); c.moveTo(-2, -0.8); c.lineTo(1.4, -0.6); c.stroke();
       const peck = a.state === 'peck' ? Math.max(0, Math.sin(t * 6 + a.seed)) ** 3 * 1.2 : 0, look = a.state === 'look' ? Math.sin(t * 5 + a.seed) * 0.9 : 0;
       c.save(); c.translate(2.8 + peck, 0); c.rotate(look);
-      c.fillStyle = '#121216'; circle(c, 0, 0, 1.2); c.fill();
-      c.fillStyle = '#222228'; c.beginPath(); c.moveTo(0.8, -0.45); c.lineTo(2.6, 0); c.lineTo(0.8, 0.45); c.fill();
+      c.fillStyle = F.head; circle(c, 0, 0, 1.2); c.fill();
+      c.fillStyle = F.beak; c.beginPath(); c.moveTo(0.8, -0.45); c.lineTo(a.pal ? 1.9 : 2.6, 0); c.lineTo(0.8, 0.45); c.fill();
       eye(c, 0.3, -0.75, 0.2, 1, '#2a2a30');
       c.restore();
     },
@@ -475,6 +480,8 @@ const ANIMALS = (() => {
       c.restore();
     },
   };
+
+  SPECIES.pigeon = { ...SPECIES.raven, init(a) { a.pal = PIGEON; } };
 
   // ---------- fennec fox: the arctic fox's desert cousin, sandy with huge ears ----------
   SPECIES.fennec = { ...SPECIES.fox, init(a) { a.pal = FOX_FENNEC; } };
@@ -679,10 +686,10 @@ const ANIMALS = (() => {
   };
 
   // how far apart animals keep from one another
-  const SPACE = { camel: 22, fennec: 12, lizard: 7, cow: 21, sheep: 12, chicken: 7, caribou: 19, raven: 8, rat: 6, hare: 9, fox: 12, gator: 30, heron: 14, frog: 7, turtle: 9, cat: 10, owl: 6 };
+  const SPACE = { pigeon: 6, camel: 22, fennec: 12, lizard: 7, cow: 21, sheep: 12, chicken: 7, caribou: 19, raven: 8, rat: 6, hare: 9, fox: 12, gator: 30, heron: 14, frog: 7, turtle: 9, cat: 10, owl: 6 };
   const crowded = (x, y, kind, self) => list.some((b) => b !== self && b.kind === kind && dist2(b.x, b.y, x, y) < (SPACE[kind] || 8) ** 2);
   // shadow sizes (half length, half width) for each species
-  const SHADOW = { camel: [12, 5], fennec: [5.8, 2.3], lizard: [3, 1], cow: [12, 6], sheep: [6.5, 4.8], chicken: [4.2, 2.8], cat: [5, 2], rat: [3, 1.3], raven: [3.2, 1.6], owl: [3.6, 3.2], caribou: [11, 4], fox: [5.8, 2.3], hare: [4, 2.6], gator: [15, 2.6], heron: [4, 2.2], frog: [2.2, 1.7], turtle: [3.4, 2.8] };
+  const SHADOW = { pigeon: [3, 1.5], camel: [12, 5], fennec: [5.8, 2.3], lizard: [3, 1], cow: [12, 6], sheep: [6.5, 4.8], chicken: [4.2, 2.8], cat: [5, 2], rat: [3, 1.3], raven: [3.2, 1.6], owl: [3.6, 3.2], caribou: [11, 4], fox: [5.8, 2.3], hare: [4, 2.6], gator: [15, 2.6], heron: [4, 2.2], frog: [2.2, 1.7], turtle: [3.4, 2.8] };
 
   // ============================================================ populating a map
   let perches = [], hasWater = false;
@@ -732,6 +739,11 @@ const ANIMALS = (() => {
       if (rng() < 0.9) group('caribou', 4 + Math.floor(rng() * 4), 'land', 48);
       scatter('fox', 1 + Math.floor(rng() * 2), 'land');
       scatter('hare', 4 + Math.floor(rng() * 3), 'land');
+    } else if (id === 'city') {
+      group('pigeon', 6 + Math.floor(rng() * 5), 'land', 40);
+      if (rng() < 0.6) group('pigeon', 4 + Math.floor(rng() * 3), 'land', 30);
+      scatter('rat', 4 + Math.floor(rng() * 3), 'land');
+      scatter('cat', 1 + Math.floor(rng() * 2), 'land');
     } else if (id === 'desert') {
       if (rng() < 0.85) group('camel', 2 + Math.floor(rng() * 3), 'land', 50);
       scatter('fennec', 1 + Math.floor(rng() * 2), 'land');
@@ -915,7 +927,7 @@ const ANIMALS = (() => {
     flocks = flocks.filter((f) => f.t < f.dur);
   }
   function spawnFlock() {
-    const id = M.world.id, kind = id === 'graveyard' || id === 'desert' ? 'ravens' : id === 'swamp' ? 'egrets' : 'geese';
+    const id = M.world.id, kind = id === 'graveyard' || id === 'desert' || id === 'city' ? 'ravens' : id === 'swamp' ? 'egrets' : 'geese';
     const fromLeft = rng() < 0.5, y0 = R(H * 0.15, H * 0.85), ang = (fromLeft ? 0 : Math.PI) + R(-0.35, 0.35);
     const n = kind === 'ravens' ? 5 + Math.floor(rng() * 4) : 6 + Math.floor(rng() * 6);
     const birds = Array.from({ length: n }, (_, i) => { const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1; return { ox: -row * 14, oy: side * row * 10, ph: rng() * TAU }; });
