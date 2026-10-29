@@ -13,7 +13,7 @@ If the name is taken, try "Zombie Bash TD" or "Zombie Bash: Hold the Line".
 Every tower now has three upgrade paths. Turn a machine gunner into a doom ray, a rocket mech or a fortress, and build farms to fund the fight.
 
 **Description** (4000):
-The dead are walking, and every road leads to your base. Hold the line across 250 levels in five worlds: farmland, graveyards, frozen tundra, toxic swamp and a fallen city of skyscrapers.
+The dead are walking, and every road leads to your base. Hold the line across 190 levels in five worlds: farmland, graveyards, frozen tundra, toxic swamp and a fallen city of skyscrapers.
 
 BUILD YOUR DEFENSE
 Place machine gunners, snipers, mortar teams, cryo cannons, flamethrowers, tesla coils, gunboats, submarines, helicopter gunships, fighter jets and farms. Every map has a different road, so every level needs a new plan.

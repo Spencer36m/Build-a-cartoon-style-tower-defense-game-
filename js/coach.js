@@ -151,7 +151,7 @@ const COACH = (() => {
     meta.introduced = {};
     const vet = Object.keys(meta.stars || {}).length > 0;
     if (meta.tutorialDone == null) meta.tutorialDone = vet;
-    if (vet) for (const t of TOWER_KEYS) if (towerUnlocked(t) && (!TOWERS[t].snowOnly || levelUnlocked(2 * LEVELS_PER_WORLD))) meta.introduced[t] = 1;
+    if (vet) for (const t of TOWER_KEYS) if (towerUnlocked(t) && (!TOWERS[t].snowOnly || levelUnlocked(WORLD_START[2]))) meta.introduced[t] = 1;
     saveMeta();
   }
   function briefings() {
@@ -168,7 +168,7 @@ const COACH = (() => {
     const box = document.createElement('div'); box.className = 'brief-box';
     const icon = towerIcon(type, [0, 0, 0], 96); icon.className = 'brief-icon';
     // the cold only matters once the player has reached the snow
-    const crewed = CREWED.has(type) && (coldMap() || levelUnlocked(2 * LEVELS_PER_WORLD)) ? '<span>Crewed: needs heat on snow maps</span>' : '';
+    const crewed = CREWED.has(type) && (coldMap() || levelUnlocked(WORLD_START[2])) ? '<span>Crewed: needs heat on snow maps</span>' : '';
     box.innerHTML = `<p class="brief-kicker">New tower in your arsenal${cards.length > 1 ? ` · ${cards.length} to meet` : ''}</p>
       <div class="brief-head"><div class="brief-icon-slot"></div><div><h3>${def.name}</h3><p class="brief-tags"><span class="role">${def.role}</span><span>$${costOf(def.cost)}</span>${!def.base.dmg ? '' : def.air ? '<span>Hits flyers</span>' : '<span>Ground only</span>'}${def.place === 'water' ? '<span>Water only</span>' : ''}${crewed}</p></div></div>
       <p class="brief-what">${I.what}</p>

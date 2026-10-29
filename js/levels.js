@@ -4,7 +4,7 @@
 // runs through the main worlds in order; an expansion world sits to one side of it.
 // Generation is seeded by the level number, so every player gets the same levels.
 // ============================================================
-const TOTAL_LEVELS = WORLDS.length * LEVELS_PER_WORLD;
+const TOTAL_LEVELS = WORLD_START[WORLDS.length - 1] + WORLDS[WORLDS.length - 1].levels;
 const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1]; // right, down, left, up
 
 const PLACE_NAMES = [
@@ -25,35 +25,37 @@ const PLACE_NAMES = [
 const mainBefore = (w) => WORLDS.slice(0, w).filter((x) => !x.expansion).length;
 // the level whose first clear opens world w (the end of the main world before it)
 function unlockFrom(w) {
-  for (let p = w - 1; p >= 0; p--) if (!WORLDS[p].expansion) return p * LEVELS_PER_WORLD + LEVELS_PER_WORLD - 1;
+  for (let p = w - 1; p >= 0; p--) if (!WORLDS[p].expansion) return worldEnd(p);
   return -1;
 }
 // the next level along the campaign: the next sector, or the first sector of the next main world
 function campaignNext(i) {
   const m = levelMetaCache[i];
   if (!m) return -1;
-  if (m.num < LEVELS_PER_WORLD) return i + 1;
-  for (let w = m.world + 1; w < WORLDS.length; w++) if (!WORLDS[w].expansion) return w * LEVELS_PER_WORLD;
+  if (m.num < worldSize(m.world)) return i + 1;
+  for (let w = m.world + 1; w < WORLDS.length; w++) if (!WORLDS[w].expansion) return WORLD_START[w];
   return -1;
 }
 const levelMetaCache = [];
 
 function levelMeta(index) {
-  const world = Math.floor(index / LEVELS_PER_WORLD);
-  const num = (index % LEVELS_PER_WORLD) + 1;
+  let world = 0;
+  while (world + 1 < WORLDS.length && index >= WORLD_START[world + 1]) world++;
+  const num = index - WORLD_START[world] + 1, n = worldSize(world);
   // the desert expansion can be played once the farmland is cleared, so it starts about as hard
   // as the middle of the cemetery and climbs faster than the other worlds
   const tier = WORLDS[world].expansion ? 2 : mainBefore(world);
-  const [d0, dk] = WORLDS[world].diff || (WORLDS[world].expansion ? [2.2, 0.07] : [tier * 1.5, 0.04]);
-  const diff = d0 + (num - 1) * dk;
+  // a world climbs by the same amount from its first sector to its last, however long it is
+  const [d0, span] = WORLDS[world].diff || (WORLDS[world].expansion ? [2.2, 3.43] : [tier * 1.5, 1.96]);
+  const diff = d0 + span * (num - 1) / (n - 1);
   const rng = mulberry32(index * 7919 + 17);
   const names = PLACE_NAMES[world];
   const name = `${names[0][Math.floor(rng() * 10)]} ${names[1][Math.floor(rng() * 10)]}`;
   return {
     index, world, tier, num, id: `${world + 1}-${num}`, name,
-    waves: num === LEVELS_PER_WORLD ? 20 : 10 + Math.floor((num - 1) / 5),
+    waves: num === n ? 20 : 10 + Math.floor((num - 1) / 5),
     diff, gold: Math.round(260 + diff * 55),
-    boss: num === LEVELS_PER_WORLD ? WORLDS[world].boss : num % 10 === 0 ? 'juggernaut' : null,
+    boss: num === n ? WORLDS[world].boss : num % 10 === 0 ? 'juggernaut' : null,
   };
 }
 const LEVEL_META = Array.from({ length: TOTAL_LEVELS }, (_, i) => levelMeta(i));
@@ -275,7 +277,7 @@ function getLevel(index) {
   const meta = LEVEL_META[index];
   const world = WORLDS[meta.world];
   const t = index / TOTAL_LEVELS;
-  const minLen = Math.round(lerp(48, 30, Math.min(1, (meta.num - 1) / 49 * 0.6 + meta.tier * 0.12)));
+  const minLen = Math.round(lerp(48, 30, Math.min(1, (meta.num - 1) / (worldSize(meta.world) - 1) * 0.6 + meta.tier * 0.12)));
   const maxLen = minLen + 14;
   let attempt = 0, main = null, entry = null, rng;
   while (!main) {
@@ -370,5 +372,5 @@ function waveSummary(L, n) {
 }
 // A zombie counts as new only in the level where the campaign first sends it.
 const FIRST_SEEN = {};
-WORLDS.forEach((w, wi) => { for (const [type, at] of w.mobs) FIRST_SEEN[type] = wi * LEVELS_PER_WORLD + at - 1; });
+WORLDS.forEach((w, wi) => { for (const [type, at] of w.mobs) FIRST_SEEN[type] = WORLD_START[wi] + at - 1; });
 const newTypes = (L, n) => L.pool.filter(([type, from]) => from === n && FIRST_SEEN[type] === L.index).map(([type]) => type);

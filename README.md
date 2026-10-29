@@ -1,6 +1,6 @@
 # Zombie Bash
 
-A zombie tower defense game inspired by the Bloons TD series. Hold the road across **250 levels in five worlds** with soldiers, artillery, aircraft and boats. Pick your world from a spinning globe, spend coins in the store, and stop every zombie before it reaches your base.
+A zombie tower defense game inspired by the Bloons TD series. Hold the road across **190 levels in five worlds** with soldiers, artillery, aircraft and boats. Pick your world from a spinning globe, spend coins in the store, and stop every zombie before it reaches your base.
 
 The game is plain HTML, CSS and JavaScript drawing on a `<canvas>`, with no build step needed to play it in a browser. It also ships as an iPhone/iPad app through [Capacitor](https://capacitorjs.com).
 
@@ -48,7 +48,7 @@ The app is landscape-only, hides the status bar, bundles its fonts, and declares
 
 ### Worlds
 
-Each world has 50 levels. Every level has its own road layout, scenery and time of day. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and level 50 is the world boss. Beating a level unlocks the next, and clearing level 50 unlocks the next world.
+Hollow Creek Farmland and Blackwood Cemetery have 30 levels each, Frostfall Tundra and Black Bayou 40, and the Fallen City finale 50. Every level has its own road layout, scenery and time of day. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and a world's last level is its boss. Beating a level unlocks the next, and clearing a world's last level unlocks the next world.
 
 The first time level 1-1 is played it is a training mission, and it cannot be skipped. Major Voss and Sgt. Moreno walk you through it one step at a time: build a Machine Gunner on a glowing spot, send in the first wave, earn cash, build a second tower, buy an upgrade, then where to find lives, supplies and the speed controls. Each step lights up the one thing to use and dims the rest, which does not respond until that step is done. If you leave part way, it starts again next time you play 1-1.
 
@@ -67,15 +67,15 @@ When a boss or elite arrives, a health bar drops in at the top of the battlefiel
 
 Zombies from earlier worlds keep coming back in later ones.
 
-**Fallen City** is the last world of the campaign and opens when Black Bayou (4-50) is cleared. Every lot away from the road is built up: glass skyscrapers with setbacks, rooftop gardens, solar panels, helipads and warning lights on two-by-two blocks, office blocks with peeling billboards, brick apartments with fire escapes and water tanks, storefronts with striped awnings, gas stations and parking lots. Towers rise tall wherever no road lies behind them (they never hide the route), cast long shadows across the streets, and light their windows at dusk and night. The streets are asphalt with a dashed yellow centre line, white edge lines, zebra crossings, potholes and skid marks between raised curbs; the pavement along them is where you build, with hydrants, street lamps, planters, dumpsters, taxis, wrecked buses and police barricades. Some levels cross a walled canal on concrete bridges. Pigeons, rats and stray cats live there, sirens wail in the distance, and its music is a film-noir jazz walk. Office Workers come in fast crowds, SWAT Zombies wear armour, Hunter Drones fly the corners, and the Chairman (Silas Vane, grown into a giant by a seed) heals the horde around him and calls in his SWAT guard.
+**Fallen City** is the last world of the campaign and opens when Black Bayou (4-40) is cleared. Every lot away from the road is built up: glass skyscrapers with setbacks, rooftop gardens, solar panels, helipads and warning lights on two-by-two blocks, office blocks with peeling billboards, brick apartments with fire escapes and water tanks, storefronts with striped awnings, gas stations and parking lots. Towers rise tall wherever no road lies behind them (they never hide the route), cast long shadows across the streets, and light their windows at dusk and night. The streets are asphalt with a dashed yellow centre line, white edge lines, zebra crossings, potholes and skid marks between raised curbs; the pavement along them is where you build, with hydrants, street lamps, planters, dumpsters, taxis, wrecked buses and police barricades. Some levels cross a walled canal on concrete bridges. Pigeons, rats and stray cats live there, sirens wail in the distance, and its music is a film-noir jazz walk. Office Workers come in fast crowds, SWAT Zombies wear armour, Hunter Drones fly the corners, and the Chairman (Silas Vane, grown into a giant by a seed) heals the horde around him and calls in his SWAT guard.
 
-**Red Mesa Wasteland** is a paid expansion (see Premium below): an extra world of 50 levels that opens to its owners once Hollow Creek Farmland (1-50) is cleared. It starts about as hard as the middle of the cemetery and climbs from there. The maps are red sand with long dunes and wind ripples, sun-cracked clay, cacti, sagebrush, cow skulls, sandstone buttes, rusted wrecks, oil pumpjacks, oil drums, the odd oasis with date palms, and abandoned concrete blockhouses from an old airbase. Its forecast brings heat haze (shimmering air and glare) and sandstorms. Camels, fennec foxes and lizards live there, a hawk cries overhead, and its music is an oud and ney tune over darbuka drums. Mummies are tough but burn twice as hard, Dune Scorpions are fast and armoured, Vultures dive across the corners, and the Sand Colossus pours scorpions out of its cracks and buries nearby towers in sand with its stomp.
+**Red Mesa Wasteland** is a paid expansion (see Premium below): an extra world of 30 levels that opens to its owners once Hollow Creek Farmland (1-30) is cleared. It starts about as hard as the middle of the cemetery and climbs from there. The maps are red sand with long dunes and wind ripples, sun-cracked clay, cacti, sagebrush, cow skulls, sandstone buttes, rusted wrecks, oil pumpjacks, oil drums, the odd oasis with date palms, and abandoned concrete blockhouses from an old airbase. Its forecast brings heat haze (shimmering air and glare) and sandstorms. Camels, fennec foxes and lizards live there, a hawk cries overhead, and its music is an oud and ney tune over darbuka drums. Mummies are tough but burn twice as hard, Dune Scorpions are fast and armoured, Vultures dive across the corners, and the Sand Colossus pours scorpions out of its cracks and buries nearby towers in sand with its stomp.
 
 The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
 
 ### Sandbox
 
-**Sandbox** on the main menu is a free-play mode. Pick any of the 200 maps (or a random one) and set your own rules:
+**Sandbox** on the main menu is a free-play mode. Pick any of the campaign maps (or a random one) and set your own rules:
 
 - **Cash** and **lives**: infinite, or a set amount.
 - **Waves**: how many, or endless.
@@ -143,11 +143,11 @@ Build **Heaters** (key H, only sold on snow maps) to keep crews warm. Each throw
 | 3 | Mortar Team | Splash | No | Start |
 | 4 | Cryo Cannon | Slows | No | Clear 1-2 |
 | 5 | Gunboat | Water only | Yes | Clear 1-4 |
-| 6 | Flamethrower | Burns, ignores armor | No | Clear 1-7 |
-| 7 | Tesla Coil | Chain lightning, ignores armor | Yes | Clear 1-12 |
-| 8 | Gunship | Flying helicopter that chases the lead zombie | Yes | Clear 1-18 |
-| 9 | Submarine | Water only, homing missiles, sonar | Yes | Clear 1-30 |
-| 0 | Fighter Jet | Flying, circles its airstrip firing missiles | Yes | Clear 1-40 |
+| 6 | Flamethrower | Burns, ignores armor | No | Clear 1-6 |
+| 7 | Tesla Coil | Chain lightning, ignores armor | Yes | Clear 1-9 |
+| 8 | Gunship | Flying helicopter that chases the lead zombie | Yes | Clear 1-13 |
+| 9 | Submarine | Water only, homing missiles, sonar | Yes | Clear 1-18 |
+| 0 | Fighter Jet | Flying, circles its airstrip firing missiles | Yes | Clear 1-24 |
 | Q | Farm | Income: drops cash crates every wave | Upgrade | Clear 1-3 |
 
 Locked towers can also be bought early in the store.
@@ -223,9 +223,9 @@ The campaign is told in manga-style motion-comic cutscenes: inked panels with sc
 - **Chapter 5, Skyline:** the seeds fall on the cities, and Bastion fights block by block to Kessler-Vane Tower, where Silas Vane has turned himself into the Chairman.
 - **Side story, Phase Two** (desert expansion): one of the seeds lands on Kessler-Vane's old Red Mesa airbase, Site Zero, and grows a Sand Colossus out of the desert.
 
-Every sector is part of the story. The 250 sectors form 50 operations (the desert expansion adds 10 more) of five missions each, and each operation has a purpose: rescue the Miller family, refill the safehouse's water, trace Okafor's signal, beat Vane's cleaners to the crypt files, keep Lazarus Two frozen, cut the hive's feeding channels. When a mission starts, the character in charge radios in with the reason for it. During the fight the squad calls out new zombie types, bosses, the final wave and a failing line, and Silas Vane cuts in on stolen channels. A win or loss ends with a word from the cast, and the level briefing shows the operation, the objective and who gave the order.
+Every sector is part of the story. The 190 sectors form 38 operations of five missions each (the desert expansion adds 6 more), and each operation has a purpose: rescue the Miller family, refill the safehouse's water, trace Okafor's signal, beat Vane's cleaners to the crypt files, keep Lazarus Two frozen, cut the hive's feeding channels. When a mission starts, the character in charge radios in with the reason for it. During the fight the squad calls out new zombie types, bosses, the final wave and a failing line, and Silas Vane cuts in on stolen channels. A win or loss ends with a word from the cast, and the level briefing shows the operation, the objective and who gave the order.
 
-Each world's intro plays when you first deploy there, and new chapters play after your first clear of sectors 25 and 50. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu. On a phone held upright, the camera follows one panel at a time so the lettering stays large.
+Each world's intro plays when you first deploy there, and new chapters play after your first clear of the world's middle sector and its last. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu. On a phone held upright, the camera follows one panel at a time so the lettering stays large.
 
 ### Controls
 

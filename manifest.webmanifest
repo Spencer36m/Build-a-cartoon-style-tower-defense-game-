@@ -1,7 +1,7 @@
 {
   "name": "Zombie Bash",
   "short_name": "Zombie Bash",
-  "description": "A zombie tower defense game. Hold the line across 250 levels in five worlds with upgradable towers, aircraft and boats.",
+  "description": "A zombie tower defense game. Hold the line across 190 levels in five worlds with upgradable towers, aircraft and boats.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

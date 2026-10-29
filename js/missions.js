@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================
-// Missions: every sector belongs to an operation of five, and every operation has
+// Missions: every sector belongs to an operation of five (a short world skips a few of its ten), and every operation has
 // a reason in the story. The cast briefs each mission and talks over the radio while it plays.
 //
 // Speakers: voss (command), moreno (gunnery sergeant), laila (sharpshooter), okafor (the doctor:
@@ -469,8 +469,10 @@ const THREAT_LINES = {
 
 // ---------- lookups ----------
 function missionFor(L) {
-  const ops = OPERATIONS[L.world] || OPERATIONS[0];
-  const oi = Math.min(ops.length - 1, Math.floor((L.num - 1) / 5)), op = ops[oi], step = (L.num - 1) % 5;
+  // a world shorter than ten operations plays an even spread of them, always the first and the last
+  const ops = OPERATIONS[L.world] || OPERATIONS[0], nOps = Math.ceil(worldSize(L.world) / 5);
+  const slot = Math.floor((L.num - 1) / 5), oi = nOps > 1 ? Math.round(slot * (ops.length - 1) / (nOps - 1)) : 0;
+  const op = ops[Math.min(ops.length - 1, oi)], step = (L.num - 1) % 5;
   const [objective, who0, line0] = op.steps[step];
   const who = step === 0 ? op.who : who0, line = step === 0 ? op.why : line0;
   return { op, opIndex: oi, step, objective, who, line, last: step === 4 };
@@ -482,7 +484,7 @@ function chatterFor(L, kind) {
 // Okafor is a voice in the static until Bastion finds her at Station Seven, and silent before
 // her first call; Vane only speaks once Bastion knows his name.
 function speakerOK(L, who) {
-  if (who === 'okafor') return L.world >= 1 || L.num >= 25;
-  if (who === 'vane') return L.world >= 1 && !(L.world === 1 && L.num < 16);
+  if (who === 'okafor') return L.world >= 1 || L.num >= midLevel(0);
+  if (who === 'vane') return L.world >= 1 && !(L.world === 1 && L.num < Math.round(worldSize(1) * 0.32));
   return true;
 }

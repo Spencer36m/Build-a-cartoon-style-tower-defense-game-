@@ -26,7 +26,7 @@ const PREMIUM = (() => {
     xpboost: P('once', 1.99, 'Field Training', 'Towers earn 50% more XP, so Armory upgrades unlock sooner.'),
     quarter: P('once', 1.99, 'Quartermaster', 'A free supply after every level you win.'),
     hyper: P('once', 0.99, 'Hyper Speed', 'Adds a 4× game speed to the speed button.'),
-    desert: P('once', 3.99, 'Red Mesa Wasteland', 'An extra world: 50 new levels across dunes, canyons, dead oil fields and an abandoned airbase, with Mummies, Dune Scorpions, Vultures, the Sand Colossus, its own music and a three-chapter side story. Opens once Hollow Creek Farmland is cleared.', { best: 'Expansion' }),
+    desert: P('once', 3.99, 'Red Mesa Wasteland', 'An extra world: 30 new levels across dunes, canyons, dead oil fields and an abandoned airbase, with Mummies, Dune Scorpions, Vultures, the Sand Colossus, its own music and a three-chapter side story. Opens once Hollow Creek Farmland is cleared.', { best: 'Expansion' }),
     tip1: P('many', 0.99, 'Buy the crew a coffee', 'A small thank-you. Every tip earns the Supporter badge.', { tip: true }),
     tip2: P('many', 2.99, 'Buy the crew lunch', 'A bigger thank-you. Every tip earns the Supporter badge.', { tip: true }),
     tip3: P('many', 9.99, 'Fund the next update', 'A huge thank-you. Every tip earns the Supporter badge.', { tip: true }),

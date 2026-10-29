@@ -18,7 +18,7 @@ const saveMeta = () => store.set(META_KEY, JSON.stringify(meta));
 const upg = (k) => meta.upg[k] | 0;
 const starsFor = (i) => meta.stars[LEVEL_META[i].id] | 0;
 // the expansion world opens to its owners once the farmland is cleared, whatever comes before it
-const expansionOpen = (w) => PREMIUM.has(WORLDS[w].id) && starsFor(LEVELS_PER_WORLD - 1) > 0;
+const expansionOpen = (w) => PREMIUM.has(WORLDS[w].id) && starsFor(worldEnd(0)) > 0;
 // the first sector of a main world opens when the main world before it is cleared
 const levelUnlocked = (i) => {
   const L = LEVEL_META[i];
@@ -26,7 +26,7 @@ const levelUnlocked = (i) => {
   if (i === 0) return true;
   return starsFor(L.num === 1 ? unlockFrom(L.world) : i - 1) > 0;
 };
-const worldUnlocked = (w) => levelUnlocked(w * LEVELS_PER_WORLD);
+const worldUnlocked = (w) => levelUnlocked(WORLD_START[w]);
 const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
 const costOf = (n) => Math.round(n * (1 - 0.04 * upg('discount')));
 const maxLives = () => BASE_LIVES + 3 * upg('walls');
@@ -257,14 +257,14 @@ function checkpoint() {
   S.dirty = false;
   saveMeta(); // banks the XP earned so far
   store.set(SAVE_KEY, JSON.stringify({
-    v: 4, level: S.levelIndex, lives: S.lives, cash: S.cash, wave: S.wave,
+    v: 5, level: S.levelIndex, id: S.L.id, lives: S.lives, cash: S.cash, wave: S.wave,
     towers: S.towers.map((t) => ({ type: t.type, col: t.col, row: t.row, tiers: t.tiers, spent: t.spent, mode: t.mode, kills: t.kills })),
   }));
 }
 function loadSave() {
   try {
     const sv = JSON.parse(store.get(SAVE_KEY));
-    if (sv && (sv.v === 3 || sv.v === 4) && LEVEL_META[sv.level] && Array.isArray(sv.towers) && sv.lives > 0 && sv.wave < LEVEL_META[sv.level].waves) return sv;
+    if (sv && sv.v === 5 && LEVEL_META[sv.level] && LEVEL_META[sv.level].id === sv.id && Array.isArray(sv.towers) && sv.lives > 0 && sv.wave < LEVEL_META[sv.level].waves) return sv;
   } catch (e) { /* corrupt save */ }
   return null;
 }
@@ -338,8 +338,11 @@ function makeSpawner(n) {
   return { wave: n, queue, time: 0, done: false, n: 0 };
 }
 
+// rewards grow with how hard a sector is (not where it sits in the list), so shorter worlds pay
+// the same per level as long ones did
+const rewardBase = (L) => Math.round(30 + L.diff * 50);
 function levelReward(stars, first) {
-  return Math.round((30 + stars * 15 + S.L.index * 1.5) * (first ? 1 : 0.35));
+  return Math.round((rewardBase(S.L) + stars * 15) * (first ? 1 : 0.35));
 }
 // Towers earn XP for their kills; clearing a level adds a bonus for every kind of tower that fought in it.
 function addXp(type, n) {
@@ -351,7 +354,7 @@ function addXp(type, n) {
 function xpBonus(won) {
   const types = new Set(S.towers.map((t) => t.type));
   for (const type of Object.keys(S.runXp)) types.add(type);
-  const each = won ? 25 + Math.round(S.L.index * 0.6) : 0;
+  const each = won ? 25 + Math.round(S.L.diff * 20) : 0;
   for (const type of types) addXp(type, each);
   return Math.round(Object.values(S.runXp).reduce((a, b) => a + b, 0));
 }
@@ -380,7 +383,7 @@ function victory() {
   if (bonusItem) meta.items[bonusItem] = (meta.items[bonusItem] | 0) + 1;
   const xp = xpBonus(true);
   const unlocked = prev === 0 ? TOWER_KEYS.filter((t) => TOWERS[t].unlock === S.levelIndex + 1 && !meta.owned[t]) : [];
-  const beat = S.L.num === 25 ? 'mid' : S.L.num === LEVELS_PER_WORLD ? 'outro' : null;
+  const beat = S.L.num === midLevel(S.L.world) ? 'mid' : S.L.num === worldSize(S.L.world) ? 'outro' : null;
   S.storyNext = beat && !Story.seen(`w${S.L.world}-${beat}`) ? `w${S.L.world}-${beat}` : null;
   saveMeta();
   Sound.play('win');
@@ -2315,13 +2318,13 @@ function storyUnlocked(id) {
   if (id === 'prologue') return true;
   const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
   if (part === 'intro') return worldUnlocked(+w);
-  return starsFor(+w * LEVELS_PER_WORLD + (part === 'mid' ? 24 : LEVELS_PER_WORLD - 1)) > 0;
+  return starsFor(part === 'mid' ? WORLD_START[+w] + midLevel(+w) - 1 : worldEnd(+w)) > 0;
 }
 function storyLockNote(id) {
   const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
   if (WORLDS[+w].expansion && !PREMIUM.has(WORLDS[+w].id)) return `Part of the ${WORLDS[+w].name} expansion`;
   if (part === 'intro') return `Reach ${WORLDS[+w].name}`;
-  return `Clear sector ${LEVEL_META[+w * LEVELS_PER_WORLD + (part === 'mid' ? 24 : LEVELS_PER_WORLD - 1)].id}`;
+  return `Clear sector ${LEVEL_META[part === 'mid' ? WORLD_START[+w] + midLevel(+w) - 1 : worldEnd(+w)].id}`;
 }
 function showChapters() {
   hideScreens();
@@ -2363,8 +2366,8 @@ function renderGlobeHint() {
   const { found, total } = Globe.wonders();
   $('#globe-hint').innerHTML = found >= total ? `All <b>${total}</b> wonders found` : `Spin the globe and tap the wonders · <b>${found}</b> / ${total} found`;
 }
-function worldStars(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) s += starsFor(w * LEVELS_PER_WORLD + i); return s; }
-function worldCleared(w) { let s = 0; for (let i = 0; i < LEVELS_PER_WORLD; i++) if (starsFor(w * LEVELS_PER_WORLD + i)) s++; return s; }
+function worldStars(w) { let s = 0; for (let i = WORLD_START[w]; i <= worldEnd(w); i++) s += starsFor(i); return s; }
+function worldCleared(w) { let s = 0; for (let i = WORLD_START[w]; i <= worldEnd(w); i++) if (starsFor(i)) s++; return s; }
 function selectWorld(w) {
   if (w !== S.worldSel) Sound.play('globe');
   S.worldSel = w;
@@ -2372,14 +2375,14 @@ function selectWorld(w) {
   const world = WORLDS[w], open = worldUnlocked(w);
   const stars = worldStars(w), cleared = worldCleared(w);
   const buyIt = world.expansion && !PREMIUM.has(world.id);
-  const lockNote = open ? '' : buyIt ? 'Expansion: 50 new levels, new zombies and a new boss' : world.expansion ? `Clear ${levelName(LEVELS_PER_WORLD - 1)} to open` : `Clear ${levelName(unlockFrom(w))} to unlock`;
+  const lockNote = open ? '' : buyIt ? `Expansion: ${worldSize(w)} new levels, new zombies and a new boss` : world.expansion ? `Clear ${levelName(worldEnd(0))} to open` : `Clear ${levelName(unlockFrom(w))} to unlock`;
   const card = $('#world-card');
   card.innerHTML = `
     <span class="w-index">${world.expansion ? 'Expansion world' : `World ${w + 1} of ${WORLDS.length}`}</span>
     <h3>${world.name}</h3>
     <p>${world.blurb}</p>
-    <div class="world-meter" aria-hidden="true"><span style="width:${(cleared / LEVELS_PER_WORLD) * 100}%"></span></div>
-    <div class="world-stats"><span><b>${cleared}</b> / ${LEVELS_PER_WORLD} cleared</span><span><b>${stars}</b> / ${LEVELS_PER_WORLD * 3} stars</span></div>
+    <div class="world-meter" aria-hidden="true"><span style="width:${(cleared / worldSize(w)) * 100}%"></span></div>
+    <div class="world-stats"><span><b>${cleared}</b> / ${worldSize(w)} cleared</span><span><b>${stars}</b> / ${worldSize(w) * 3} stars</span></div>
     <div class="wave-chips"></div>
     <p class="hint zombie-tip" hidden></p>
     ${open ? '' : `<p class="locked-note">${lockNote}</p>`}
@@ -2408,9 +2411,9 @@ function showLevels(w, focus) {
   S.worldSel = w;
   const grid = $('#level-grid');
   grid.innerHTML = '';
-  let firstOpen = w * LEVELS_PER_WORLD, next = -1;
-  for (let k = 0; k < LEVELS_PER_WORLD; k++) {
-    const i = w * LEVELS_PER_WORLD + k;
+  let firstOpen = WORLD_START[w], next = -1;
+  for (let k = 0; k < worldSize(w); k++) {
+    const i = WORLD_START[w] + k;
     const m = LEVEL_META[i], open = levelUnlocked(i), st = starsFor(i);
     if (open) firstOpen = i;
     if (open && !st && next < 0) next = i;
@@ -2523,7 +2526,7 @@ function selectLevel(i) {
   op.innerHTML = `<span class="ld-op-name">Operation ${m.op.name} <i>${m.step + 1} / 5</i></span><span class="ld-op-goal">${m.objective}</span><div class="ld-op-quote"><canvas width="160" height="160" aria-hidden="true"></canvas><p><b>${(CAST[spk] || CAST.voss).name}</b>${m.line}</p></div>`;
   op.querySelector('canvas').getContext('2d').drawImage(Comms.portrait(spk), 0, 0);
   box.append(op);
-  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${Math.round(30 + 45 + L.index * 1.5)} coins.`}</p>`);
+  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${rewardBase(L) + 45} coins.`}</p>`);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary ld-go'; go.textContent = st ? 'Replay mission' : 'Start mission';
   go.addEventListener('click', () => { Sound.init(); startGame(i); });
   box.append(go);

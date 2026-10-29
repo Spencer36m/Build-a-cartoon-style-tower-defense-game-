@@ -18,7 +18,7 @@ const SANDBOX = (() => {
     try { return { ...defaults(), ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch (e) { return defaults(); }
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* private mode: settings just are not kept */ } }
-  const index = () => cfg.world * LEVELS_PER_WORLD + cfg.num - 1;
+  const index = () => WORLD_START[cfg.world] + Math.min(cfg.num, worldSize(cfg.world)) - 1;
 
   // the level as the sandbox rules reshape it; the campaign's own copy is left alone
   function level(i, sb) {
@@ -90,13 +90,13 @@ const SANDBOX = (() => {
     // the map: world, number, a live preview and the sky
     const map = el('section', 'sb-card');
     map.append(el('h3', 'sb-h', 'Map'));
-    map.append(chips(worldsOpen().map((i) => [i, WORLDS[i].short]), cfg.world, (v) => set({ world: v, weather: 'forecast', num: Math.min(cfg.num, LEVELS_PER_WORLD) })));
+    map.append(chips(worldsOpen().map((i) => [i, WORLDS[i].short]), cfg.world, (v) => set({ world: v, weather: 'forecast', num: Math.min(cfg.num, worldSize(v)) })));
     const pick = el('div', 'sb-map-pick');
     const prev = el('button', 'btn btn-small', '‹'), next = el('button', 'btn btn-small', '›'), rnd = el('button', 'btn btn-small', 'Random');
     prev.type = next.type = rnd.type = 'button'; prev.setAttribute('aria-label', 'Previous map'); next.setAttribute('aria-label', 'Next map');
-    prev.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num > 1 ? cfg.num - 1 : LEVELS_PER_WORLD }); });
-    next.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num < LEVELS_PER_WORLD ? cfg.num + 1 : 1 }); });
-    rnd.addEventListener('click', () => { Sound.play('click'); set({ world: worldsOpen()[Math.floor(Math.random() * worldsOpen().length)], num: 1 + Math.floor(Math.random() * LEVELS_PER_WORLD), weather: 'forecast' }); });
+    prev.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num > 1 ? cfg.num - 1 : worldSize(cfg.world) }); });
+    next.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num < worldSize(cfg.world) ? cfg.num + 1 : 1 }); });
+    rnd.addEventListener('click', () => { Sound.play('click'); const w = worldsOpen()[Math.floor(Math.random() * worldsOpen().length)]; set({ world: w, num: 1 + Math.floor(Math.random() * worldSize(w)), weather: 'forecast' }); });
     pick.append(prev, el('span', 'sb-map-name', `<b>${L.id}</b> ${L.name}`), next, rnd);
     map.append(pick);
     const frame = el('div', 'ld-map sb-thumb'); const cv = document.createElement('canvas'); cv.width = 480; cv.height = 288; frame.append(cv); map.append(frame);

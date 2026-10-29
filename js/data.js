@@ -5,7 +5,6 @@
 const TILE = 48, COLS = 20, ROWS = 12;
 const W = COLS * TILE, H = ROWS * TILE;
 const TAU = Math.PI * 2;
-const LEVELS_PER_WORLD = 50;
 const BASE_LIVES = 20;
 const FONT_DISPLAY = '"Barlow Condensed", "Arial Narrow", system-ui, sans-serif';
 const FONT_BODY = '"Barlow", "Segoe UI", system-ui, sans-serif';
@@ -55,7 +54,7 @@ function rgba(h, a) {
 // lat/lon place each world on the globe (degrees).
 const WORLDS = [
   {
-    id: 'farmland', name: 'Hollow Creek Farmland', short: 'Farmland', lat: 38, lon: -95,
+    id: 'farmland', levels: 30, name: 'Hollow Creek Farmland', short: 'Farmland', lat: 38, lon: -95,
     blurb: 'The outbreak started in the cornfields. Hold the farm roads and keep the survivors safe.',
     ground: ['#5f7a3a', '#6d8742', '#55702f'], road: '#8b7356', roadEdge: '#5e4b37', water: '#2f5d6b',
     decor: ['oak', 'oak', 'bush', 'hay', 'fence', 'crops', 'rock', 'car', 'barn'],
@@ -64,7 +63,7 @@ const WORLDS = [
     boss: 'harvester',
   },
   {
-    id: 'graveyard', name: 'Blackwood Cemetery', short: 'Cemetery', lat: 52, lon: 10,
+    id: 'graveyard', levels: 30, name: 'Blackwood Cemetery', short: 'Cemetery', lat: 52, lon: 10,
     blurb: 'Fog rolls between the headstones. The dead here do not stay buried.',
     ground: ['#3f4f3a', '#4a5a41', '#36442f'], road: '#77746b', roadEdge: '#4c4a44', water: '#26424a',
     decor: ['tomb', 'tomb', 'cross', 'deadtree', 'deadtree', 'bush', 'rock', 'crypt'],
@@ -73,7 +72,7 @@ const WORLDS = [
     boss: 'graveLord',
   },
   {
-    id: 'tundra', name: 'Frostfall Tundra', short: 'Tundra', lat: 68, lon: 100,
+    id: 'tundra', levels: 40, name: 'Frostfall Tundra', short: 'Tundra', lat: 68, lon: 100,
     blurb: 'Frozen bodies thaw and march across the ice. Cold barely slows them here.',
     ground: ['#d9e2e8', '#e6edf1', '#c9d4dc'], road: '#9aa6b0', roadEdge: '#6f7b86', water: '#2b5a78',
     decor: ['pine', 'pine', 'pine', 'snowrock', 'snowrock', 'cabin', 'log'],
@@ -82,7 +81,7 @@ const WORLDS = [
     boss: 'abomination',
   },
   {
-    id: 'swamp', name: 'Black Bayou', short: 'Bayou', lat: 4, lon: -62,
+    id: 'swamp', levels: 40, name: 'Black Bayou', short: 'Bayou', lat: 4, lon: -62,
     blurb: 'Toxic runoff has made the swamp dead swell up. Pop them before they burst.',
     ground: ['#4c5a2e', '#57663a', '#434f27'], road: '#6b5b45', roadEdge: '#463b2c', water: '#3a4f2c',
     decor: ['cypress', 'cypress', 'reeds', 'barrel', 'mushroom', 'deadtree', 'shack'],
@@ -92,7 +91,7 @@ const WORLDS = [
   },
   // the paid expansion: open to players who own it once they have cleared the farmland
   {
-    id: 'desert', name: 'Red Mesa Wasteland', short: 'Desert', lat: 12, lon: 4, expansion: true,
+    id: 'desert', levels: 30, name: 'Red Mesa Wasteland', short: 'Desert', lat: 12, lon: 4, expansion: true,
     blurb: 'Past the last town the land burns dry. Old army bases and dead oil fields hide where the outbreak began.',
     ground: ['#d4a768', '#e0b878', '#c09056'], road: '#9a7a52', roadEdge: '#6a5034', water: '#2f7f86',
     decor: ['cactus', 'cactus', 'sagebrush', 'sagebrush', 'skull', 'mesa', 'mesa', 'wreck', 'pumpjack', 'drums', 'outpost'],
@@ -104,17 +103,24 @@ const WORLDS = [
   },
   // the campaign's last world, after the bayou: Kessler-Vane's home city
   {
-    id: 'city', name: 'Fallen City', short: 'City', lat: -30, lon: 15, snapLand: true,
+    id: 'city', levels: 50, name: 'Fallen City', short: 'City', lat: -30, lon: 15, snapLand: true,
     blurb: 'Kessler-Vane Tower still stands over the dead city. Fight block by block, street by street, to the man who started it all.',
     ground: ['#6e6e6a', '#7a7a76', '#62625e'], road: '#3c3e42', roadEdge: '#8a8a86', water: '#2c4a58',
     decor: ['skyscraper', 'skyscraper', 'skyscraper', 'office', 'office', 'shop', 'shop', 'apartment', 'apartment', 'gasstation', 'parking', 'bus', 'taxi', 'hydrant', 'streetlight', 'barricade', 'dumpster', 'planter'],
     // starts a little below where the bayou ends: the streets leave less room to build
-    diff: [5, 0.03],
+    diff: [5, 1.47],
     times: ['night', 'dusk', 'night', 'day', 'dawn'], weather: ['rain', 'clear', 'fog', 'rain'],
     mobs: [['suit', 1], ['swat', 4], ['drone', 10]],
     boss: 'chairman',
   },
 ];
+// Worlds have different lengths: where each one's levels start in the full list, and its last.
+const WORLD_START = [];
+WORLDS.reduce((n, w) => { WORLD_START.push(n); return n + w.levels; }, 0);
+const worldSize = (w) => WORLDS[w].levels;
+const worldEnd = (w) => WORLD_START[w] + WORLDS[w].levels - 1;
+// the sector whose first clear plays a world's mid-story chapter
+const midLevel = (w) => Math.ceil(WORLDS[w].levels / 2);
 
 // ============================================================
 // Zombies
@@ -367,7 +373,7 @@ const TOWERS = {
     ],
   },
   flame: {
-    name: 'Flamethrower', role: 'Burn', place: 'land', air: false, cost: 110, key: '6', unlock: 7, price: 220,
+    name: 'Flamethrower', role: 'Burn', place: 'land', air: false, cost: 110, key: '6', unlock: 6, price: 220,
     desc: 'Short-range fire that sets crowds alight. Burning ignores armor.',
     base: { dmg: 4, rate: 0.32, range: 1.9, splash: 0.75, burn: 6, burnDur: 2 },
     paths: [
@@ -395,7 +401,7 @@ const TOWERS = {
     ],
   },
   tesla: {
-    name: 'Tesla Coil', role: 'Chain', place: 'land', air: true, cost: 130, key: '7', unlock: 12, price: 350,
+    name: 'Tesla Coil', role: 'Chain', place: 'land', air: true, cost: 130, key: '7', unlock: 9, price: 350,
     desc: 'Lightning arcs between zombies and ignores armor.',
     base: { dmg: 11, rate: 1.25, range: 2.4, chain: 3 },
     paths: [
@@ -423,7 +429,7 @@ const TOWERS = {
     ],
   },
   heli: {
-    name: 'Gunship', role: 'Flying', place: 'land', air: true, cost: 260, key: '8', unlock: 18, price: 500,
+    name: 'Gunship', role: 'Flying', place: 'land', air: true, cost: 260, key: '8', unlock: 13, price: 500,
     desc: 'A helicopter that flies to the leading zombie anywhere on the map and hoses it down.',
     base: { dmg: 4, rate: 0.14, range: 2.0, speed: 140 },
     paths: [
@@ -451,7 +457,7 @@ const TOWERS = {
     ],
   },
   sub: {
-    name: 'Submarine', role: 'Water only', place: 'water', air: true, cost: 180, key: '9', unlock: 30, price: 700,
+    name: 'Submarine', role: 'Water only', place: 'water', air: true, cost: 180, key: '9', unlock: 18, price: 700,
     desc: 'Fires homing missiles from the water. Its sonar reveals Tunnelers so every tower can hit them.',
     base: { dmg: 24, rate: 1.3, range: 3.2, pierce: 0.6, missiles: 1, sonar: true },
     paths: [
@@ -479,7 +485,7 @@ const TOWERS = {
     ],
   },
   jet: {
-    name: 'Fighter Jet', role: 'Flying', place: 'land', air: true, cost: 300, key: '0', unlock: 40, price: 900,
+    name: 'Fighter Jet', role: 'Flying', place: 'land', air: true, cost: 300, key: '0', unlock: 24, price: 900,
     desc: 'Circles its airstrip at speed and fires homing missiles at anything below.',
     base: { dmg: 18, rate: 0.9, range: 2.6, missiles: 1, orbit: 2.8, planes: 1 },
     paths: [
