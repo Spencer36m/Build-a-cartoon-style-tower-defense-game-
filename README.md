@@ -50,6 +50,10 @@ The app is landscape-only, hides the status bar, bundles its fonts, and declares
 
 Each world has 50 levels. Every level has its own road layout, scenery and time of day. Some have rivers and lakes with bridges, and some have two entrances. Every 10th level brings an elite Juggernaut, and level 50 is the world boss. Beating a level unlocks the next, and clearing level 50 unlocks the next world.
 
+The first time level 1-1 is played it is a training mission, and it cannot be skipped. Major Voss and Sgt. Moreno walk you through it one step at a time: build a Machine Gunner on a glowing spot, send in the first wave, earn cash, build a second tower, buy an upgrade, then where to find lives, supplies and the speed controls. Each step lights up the one thing to use and dims the rest, which does not respond until that step is done. If you leave part way, it starts again next time you play 1-1.
+
+Every tower gets a briefing card the first time it is in your arsenal (the Sniper and Mortar Team on 1-2, then each tower as you unlock it, and the Heater on the first snow level): what it does, what it is great against, what to watch out for and a tip, while the game waits. The Arsenal button for the new tower then glows for a few seconds so you can find it.
+
 When a boss or elite arrives, a health bar drops in at the top of the battlefield with a red flash round the edges. It shows the boss's portrait, name, armour and health; damage leaves a pale trail that drains away, big hits shake it, and it pulses when the boss is nearly dead. It stamps DEFEATED (or BROKE THROUGH) when the fight is over, moves aside for the radio messages, and shows two bars when two bosses are on the field.
 
 | World | New zombies | Boss |
@@ -236,6 +240,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/missions.js`, `js/comms.js`: the 40 operations, the cast's radio lines, and the comms card that shows them in a mission
 - `js/music.js`: the menu theme and each world's song, all synthesized
 - `js/audio.js`: synthesized sound effects, the music player and ambience
+- `js/coach.js`: the training mission and the new tower briefings
 - `js/game.js`: game engine, input, menus, store and saving
 - `fonts/`: Barlow and Barlow Condensed (SIL Open Font License), bundled for offline play
 - `manifest.webmanifest`, `sw.js`, `icons/`: installable web app and offline support

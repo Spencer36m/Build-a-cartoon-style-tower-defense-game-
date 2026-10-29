@@ -175,6 +175,10 @@ function sayChatter(kind, o) {
 }
 // sb: sandbox rules (see sandbox.js); a sandbox game ignores saves and earns nothing
 function startGame(index, save, sb = null) {
+  COACH.stop();
+  // the very first mission is the training mission, always from the start
+  const training = !sb && index === 0 && COACH.due();
+  if (training) save = null;
   S.sandbox = sb;
   const L = sb ? SANDBOX.level(index, sb) : getLevel(index);
   if (sb) save = null;
@@ -214,6 +218,8 @@ function startGame(index, save, sb = null) {
   S.heatHint = false; S.frozeHint = false;
   checkpoint();
   buildShop(); renderInfo(); renderNextWave(); renderPowerbar(); updateHUD(true);
+  if (training) COACH.startTutorial();
+  else if (!sb) COACH.briefings();
 }
 
 function checkpoint() {
@@ -256,7 +262,7 @@ function applySave(sv) {
 }
 
 function startWave() {
-  if (S.state !== 'playing' || S.paused || S.wave >= S.L.waves) return;
+  if (S.state !== 'playing' || S.paused || S.wave >= S.L.waves || !COACH.allowWave()) return;
   const early = S.spawners.length > 0 || S.enemies.length > 0;
   S.wave++;
   S.spawners.push(makeSpawner(S.wave));
@@ -347,7 +353,7 @@ function victory() {
   Sound.play('win');
   const next = LEVEL_META[S.levelIndex + 1];
   let text;
-  if (unlocked.length) text = `New tower unlocked: ${unlocked.map((t) => TOWERS[t].name).join(', ')}.`;
+  if (unlocked.length) text = `New tower unlocked: ${unlocked.map((t) => TOWERS[t].name).join(', ')}. You get a briefing on it at the start of your next mission.`;
   else if (!next) text = 'Every sector is secure. Replay levels to earn all the stars.';
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
   else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id}, ${missionFor(next).objective.toLowerCase()}.`;
@@ -1865,6 +1871,7 @@ function render() {
     c.restore();
     label(c, 'TAP TO CALL AIRSTRIKE', h.x, h.y - TILE * 1.8 - 10, 13, '#ece6d6');
   }
+  COACH.drawMap(c, t);
   drawBossBars(c);
 
   if (S.banner) {
@@ -1902,7 +1909,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - lastFrame) / 1000);
   lastFrame = now;
   S.anim += dt;
-  if (S.state === 'playing' && !S.paused) {
+  if (S.state === 'playing' && !S.paused && !COACH.holding) {
     for (let i = 0; i < S.speed; i++) { update(dt); if (S.state !== 'playing') break; }
   } else if (S.state === 'won' || S.state === 'over') updateFx(dt);
   if (!S.paused) {
@@ -1914,7 +1921,7 @@ function frame(now) {
     if (S.L) WEATHER.update(dt, S.state === 'playing');
     if (S.L && S.state !== 'menu') ANIMALS.update(dt, S.enemies, S.towerAt);
   }
-  if (S.state !== 'menu') { updateBossBars(dt); render(); }
+  if (S.state !== 'menu') { updateBossBars(dt); render(); COACH.update(dt); }
   updateHUD();
   updateAudioScene();
   requestAnimationFrame(frame);
@@ -2226,7 +2233,7 @@ function renderPowerbar() {
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen', '#sandbox-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
 function coinText() { return `${meta.coins} coins`; }
-function leaveGame() { if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; S.sandbox = null; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
+function leaveGame() { COACH.stop(); if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; S.sandbox = null; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
 
 function showMenu() {
   leaveGame();
@@ -2832,7 +2839,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('button')) Soun
 }
 MenuFX.init($('#menu-fx'));
 Comms.init($('#stage'));
-Comms.setHold(() => S.paused || S.state !== 'playing' || Story.active);
+Comms.setHold(() => S.paused || S.state !== 'playing' || Story.active || COACH.active || COACH.holding);
 Story.init();
 LevelFX.init($('#level-fx'));
 new ResizeObserver(() => layoutLevels()).observe($('#level-grid'));

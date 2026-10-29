@@ -981,3 +981,77 @@ kbd {
 .sb-spawn-btn { justify-content: center; padding: 3px; cursor: pointer; border: 0; }
 .sb-spawn-btn::before { display: none; }
 .sb-spawn-btn:active { transform: scale(0.94); }
+
+/* ---------- Coach: the training mission and new tower briefings ---------- */
+.coach { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+.coach-spot {
+  position: fixed; border: 3px solid var(--amber); border-radius: 10px; pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(5, 7, 9, 0), 0 0 18px rgba(227, 168, 62, 0.7);
+  animation: coach-pulse 1.2s ease-in-out infinite;
+  transition: left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+.coach-spot.dim { box-shadow: 0 0 0 200vmax rgba(5, 7, 9, 0.6), 0 0 18px rgba(227, 168, 62, 0.8); }
+@keyframes coach-pulse { 50% { border-color: #ffe0a0; } }
+.coach-block { position: fixed; pointer-events: auto; background: transparent; }
+.coach-arrow {
+  position: fixed; width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent;
+  border-top: 22px solid var(--amber); filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.6)); pointer-events: none;
+  animation: coach-bob 0.8s ease-in-out infinite alternate;
+}
+.coach-arrow.up { border-top: 0; border-bottom: 22px solid var(--amber); }
+@keyframes coach-bob { to { transform: translateY(-7px); } }
+.coach-arrow.up { animation-name: coach-bob-up; }
+@keyframes coach-bob-up { to { transform: translateY(7px); } }
+.coach-card {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%) rotate(-0.4deg);
+  width: min(560px, calc(100vw - 24px)); display: flex; align-items: stretch;
+  background: #f2eee4; color: #101010; border: 3px solid #101010; box-shadow: 5px 6px 0 rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+.coach-card.top { top: 64px; bottom: auto; }
+.coach-card.pass { pointer-events: none; }
+.coach-card.nudge { animation: coach-nudge 0.35s; }
+@keyframes coach-nudge { 25% { transform: translateX(calc(-50% - 6px)); } 75% { transform: translateX(calc(-50% + 6px)); } }
+.coach-face { width: 78px; height: 78px; flex: none; border-right: 3px solid #101010; background: #f2eee4; align-self: flex-start; }
+.coach-body { padding: 7px 12px 9px; min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.coach-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.coach-name { font-family: var(--font-display); font-weight: 800; font-size: 0.84rem; letter-spacing: 0.08em; text-transform: uppercase; background: #101010; color: var(--amber); padding: 0 6px; }
+.coach-tag { font-family: var(--font-display); font-weight: 600; font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6d6a63; }
+.coach-count { margin-left: auto; font-family: var(--font-display); font-weight: 700; font-size: 0.74rem; color: #6d6a63; }
+.coach-text { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; line-height: 1.22; text-transform: uppercase; letter-spacing: 0.01em; }
+.coach-next { align-self: flex-end; }
+.coach-brief {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px;
+  background: rgba(5, 7, 9, 0.66); pointer-events: auto;
+}
+.coach-brief[hidden] { display: none; }
+.brief-box {
+  width: min(520px, 100%); max-height: calc(100vh - 24px); overflow: auto; background: var(--panel); color: var(--text);
+  border: 1px solid var(--line-strong); clip-path: var(--cut); padding: 16px 18px 14px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  animation: brief-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes brief-in { from { transform: translateY(18px) scale(0.96); opacity: 0; } }
+.brief-kicker { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); }
+.brief-head { display: flex; gap: 14px; align-items: center; }
+.brief-icon-slot canvas { width: 84px; height: 84px; display: block; border: 1px solid var(--line-strong); background: radial-gradient(circle at 50% 40%, #3a4636, #1c231a); }
+.brief-head h3 { margin: 0; font-family: var(--font-display); font-size: 1.7rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.brief-tags { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.brief-tags span { font-family: var(--font-display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 7px; border: 1px solid var(--line-strong); color: var(--muted); }
+.brief-tags .role { background: var(--amber); color: #1a1408; border-color: var(--amber); }
+.brief-what { margin: 12px 0 8px; font-size: 1rem; line-height: 1.4; }
+.brief-rows { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 0.92rem; line-height: 1.35; }
+.brief-rows dt { font-family: var(--font-display); font-weight: 800; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; padding-top: 2px; }
+.brief-rows dd { margin: 0; color: #d4d0c6; }
+.brief-rows .good { color: var(--green); } .brief-rows .bad { color: #e0675b; } .brief-rows .tip { color: var(--ice); }
+.brief-actions { margin-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brief-actions .hint { margin: 0; }
+@media (max-width: 560px), (max-height: 520px) {
+  .coach-face { width: 60px; height: 60px; }
+  .coach-text { font-size: 0.95rem; }
+  .coach-card.top { top: 8px; }
+  .brief-box { padding: 12px 14px; }
+  .brief-head h3 { font-size: 1.35rem; }
+  .brief-icon-slot canvas { width: 64px; height: 64px; }
+  .brief-what { font-size: 0.92rem; margin: 8px 0 6px; }
+  .brief-rows { font-size: 0.85rem; }
+}
