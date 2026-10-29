@@ -195,6 +195,7 @@ const LevelFX = (() => {
     [[0, '#07080f'], [0.6, '#1c1a33'], [1, '#3a2f4a']],
     [[0, '#081424'], [0.55, '#1c3550'], [1, '#6d8aa0']],
     [[0, '#0c140e'], [0.5, '#24331f'], [1, '#5a6a3a']],
+    [[0, '#3a1a2a'], [0.4, '#a0402a'], [0.72, '#f0904a'], [1, '#ffd890']],
   ];
 
   function resize() {
@@ -207,7 +208,7 @@ const LevelFX = (() => {
   function build() {
     const rng = mulberry32(17 + world * 101);
     parts = [];
-    const n = world === 2 ? 120 : world === 3 ? 40 : world === 1 ? 14 : 10;
+    const n = world === 2 ? 120 : world === 3 ? 40 : world === 4 ? 60 : world === 1 ? 14 : 10;
     for (let i = 0; i < n; i++) parts.push({ x: rng() * w, y: rng() * h, s: 0.5 + rng(), ph: rng() * TAU });
     props = { rng: Array.from({ length: 80 }, () => rng()) };
   }
@@ -335,12 +336,44 @@ const LevelFX = (() => {
     for (let i = 0; i < 5; i++) glowAt(((t * 10 + i * 260) % (w + 400)) - 200, h * 0.78, 240, '140,160,110', 0.12);
   }
 
+  function desert() {
+    // a huge low sun behind the heat shimmer, red mesas, dunes, a pumpjack nodding and vultures circling
+    const sx = w * 0.62, sy = h * 0.58, sr = Math.min(w, h) * 0.11;
+    glowAt(sx, sy, Math.min(w, h) * 0.6, '255,170,90', 0.45);
+    c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(sx, sy, sr, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(160,60,40,0.25)'; for (let i = 0; i < 4; i++) c.fillRect(sx - sr, sy - sr * 0.2 + i * sr * 0.28 + Math.sin(t * 2 + i) * 2, sr * 2, 2);
+    const mesa = (x, y, mw, mh, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x - mw * 0.7, y); c.lineTo(x - mw * 0.5, y - mh * 0.85); c.lineTo(x - mw * 0.42, y - mh); c.lineTo(x + mw * 0.4, y - mh); c.lineTo(x + mw * 0.5, y - mh * 0.8); c.lineTo(x + mw * 0.7, y); c.fill(); };
+    mesa(w * 0.18, h * 0.7, w * 0.22, h * 0.18, '#7a2e22'); mesa(w * 0.86, h * 0.68, w * 0.16, h * 0.14, '#6a2a20'); mesa(w * 0.45, h * 0.7, w * 0.1, h * 0.08, '#8a3a26');
+    hills(h * 0.76, 18, '#a0502a', 2, 0.004);
+    hills(h * 0.84, 22, '#6a3018', 5, 0.005);
+    // the pumpjack, a cactus and a camel caravan on the ridge
+    c.fillStyle = '#1e0e0a';
+    const px = w * 0.3, py = h * 0.86, nod = Math.sin(t * 1.4) * 0.25;
+    c.beginPath(); c.moveTo(px - 12, py); c.lineTo(px, py - 40); c.lineTo(px + 12, py); c.fill();
+    c.save(); c.translate(px, py - 40); c.rotate(nod); c.fillRect(-36, -3, 64, 6); c.beginPath(); c.moveTo(28, -6); c.quadraticCurveTo(40, -2, 34, 14); c.lineTo(26, 6); c.fill(); c.restore();
+    c.fillRect(px + 32, py - 30, 3, 30);
+    const cx = w * 0.78, cy = h * 0.88;
+    c.fillRect(cx - 4, cy - 60, 9, 60); c.fillRect(cx - 22, cy - 34, 18, 7); c.fillRect(cx - 22, cy - 50, 7, 22); c.fillRect(cx + 5, cy - 42, 16, 7); c.fillRect(cx + 15, cy - 58, 7, 22);
+    for (let i = 0; i < 3; i++) {
+      const x = ((t * 8 + i * 40) % (w + 200)) - 100, y = h * 0.76 - 2;
+      c.beginPath(); c.ellipse(x, y - 14, 12, 6, 0, 0, TAU); c.fill(); c.beginPath(); c.ellipse(x - 2, y - 20, 6, 5, 0, 0, TAU); c.fill();
+      c.fillRect(x + 8, y - 26, 3, 14); c.fillRect(x + 8, y - 28, 8, 4);
+      for (const lx of [-8, -4, 4, 8]) c.fillRect(x + lx, y - 10, 2, 10 + Math.sin(t * 4 + i + lx) * 1.5);
+    }
+    // vultures wheeling high up
+    c.strokeStyle = '#2a120c'; c.lineWidth = 2;
+    for (let i = 0; i < 4; i++) { const a = t * 0.4 + i * 1.6, x = w * 0.5 + Math.cos(a) * w * 0.18, y = h * 0.22 + Math.sin(a) * h * 0.06, f = Math.sin(t * 3 + i) * 2; c.beginPath(); c.moveTo(x - 10, y + f); c.quadraticCurveTo(x - 4, y - 3, x, y); c.quadraticCurveTo(x + 4, y - 3, x + 10, y + f); c.stroke(); }
+    // blowing sand
+    c.fillStyle = 'rgba(255,220,160,0.5)';
+    for (const p of parts) { const x = (p.x + t * 90 * p.s) % (w + 40) - 20, y = h * 0.7 + p.y * 0.3 + Math.sin(t * 2 + p.ph) * 4; c.fillRect(x, y, 3 * p.s, 1); }
+  }
+
   function draw() {
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     const g = c.createLinearGradient(0, 0, 0, h);
     for (const [k, col] of SKIES[world] || SKIES[0]) g.addColorStop(k, col);
     c.fillStyle = g; c.fillRect(0, 0, w, h);
-    [farmland, cemetery, tundra, bayou][world]();
+    [farmland, cemetery, tundra, bayou, desert][world]();
     // darken the middle so the mission map stays readable
     const v = c.createRadialGradient(w * 0.4, h * 0.55, h * 0.1, w * 0.4, h * 0.55, w * 0.7);
     v.addColorStop(0, 'rgba(6,8,10,0.45)'); v.addColorStop(1, 'rgba(6,8,10,0.2)');

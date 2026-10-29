@@ -26,6 +26,7 @@ const PREMIUM = (() => {
     xpboost: P('once', 1.99, 'Field Training', 'Towers earn 50% more XP, so Armory upgrades unlock sooner.'),
     quarter: P('once', 1.99, 'Quartermaster', 'A free supply after every level you win.'),
     hyper: P('once', 0.99, 'Hyper Speed', 'Adds a 4× game speed to the speed button.'),
+    desert: P('once', 3.99, 'Red Mesa Wasteland', 'A fifth world: 50 new levels across dunes, canyons, dead oil fields and an abandoned airbase, with Mummies, Dune Scorpions, Vultures, the Sand Colossus, its own music and three new story chapters. Opens once Hollow Creek Farmland is cleared.', { best: 'Expansion' }),
     tip1: P('many', 0.99, 'Buy the crew a coffee', 'A small thank-you. Every tip earns the Supporter badge.', { tip: true }),
     tip2: P('many', 2.99, 'Buy the crew lunch', 'A bigger thank-you. Every tip earns the Supporter badge.', { tip: true }),
     tip3: P('many', 9.99, 'Fund the next update', 'A huge thank-you. Every tip earns the Supporter badge.', { tip: true }),
@@ -244,6 +245,15 @@ const PREMIUM = (() => {
     c.fillStyle = g; c.fill();
     BUILDINGS.flagMark(c, F, 7.6, 5.2);
   });
+  // a little desert at sunset for the expansion's card
+  const desertArt = (size) => pic(size, (c, s) => {
+    const g = c.createLinearGradient(0, 0, 0, s); g.addColorStop(0, '#f4b860'); g.addColorStop(0.55, '#e07a3a'); g.addColorStop(1, '#7a3a20');
+    c.fillStyle = g; c.fillRect(0, 0, s, s);
+    c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(s * 0.68, s * 0.42, s * 0.13, 0, TAU); c.fill();
+    c.fillStyle = '#9a4a28'; c.beginPath(); c.moveTo(0, s * 0.62); c.lineTo(s * 0.12, s * 0.62); c.lineTo(s * 0.16, s * 0.46); c.lineTo(s * 0.38, s * 0.46); c.lineTo(s * 0.42, s * 0.62); c.lineTo(s, s * 0.64); c.lineTo(s, s); c.lineTo(0, s); c.fill();
+    c.fillStyle = '#d49a5a'; c.beginPath(); c.moveTo(0, s * 0.8); c.quadraticCurveTo(s * 0.35, s * 0.62, s * 0.7, s * 0.78); c.quadraticCurveTo(s * 0.85, s * 0.84, s, s * 0.76); c.lineTo(s, s); c.lineTo(0, s); c.fill();
+    c.fillStyle = '#2a3a1a'; c.fillRect(s * 0.78, s * 0.56, s * 0.04, s * 0.22); c.fillRect(s * 0.72, s * 0.62, s * 0.06, s * 0.03); c.fillRect(s * 0.72, s * 0.56, s * 0.03, s * 0.07); c.fillRect(s * 0.82, s * 0.6, s * 0.05, s * 0.03); c.fillRect(s * 0.85, s * 0.54, s * 0.03, s * 0.08);
+  });
   const swatch = (cls) => { const d = document.createElement('div'); d.className = `cz-swatch ${cls}`; return d; };
   const GLYPH = {
     coins: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 10v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4M5 14v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4"/></svg>',
@@ -286,6 +296,8 @@ const PREMIUM = (() => {
       section(grid, 'Featured');
       card(grid, 'starter', skinIcon('gunner', 'gold', 64), after, { wide: true, meta: 'Best for new players' });
     }
+    section(grid, 'Expansion');
+    card(grid, 'desert', desertArt(64), after, { wide: true, meta: 'New world' });
     section(grid, 'Coins');
     for (const id of ['coins1', 'coins2', 'coins3']) card(grid, id, glyph('coins'), after, { meta: `${PRODUCTS[id].coins.toLocaleString('en-US')} coins` });
     section(grid, 'Boosts', 'Bought once, they work in every level for good.');

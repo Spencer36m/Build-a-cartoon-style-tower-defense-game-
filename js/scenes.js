@@ -881,6 +881,12 @@ const SCENES = (() => {
         c.fillStyle = tone(c, 0.45, k); poly(c, [[w * 0.2, hy - h * 0.38], [w * 0.28, hy], [w * 0.36, hy - h * 0.2], [w * 0.55, hy - h * 0.5], [w * 0.64, hy], [w * 0.78, hy - h * 0.22], [w, hy - h * 0.1], [w, hy]]); c.fill();
         c.strokeStyle = INK; c.lineWidth = u * 0.4; for (const [px, py] of [[0.2, 0.38], [0.55, 0.5], [0.78, 0.22], [1, 0.34]]) for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * px, hy - h * py); c.lineTo(w * px + (i - 2) * u * 5 + u * 3, hy - h * py * (0.4 + i * 0.08)); c.stroke(); }
         c.fillStyle = INK; c.fillRect(0, hy, w, h); station(c, w * 0.3, hy, h * 0.22, u);
+      } else if (o.world === 4) {
+        // a huge low sun behind flat-topped mesas, dunes in tone and a pumpjack nodding
+        c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.7, hy - h * 0.06, h * 0.24, 0, TAU); c.fill(); rays(c, w * 0.7, hy - h * 0.06, 30, w, 0.2, 13, PAPER, Math.PI, TAU);
+        desertMesas(c, w, h, hy, k);
+        c.fillStyle = INK; c.fillRect(0, hy, w, h);
+        pumpjack(c, w * 0.2, hy, h * 0.2, u);
       } else {
         c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.55, h * 0.36, h * 0.12, 0, TAU); c.fill();
         c.fillStyle = INK; c.fillRect(0, hy, w, h);
@@ -906,6 +912,7 @@ const SCENES = (() => {
       const u = unit(w, h);
       if (o.world === 2) motes(c, w, h, t, 70, 3, PAPER, 0.8, u * 0.4, u * 8, -u * 6);
       else if (o.world === 3) motes(c, w, h, t, 26, 5, '#c8ffd8', 0.9, u * 0.35, -u * 0.8, u * 0.8, u * 4);
+      else if (o.world === 4) motes(c, w, h, t, 60, 9, '#ffd8a0', 0.7, u * 0.3, u * 0.4, u * 9, u * 2);
       else if (o.world === 1) { for (let i = 0; i < 3; i++) fog(c, ((t * u * (2 + i) + i * w * 0.45) % (w * 1.4)) - w * 0.2, h * (0.72 + i * 0.03), w * 0.25, h * 0.05, 0.3); }
       else motes(c, w, h, t, 30, 6, '#ffd890', 0.8, u * 0.3, -u * 2, u * 1.5, u * 3);
     },
@@ -1353,6 +1360,99 @@ const SCENES = (() => {
       vignette(c, w, h, 0.6, k);
     },
     anim(c, w, h, t) { const u = unit(w, h); glow(c, w * 0.56, h * 0.25, u * (30 + 10 * pulse(t, 1.5)), SPOT.green, 0.25); motes(c, w, h * 0.8, t, 30, 12, PAPER, 0.6, u * 0.3, u * 6, 0); },
+  };
+
+  // ============================================================ CHAPTER 5 · PHASE TWO (the desert)
+  // flat-topped buttes along the horizon: ink cliffs with a band of tone where the light hits
+  function desertMesas(c, w, h, hy, k) {
+    for (const [x, mw, mh] of [[0.12, 0.26, 0.2], [0.46, 0.14, 0.12], [0.9, 0.22, 0.16]]) {
+      const pts = [[w * (x - mw * 0.6), hy], [w * (x - mw * 0.45), hy - h * mh * 0.8], [w * (x - mw * 0.38), hy - h * mh], [w * (x + mw * 0.36), hy - h * mh], [w * (x + mw * 0.44), hy - h * mh * 0.78], [w * (x + mw * 0.6), hy]];
+      poly(c, pts); c.fillStyle = INK; c.fill();
+      poly(c, [pts[1], pts[2], pts[3], [w * (x + mw * 0.34), hy - h * mh * 0.86], [w * (x - mw * 0.43), hy - h * mh * 0.86]]); c.fillStyle = tone(c, 0.55, k); c.fill();
+    }
+  }
+  function pumpjack(c, x, y, hh, u) {
+    c.fillStyle = INK; poly(c, [[x - hh * 0.14, y], [x, y - hh * 0.6], [x + hh * 0.14, y]]); c.fill();
+    c.save(); c.translate(x, y - hh * 0.6); c.rotate(-0.12);
+    c.fillRect(-hh * 0.55, -u * 0.8, hh * 0.95, u * 1.6);
+    c.beginPath(); c.moveTo(hh * 0.4, -u * 1.5); c.quadraticCurveTo(hh * 0.58, 0, hh * 0.48, hh * 0.22); c.lineTo(hh * 0.36, hh * 0.08); c.fill();
+    c.fillRect(-hh * 0.6, -u * 3, hh * 0.12, u * 6);
+    c.restore();
+    c.fillRect(x + hh * 0.45, y - hh * 0.4, u * 0.8, hh * 0.4);
+  }
+  // the Red Mesa airbase at noon: hangars and a control tower baking in the heat, a fallen seed
+  // glowing in its crater, Kessler-Vane trucks parked round it
+  S.desertBase = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h), hy = h * 0.62;
+      paper(c, w, h);
+      vTone(c, 0, 0, w, hy, 0.45, 0.05, k);
+      c.fillStyle = PAPER; c.beginPath(); c.arc(w * 0.82, h * 0.2, h * 0.11, 0, TAU); c.fill(); glow(c, w * 0.82, h * 0.2, h * 0.4, SPOT.orange, 0.4);
+      rays(c, w * 0.82, h * 0.2, 24, w * 0.6, 0.18, 31, PAPER);
+      desertMesas(c, w, h, hy, k);
+      // dunes in two tones and the base's runway
+      hills(c, w, h, hy, h * 0.02, 7, tone(c, 0.3, k));
+      c.fillStyle = tone(c, 0.15, k); c.fillRect(0, hy + h * 0.1, w, h * 0.06);
+      c.strokeStyle = INK; c.lineWidth = u * 0.5; c.setLineDash([u * 4, u * 3]); c.beginPath(); c.moveTo(0, hy + h * 0.13); c.lineTo(w, hy + h * 0.13); c.stroke(); c.setLineDash([]);
+      // two hangars, a control tower and a radar dish
+      for (const [x, hw] of [[0.14, 0.13], [0.34, 0.1]]) {
+        c.fillStyle = INK; c.beginPath(); c.ellipse(w * x, hy + h * 0.06, w * hw, h * 0.15, 0, Math.PI, TAU); c.fill();
+        c.strokeStyle = tone(c, 0.5, k); c.lineWidth = u * 0.4; for (let i = 1; i < 5; i++) { c.beginPath(); c.ellipse(w * x, hy + h * 0.06, w * hw * (i / 5), h * 0.15, 0, Math.PI, TAU); c.stroke(); }
+        c.fillStyle = tone(c, 0.85, k); c.fillRect(w * (x - hw * 0.35), hy - h * 0.02, w * hw * 0.7, h * 0.08);
+      }
+      c.fillStyle = INK; c.fillRect(w * 0.48, hy - h * 0.3, u * 3, h * 0.36); c.fillRect(w * 0.48 - u * 3, hy - h * 0.36, u * 9, h * 0.07);
+      c.fillStyle = tone(c, 0.3, k); c.fillRect(w * 0.48 - u * 2.4, hy - h * 0.34, u * 7.8, h * 0.03);
+      c.strokeStyle = INK; c.lineWidth = u * 0.6; c.beginPath(); c.arc(w * 0.56, hy - h * 0.16, u * 5, Math.PI * 0.9, Math.PI * 1.9); c.stroke(); c.beginPath(); c.moveTo(w * 0.56, hy - h * 0.16); c.lineTo(w * 0.56, hy + h * 0.04); c.stroke();
+      // the crater, the seed, and the trucks round it
+      const cx = w * 0.72, cy = hy + h * 0.2;
+      c.fillStyle = INK; c.beginPath(); c.ellipse(cx, cy, w * 0.14, h * 0.06, 0, 0, TAU); c.fill();
+      glow(c, cx, cy - h * 0.04, w * 0.22, SPOT.red, 0.6);
+      shard(c, cx, cy - h * 0.02, h * 0.14, -0.15, 71, 0.2, k, u * 0.5);
+      for (const [x, f] of [[0.55, 1], [0.6, 1], [0.88, -1]]) { const tx = w * x, ty = hy + h * 0.24; c.fillStyle = INK; c.fillRect(tx - u * 5, ty - u * 4, u * 10, u * 4); c.fillRect(tx + f * u * 3, ty - u * 6.5, u * 3.5, u * 2.6); c.fillStyle = PAPER; c.font = font(u * 2.2); c.textAlign = 'center'; c.fillText('K-V', tx - f * u * 1.2, ty - u * 1.2); }
+      // heat rising off the ground
+      c.strokeStyle = 'rgba(242,238,228,0.55)'; c.lineWidth = u * 0.3;
+      for (let i = 0; i < 9; i++) { const x0 = (i / 9) * w + u * 4; c.beginPath(); for (let y = hy + h * 0.04; y > hy - h * 0.1; y -= u) c.lineTo(x0 + Math.sin(y * 0.25 + i) * u * 0.8, y); c.stroke(); }
+      spot(c, SPOT.orange, () => c.fillRect(0, 0, w, h), 0.18);
+      vignette(c, w, h, 0.6, k);
+    },
+    anim(c, w, h, t) { const u = unit(w, h); glow(c, w * 0.72, h * 0.78, u * (16 + 6 * pulse(t, 3)), SPOT.red, 0.45); motes(c, w, h, t, 40, 19, '#ffe0b0', 0.6, u * 0.3, u * 0.3, u * 8, u * 1.5); },
+  };
+  // the Sand Colossus bursting up out of a dune, sand pouring off it, its cracks glowing
+  S.colossusRise = {
+    base(c, w, h) {
+      const k = cellOf(w, h), u = unit(w, h), cx = w * 0.56, gy = h * 0.8;
+      nightSky(c, w, h, k, 0.8, 0.4, 30, 59);
+      glow(c, cx, h * 0.4, w * 0.6, SPOT.orange, 0.55);
+      const s = Math.min(h / 100 * 0.72, w / 300);
+      c.save(); c.translate(cx, gy);
+      const body = () => {
+        c.beginPath();
+        // shoulders and a small head hunched forward, arms like broken pillars
+        c.moveTo(-70 * s, 0); c.lineTo(-62 * s, -52 * s); c.lineTo(-40 * s, -76 * s); c.lineTo(-14 * s, -84 * s); c.lineTo(-10 * s, -100 * s); c.lineTo(10 * s, -102 * s); c.lineTo(14 * s, -84 * s); c.lineTo(40 * s, -78 * s); c.lineTo(64 * s, -54 * s); c.lineTo(72 * s, 0); c.closePath();
+        sub(c, [[-60 * s, -60 * s], [-104 * s, -26 * s], [-118 * s, 2 * s], [-92 * s, 2 * s], [-56 * s, -30 * s]]);
+        sub(c, [[60 * s, -62 * s], [100 * s, -36 * s], [112 * s, 2 * s], [88 * s, 2 * s], [56 * s, -32 * s]]);
+      };
+      c.save(); c.translate(-1.5 * s, -1.2 * s); body(); c.fillStyle = SPOT.orange; c.fill(); c.restore();
+      body(); c.fillStyle = INK; c.fill();
+      // rock slabs in tone, and cracks glowing like embers
+      const rng = mulberry32(61);
+      for (let i = 0; i < 12; i++) { const x = (rng() - 0.5) * 110 * s, y = -10 * s - rng() * 66 * s, r = (5 + rng() * 7) * s; poly(c, Array.from({ length: 5 }, (_, q) => [x + Math.cos(q / 5 * TAU + rng()) * r, y + Math.sin(q / 5 * TAU + rng()) * r * 0.8])); c.fillStyle = tone(c, 0.6, k); c.fill(); }
+      for (let i = 0; i < 7; i++) crack(c, (rng() - 0.5) * 90 * s, -20 * s - rng() * 50 * s, 26 * s, -Math.PI / 2 + (rng() - 0.5) * 2, 80 + i, u * 0.6, 2, SPOT.orange);
+      for (const ex of [-5, 5]) { glow(c, ex * s, -93 * s, 5 * s, SPOT.orange, 0.9); c.fillStyle = '#fff0c8'; c.beginPath(); c.arc(ex * s, -93 * s, 1.6 * s, 0, TAU); c.fill(); }
+      c.restore();
+      // sand streaming off it and the dune it broke out of
+      c.strokeStyle = PAPER; c.lineCap = 'round';
+      for (let i = 0; i < 60; i++) { const x = cx + (rng() - 0.5) * 200 * s, y0 = gy - (10 + rng() * 60) * s; c.globalAlpha = 0.25 + rng() * 0.4; c.lineWidth = u * (0.15 + rng() * 0.25); c.beginPath(); c.moveTo(x, y0); c.lineTo(x + u * (1 + rng() * 2), gy); c.stroke(); }
+      c.globalAlpha = 1;
+      hills(c, w, h, gy, h * 0.03, 11, tone(c, 0.7, k));
+      for (let i = 0; i < 7; i++) fog(c, cx + (i - 3) * u * 20, gy, u * 18, u * 4, 0.5, '255,226,180');
+      // scorpions spilling down the dune, and the squad on a ridge
+      for (let i = 0; i < 5; i++) { const x = cx + (i - 2) * u * 14 + u * 4, y = gy + h * 0.06; c.fillStyle = INK; c.beginPath(); c.ellipse(x, y, u * 2.2, u * 1, 0, 0, TAU); c.fill(); c.strokeStyle = INK; c.lineWidth = u * 0.5; c.beginPath(); c.moveTo(x - u * 2, y); c.quadraticCurveTo(x - u * 4, y - u * 3, x - u * 1.5, y - u * 3.6); c.stroke(); }
+      c.fillStyle = INK; c.beginPath(); c.moveTo(0, h); c.lineTo(0, h * 0.9); c.quadraticCurveTo(w * 0.15, h * 0.86, w * 0.34, h * 0.92); c.lineTo(w * 0.34, h); c.fill();
+      figure(c, w * 0.08, h * 0.9, h * 0.13, 'voss', { pose: 'point', rim: SPOT.orange }); figure(c, w * 0.16, h * 0.89, h * 0.125, 'laila', { rim: SPOT.orange }); figure(c, w * 0.24, h * 0.9, h * 0.135, 'moreno', { pose: 'gun', rim: SPOT.orange });
+      vignette(c, w, h, 0.6, k);
+    },
+    anim(c, w, h, t) { const u = unit(w, h); glow(c, w * 0.56, h * 0.3, u * (24 + 8 * pulse(t, 2)), SPOT.orange, 0.3); motes(c, w, h * 0.85, t, 40, 23, '#ffd8a0', 0.7, u * 0.3, u * 5, u * 3); },
   };
 
   S.trio = {

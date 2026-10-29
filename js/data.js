@@ -90,6 +90,18 @@ const WORLDS = [
     mobs: [['bloater', 1], ['imp', 1]],
     boss: 'behemoth',
   },
+  // the paid expansion: open to players who own it once they have cleared the farmland
+  {
+    id: 'desert', name: 'Red Mesa Wasteland', short: 'Desert', lat: 12, lon: 4, expansion: true,
+    blurb: 'Past the last town the land burns dry. Old army bases and dead oil fields hide where the outbreak began.',
+    ground: ['#d4a768', '#e0b878', '#c09056'], road: '#9a7a52', roadEdge: '#6a5034', water: '#2f7f86',
+    decor: ['cactus', 'cactus', 'sagebrush', 'sagebrush', 'skull', 'mesa', 'mesa', 'wreck', 'pumpjack', 'drums', 'outpost'],
+    times: ['day', 'day', 'dusk', 'dawn', 'night'], weather: ['clear', 'heat', 'sandstorm', 'clear'],
+    mobs: [['mummy', 1], ['scorpion', 3], ['vulture', 10]],
+    // zombies from earlier worlds that would look wrong out here
+    skipOld: ['frosty'],
+    boss: 'colossus',
+  },
 ];
 
 // ============================================================
@@ -142,6 +154,15 @@ const ZOMBIES = {
   imp:      { name: 'Crawler', hp: 14, speed: 80, reward: 1, r: 8,
     desc: 'Drags itself along fast and low.',
     look: { kind: 'human', skin: '#8f9b6a', shirt: '#4a4038', small: true } },
+  mummy:    { name: 'Mummy', hp: 120, speed: 36, armor: 3, reward: 9, r: 13, burnMult: 2,
+    desc: 'Wrapped in old, dry bandages. Tough, but fire burns it twice as hard.',
+    look: { kind: 'human', skin: '#a89a76', shirt: '#cfc3a0' } },
+  scorpion: { name: 'Dune Scorpion', hp: 42, speed: 80, armor: 4, reward: 7, r: 11,
+    desc: 'Scuttles fast under a hard shell that shrugs off light rounds.',
+    look: { kind: 'scorpion' } },
+  vulture:  { name: 'Vulture', hp: 48, speed: 64, reward: 7, r: 13, fly: true,
+    desc: 'Circles over the dead and dives across the road\'s corners. Only anti-air towers can hit it.',
+    look: { kind: 'crow' } },
   juggernaut: { name: 'Juggernaut', hp: 700, speed: 26, armor: 6, reward: 70, r: 22, lives: 8, boss: true, mini: true,
     desc: 'Wrapped in scrap armor plating. Shows up every tenth level.',
     look: { kind: 'human', skin: '#76835c', shirt: '#55585e', gear: 'plate', wide: true } },
@@ -161,13 +182,17 @@ const ZOMBIES = {
     summon: { type: 'imp', n: 3, every: 5 }, splits: { type: 'bloater', n: 3 },
     desc: 'Leaks Crawlers, then bursts into three Bloaters.',
     look: { kind: 'bloater', skin: '#7c8a48' } },
+  colossus: { name: 'Sand Colossus', hp: 3400, speed: 19, armor: 7, reward: 300, r: 32, lives: 15, boss: true,
+    summon: { type: 'scorpion', n: 2, every: 5 }, stomp: { every: 8, radius: 2.4, dur: 1.6, sand: true },
+    desc: 'A giant of living sandstone. Scorpions pour out of its cracks, and its stomp buries nearby towers.',
+    look: { kind: 'giant', skin: '#c9a46a' } },
 };
 
 // How many of each zombie a wave holds, and how tightly they bunch up.
 const WEIGHT = { walker: 1, runner: 0.6, cone: 0.4, digger: 0.3, carrion: 0.25, skeleton: 0.55, bucket: 0.25, ghost: 0.35,
-  necro: 0.1, bats: 0.3, brute: 0.12, frosty: 0.35, medic: 0.09, bloater: 0.18, imp: 0.5 };
+  necro: 0.1, bats: 0.3, brute: 0.12, frosty: 0.35, medic: 0.09, bloater: 0.18, imp: 0.5, mummy: 0.4, scorpion: 0.45, vulture: 0.25 };
 const GAP = { walker: 0.8, runner: 0.45, cone: 0.95, digger: 1.1, carrion: 0.6, skeleton: 0.5, bucket: 1.3, ghost: 0.8,
-  necro: 3, bats: 0.3, brute: 2.6, frosty: 0.9, medic: 3, bloater: 1.8, imp: 0.35 };
+  necro: 3, bats: 0.3, brute: 2.6, frosty: 0.9, medic: 3, bloater: 1.8, imp: 0.35, mummy: 1.1, scorpion: 0.5, vulture: 0.6 };
 
 // ============================================================
 // Towers

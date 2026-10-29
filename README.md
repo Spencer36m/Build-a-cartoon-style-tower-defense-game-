@@ -62,8 +62,11 @@ When a boss or elite arrives, a health bar drops in at the top of the battlefiel
 | Blackwood Cemetery | Skeleton, Riot Zombie, Wraith, Necromancer, Bat Swarm | Grave Lord |
 | Frostfall Tundra | Frostbite, Brute, Plague Doctor | Abomination |
 | Black Bayou | Bloater, Crawler | Behemoth |
+| Red Mesa Wasteland (expansion) | Mummy, Dune Scorpion, Vulture | Sand Colossus |
 
 Zombies from earlier worlds keep coming back in later ones.
+
+**Red Mesa Wasteland** is a paid expansion (see Premium below): a fifth world of 50 levels that opens to its owners once Hollow Creek Farmland (1-50) is cleared. It starts about as hard as the middle of the cemetery and climbs from there. The maps are red sand with long dunes and wind ripples, sun-cracked clay, cacti, sagebrush, cow skulls, sandstone buttes, rusted wrecks, oil pumpjacks, oil drums, the odd oasis with date palms, and abandoned concrete blockhouses from an old airbase. Its forecast brings heat haze (shimmering air and glare) and sandstorms. Camels, fennec foxes and lizards live there, a hawk cries overhead, and its music is an oud and ney tune over darbuka drums. Mummies are tough but burn twice as hard, Dune Scorpions are fast and armoured, Vultures dive across the corners, and the Sand Colossus pours scorpions out of its cracks and buries nearby towers in sand with its stomp.
 
 The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
 
@@ -214,8 +217,9 @@ The campaign is told in manga-style motion-comic cutscenes: inked panels with sc
 - **Chapter 2, The Restless:** Blackwood Cemetery, a rift torn in the sky and the Grave Lord.
 - **Chapter 3, White Silence:** Station Seven on the Frostfall ice, and Lazarus Two.
 - **Chapter 4, The Hive:** Black Bayou, the horde converging and the last stand, where Laila's one shot saves Okafor and opens the hive's heart.
+- **Chapter 5, Phase Two** (expansion): one of the seeds lands on Kessler-Vane's old Red Mesa airbase, Site Zero, and grows a Sand Colossus out of the desert.
 
-Every sector is part of the story. The 200 sectors form 40 operations of five missions each, and each operation has a purpose: rescue the Miller family, refill the safehouse's water, trace Okafor's signal, beat Vane's cleaners to the crypt files, keep Lazarus Two frozen, cut the hive's feeding channels. When a mission starts, the character in charge radios in with the reason for it. During the fight the squad calls out new zombie types, bosses, the final wave and a failing line, and Silas Vane cuts in on stolen channels. A win or loss ends with a word from the cast, and the level briefing shows the operation, the objective and who gave the order.
+Every sector is part of the story. The 200 sectors form 40 operations (the desert adds 10 more) of five missions each, and each operation has a purpose: rescue the Miller family, refill the safehouse's water, trace Okafor's signal, beat Vane's cleaners to the crypt files, keep Lazarus Two frozen, cut the hive's feeding channels. When a mission starts, the character in charge radios in with the reason for it. During the fight the squad calls out new zombie types, bosses, the final wave and a failing line, and Silas Vane cuts in on stolen channels. A win or loss ends with a word from the cast, and the level briefing shows the operation, the objective and who gave the order.
 
 Each world's intro plays when you first deploy there, and new chapters play after your first clear of sectors 25 and 50. Every mission briefing carries a line of intel from Major Voss. Replay any chapter you have unlocked from **Story** on the main menu. On a phone held upright, the camera follows one panel at a time so the lettering stays large.
 

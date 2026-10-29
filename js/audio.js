@@ -297,7 +297,7 @@ const Sound = {
     loop('bandpass', weather === 'fog' || weather === 'mist' ? 300 : 380, 0.6, 0.15, 0.1, 150, 'base');
     loop('lowpass', 2600, 0.5, rain * 0.25, 0, 0, 'rainA');
     loop('highpass', 5000, 0.5, rain * 0.07, 0, 0, 'rainB');
-    loop('bandpass', 520, 0.8, weather === 'snow' ? 0.3 : 0.05, 0.13, 260, 'wind');
+    loop('bandpass', 520, 0.8, weather === 'snow' ? 0.3 : world === 4 ? 0.14 : 0.05, 0.13, 260, 'wind');
     loop('lowpass', 170, 0.8, 0, 0.3, 60, 'roar');
     this.amb = { nodes, gains, weather, time, world };
   },
@@ -315,7 +315,8 @@ const Sound = {
     for (const n of this.amb.nodes) { try { n.stop(); } catch (e) { /* already stopped */ } }
     this.amb = null;
   },
-  // occasional creatures: crickets at night, frogs in the bayou, owls and crows in the cemetery
+  // occasional creatures: crickets at night, frogs in the bayou, owls and crows in the cemetery,
+  // a hawk's cry over the desert
   ambEvents(dt) {
     const a = this.amb, bus = this.ambBus, r = Math.random();
     if ((a.time === 'night' || a.time === 'dusk') && a.weather !== 'rain' && a.world !== 2 && r < dt * 1.6) {
@@ -325,6 +326,7 @@ const Sound = {
     if (a.world === 3 && Math.random() < dt * 0.35) { const f = 90 + Math.random() * 60; this.tone(f, 0.12, 'square', 0.05, f * 0.7, 0, bus); this.tone(f, 0.1, 'square', 0.04, f * 0.7, 0.16, bus); }
     if (a.world === 1 && Math.random() < dt * 0.06) { this.tone(380, 0.35, 'sine', 0.06, 340, 0, bus, 0.05, 0.6); this.tone(360, 0.5, 'sine', 0.06, 320, 0.45, bus, 0.05, 0.6); }
     if (a.world === 0 && Math.random() < dt * 0.04) for (const d of [0, 0.25]) this.voice(800, 560, 0.16, 0.04, 1500, bus, d);
+    if (a.world === 4 && a.time !== 'night' && Math.random() < dt * 0.03) this.voice(2300, 1300, 0.7, 0.03, 3200, bus, 0);
   },
 };
 

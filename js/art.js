@@ -1735,7 +1735,16 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
   if (part && part !== 'over') return;
   if (L.n === 5) { c.save(); c.translate(x, y); upgradeSparks(c, L, t, x, lights, y); c.restore(); }
   if (!opts.icon) { c.save(); c.translate(x, y); tierMarks(c, tiers, 16, 16); c.restore(); }
-  if (tw.stun > 0) {
+  if (tw.stun > 0 && tw.stunSand) {
+    // half buried under a heap of sand
+    c.save(); c.translate(x, y);
+    const rng = mulberry32((x * 7 + y) | 0);
+    ellipse(c, 2, 3, 21, 17); c.fillStyle = 'rgba(60,40,20,0.3)'; c.fill();
+    ellipse(c, 0, 0, 20, 16); c.fillStyle = radial(c, -6, -6, 24, '#f0d49a', '#a87c46', 0, 0); c.fill();
+    c.fillStyle = 'rgba(120,84,44,0.5)';
+    for (let i = 0; i < 18; i++) { const a = rng() * TAU, d = rng() * 15; circle(c, Math.cos(a) * d, Math.sin(a) * d * 0.8, 0.6); c.fill(); }
+    c.restore();
+  } else if (tw.stun > 0) {
     c.save(); c.globalAlpha = 0.65;
     rr(c, x - 20, y - 20, 40, 40, 6); c.fillStyle = 'rgba(200,235,255,0.75)'; c.fill();
     c.strokeStyle = '#ffffff'; c.lineWidth = 1.5; c.stroke();

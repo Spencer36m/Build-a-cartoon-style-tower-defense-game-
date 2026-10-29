@@ -77,21 +77,26 @@ const SANDBOX = (() => {
   function row(label, ...kids) { const r = el('div', 'sb-row'); r.append(el('span', 'sb-label', label), ...kids); return r; }
   function set(patch, full = true) { Object.assign(cfg, patch); save(); if (full) render(); }
 
+  // zombies from an expansion the player has not bought stay out of the picker
+  const zLocked = (t) => WORLDS.some((w) => w.expansion && !PREMIUM.has(w.id) && (w.boss === t || w.mobs.some(([m]) => m === t)));
+  // worlds the player can build a sandbox in: the expansion only once it is bought
+  const worldsOpen = () => WORLDS.map((w, i) => i).filter((i) => !WORLDS[i].expansion || PREMIUM.has(WORLDS[i].id));
   function render() {
     const root = document.querySelector('#sandbox-body');
     root.innerHTML = '';
+    if (!worldsOpen().includes(cfg.world)) cfg.world = 0;
     const world = WORLDS[cfg.world], L = getLevel(index());
 
     // the map: world, number, a live preview and the sky
     const map = el('section', 'sb-card');
     map.append(el('h3', 'sb-h', 'Map'));
-    map.append(chips(WORLDS.map((w, i) => [i, w.short]), cfg.world, (v) => set({ world: v, weather: 'forecast', num: Math.min(cfg.num, LEVELS_PER_WORLD) })));
+    map.append(chips(worldsOpen().map((i) => [i, WORLDS[i].short]), cfg.world, (v) => set({ world: v, weather: 'forecast', num: Math.min(cfg.num, LEVELS_PER_WORLD) })));
     const pick = el('div', 'sb-map-pick');
     const prev = el('button', 'btn btn-small', '‹'), next = el('button', 'btn btn-small', '›'), rnd = el('button', 'btn btn-small', 'Random');
     prev.type = next.type = rnd.type = 'button'; prev.setAttribute('aria-label', 'Previous map'); next.setAttribute('aria-label', 'Next map');
     prev.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num > 1 ? cfg.num - 1 : LEVELS_PER_WORLD }); });
     next.addEventListener('click', () => { Sound.play('click'); set({ num: cfg.num < LEVELS_PER_WORLD ? cfg.num + 1 : 1 }); });
-    rnd.addEventListener('click', () => { Sound.play('click'); set({ world: Math.floor(Math.random() * WORLDS.length), num: 1 + Math.floor(Math.random() * LEVELS_PER_WORLD), weather: 'forecast' }); });
+    rnd.addEventListener('click', () => { Sound.play('click'); set({ world: worldsOpen()[Math.floor(Math.random() * worldsOpen().length)], num: 1 + Math.floor(Math.random() * LEVELS_PER_WORLD), weather: 'forecast' }); });
     pick.append(prev, el('span', 'sb-map-name', `<b>${L.id}</b> ${L.name}`), next, rnd);
     map.append(pick);
     const frame = el('div', 'ld-map sb-thumb'); const cv = document.createElement('canvas'); cv.width = 480; cv.height = 288; frame.append(cv); map.append(frame);
@@ -143,7 +148,7 @@ const SANDBOX = (() => {
         b.addEventListener('click', () => {
           Sound.play('click');
           let m = mix;
-          if (!m) { m = {}; const pool = ZTYPES.filter((t) => !ZOMBIES[t].boss); for (let i = 0; i < 4; i++) { const t = pool[Math.floor(Math.random() * pool.length)]; m[t] = 2 + Math.floor(Math.random() * 10); } if (Math.random() < 0.4) { const bs = ZTYPES.filter((t) => ZOMBIES[t].boss); m[bs[Math.floor(Math.random() * bs.length)]] = 1; } }
+          if (!m) { m = {}; const pool = ZTYPES.filter((t) => !ZOMBIES[t].boss && !zLocked(t)); for (let i = 0; i < 4; i++) { const t = pool[Math.floor(Math.random() * pool.length)]; m[t] = 2 + Math.floor(Math.random() * 10); } if (Math.random() < 0.4) { const bs = ZTYPES.filter((t) => ZOMBIES[t].boss && !zLocked(t)); m[bs[Math.floor(Math.random() * bs.length)]] = 1; } }
           set({ mix: { ...m } });
         });
         presets.append(b);
@@ -151,6 +156,7 @@ const SANDBOX = (() => {
       zs.append(presets);
       const grid = el('div', 'sb-zgrid');
       for (const type of ZTYPES) {
+        if (zLocked(type)) continue;
         const z = ZOMBIES[type], n = cfg.mix[type] | 0;
         const card = el('div', 'sb-z' + (n ? ' on' : '') + (z.boss ? ' boss' : '') + (z.fly ? ' air' : ''));
         card.title = `${z.name}: ${z.desc}`;

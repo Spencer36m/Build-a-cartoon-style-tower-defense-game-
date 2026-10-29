@@ -1,12 +1,13 @@
 'use strict';
 // ============================================================
-// Buildings: the farm barn, the log cabin, the bayou shack and the stone crypt.
+// Buildings: the farm barn, the log cabin, the bayou shack, the stone crypt and the desert's
+// abandoned army outpost.
 // Drawn in a three-quarter view so the front walls show under the roofs: height goes straight
 // up the screen, foreshortened a little. Every surface is
 // built from its parts (boards, logs, clapboard, stone, shingles, tin), weathered with
 // tiling grime, rust and moss textures, and lit from the top left like the rest of the map.
 // ============================================================
-const BUILDING_KINDS = new Set(['barn', 'cabin', 'shack', 'crypt']);
+const BUILDING_KINDS = new Set(['barn', 'cabin', 'shack', 'crypt', 'outpost']);
 
 const BUILDINGS = (() => {
   const ZX = 0, ZY = 0.82;
@@ -948,12 +949,63 @@ const BUILDINGS = (() => {
     c.restore();
   }
 
+  // ============================================================ the army outpost
+  // a sun-bleached concrete blockhouse from an abandoned airbase: a faded star on the flat roof,
+  // a radio mast, an air conditioner, sandbags along the front and sand drifted against the walls
+  function outpost(c, rng, wide, out) {
+    const w = wide ? 50 : 34, d = 20, hgt = 10, zr = hgt + 1;
+    c.save(); c.translate(0, 4);
+    groundShadow(c, w, d, zr, 1.2, [], 'rgba(70,34,0,0.5)');
+    const sandy = (W2, H2) => { c.fillStyle = 'rgba(214,170,110,0.32)'; c.fillRect(0, 0, W2, H2); };
+    box(c, 0, 0, 0, w, d, hgt, (W2, H2) => {
+      concrete(c, W2, H2, rng); sandy(W2, H2);
+      wallLight(c, W2, H2, -0.12, 2);
+      const dx = W2 * 0.18;
+      c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(dx - 0.5, H2 - 7.5, 5.5, 7.5);
+      c.fillStyle = linear(c, dx, 0, dx + 4.5, 0, [[0, '#6a6a58'], [1, '#3a3a30']]); c.fillRect(dx, H2 - 7, 4.5, 7);
+      overlay(c, rust(), dx, H2 - 7, 4.5, 7, 0.9, rng);
+      c.fillStyle = '#1a1a14'; c.fillRect(dx + 3.4, H2 - 3.8, 0.5, 0.8);
+      const wins = wide ? [W2 * 0.42, W2 * 0.62, W2 * 0.82] : [W2 * 0.5, W2 * 0.76];
+      for (const x of wins) windowAt(c, x, 2.4, 4, 3, { style: rng() < 0.5 ? 'boarded' : 'broken', trim: '#9a907a' }, rng);
+      c.save(); c.font = `800 2.4px ${typeof FONT_DISPLAY !== 'undefined' ? FONT_DISPLAY : 'sans-serif'}`; c.textBaseline = 'top';
+      c.fillStyle = 'rgba(30,30,24,0.6)'; c.fillText(`B-${1 + Math.floor(rng() * 9)}`, W2 * 0.05, 1.2); c.restore();
+    }, (D2, H2) => { concrete(c, D2, H2, rng); sandy(D2, H2); wallLight(c, D2, H2, 0.25, 2); }, (bw, bd) => {
+      c.fillStyle = '#9a8a70'; c.fillRect(0, 0, bw, bd);
+      overlay(c, grime(), 0, 0, bw, bd, 0.6, rng);
+      c.fillStyle = 'rgba(0,0,0,0.25)'; c.fillRect(0, 0, bw, 0.8); c.fillRect(0, 0, 0.8, bd);
+      c.fillStyle = 'rgba(255,245,220,0.2)'; c.fillRect(0, bd - 0.8, bw, 0.8);
+      // the faded white star of the airbase, half buried in sand
+      c.save(); c.globalAlpha = 0.55; c.fillStyle = '#f2eee2'; circle(c, bw * 0.38, bd * 0.5, bd * 0.32); c.fill();
+      c.fillStyle = '#5a6a7a'; star(c, bw * 0.38, bd * 0.5, bd * 0.28, bd * 0.11); c.fill(); c.restore();
+      for (let i = 0; i < 4; i++) { c.fillStyle = 'rgba(226,190,130,0.75)'; ellipse(c, rng() * bw, rng() * bd, 3 + rng() * 6, 1.5 + rng() * 2, rng()); c.fill(); }
+      // an air conditioner and a roof hatch
+      const ax = bw * 0.72, ay = bd * 0.3;
+      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(ax + 0.6, ay + 0.8, 6, 4);
+      c.fillStyle = linear(c, ax, ay, ax + 6, ay + 4, [[0, '#c8c4b8'], [1, '#7a766c']]); c.fillRect(ax, ay, 6, 4);
+      c.strokeStyle = '#3a3a34'; c.lineWidth = 0.25; circle(c, ax + 3, ay + 2, 1.5); c.stroke();
+      c.fillStyle = '#5a5448'; c.fillRect(bw * 0.72, bd * 0.68, 3.5, 3.5); c.fillStyle = 'rgba(255,255,255,0.15)'; c.fillRect(bw * 0.72, bd * 0.68, 3.5, 0.5);
+    });
+    // a radio mast with a red light on top
+    const m0 = P(-w / 2 + 3, -d / 2 + 3, zr), m1 = P(-w / 2 + 3, -d / 2 + 3, zr + 14);
+    c.strokeStyle = '#3a3630'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(m0[0], m0[1]); c.lineTo(m1[0], m1[1]); c.stroke();
+    c.lineWidth = 0.2; for (let z = 2; z < 14; z += 2) { const a = P(-w / 2 + 2, -d / 2 + 3, zr + z), b = P(-w / 2 + 4, -d / 2 + 3, zr + z + 2); c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+    c.fillStyle = '#ff5040'; circle(c, m1[0], m1[1], 0.6); c.fill();
+    out.glows.push({ x: m1[0], y: m1[1] + 2, r: 16, color: '255,80,60', a: 0.5 });
+    // sandbags along the front, and sand drifted up against the wall
+    for (let x = -w / 2 + 3; x < w / 2 - 2; x += 6.2) if (rng() < 0.85) sandbag(c, x, d / 2 + 3.5, 0, (rng() - 0.5) * 0.15, rng);
+    const dr = P(-w / 2, d / 2, 0);
+    c.fillStyle = linear(c, 0, dr[1] - 4, 0, dr[1] + 1, [[0, 'rgba(226,186,124,0)'], [1, 'rgba(226,186,124,0.95)']]);
+    ellipse(c, dr[0] + w * 0.75, dr[1] - 0.5, w * 0.3, 3.5, 0); c.fill();
+    c.restore();
+  }
+
   function draw(kind, c, d, rng, out) {
     const wide = !!d.wide;
     if (kind === 'barn') barn(c, rng, wide, out);
     else if (kind === 'cabin') cabin(c, rng, wide, out);
     else if (kind === 'shack') shack(c, rng, wide, out);
     else if (kind === 'crypt') crypt(c, rng, wide, out);
+    else if (kind === 'outpost') outpost(c, rng, wide, out);
   }
 
   return { draw, safehouse, flagMark, FLAG_PLAIN, P, box, southWall, westWall, slope, face, stone, tin, shingles, boards, clapboard, overlay, grime, rust, moss, grain, castShadow, windowAt, lantern, tone, jitter, wallLight };

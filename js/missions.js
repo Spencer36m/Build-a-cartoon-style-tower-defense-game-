@@ -1,6 +1,6 @@
 'use strict';
 // ============================================================
-// Missions: every one of the 200 sectors belongs to an operation of five, and every operation has
+// Missions: every sector belongs to an operation of five, and every operation has
 // a reason in the story. The cast briefs each mission and talks over the radio while it plays.
 //
 // Speakers: voss (command), moreno (gunnery sergeant), laila (sharpshooter), okafor (the doctor:
@@ -273,6 +273,69 @@ const OPERATIONS = [
         ['Bring down the Behemoth', 'voss', 'Hold the line, Commander. For everyone.']],
       win: ['voss', "Commander. It's over."] },
   ],
+  // ---------------------------------------------------------------- World 5 · Red Mesa (expansion)
+  [
+    { name: 'Sun Dog', who: 'voss', why: 'A seed came down on the old Red Mesa airbase. Get us a foothold before Kessler-Vane digs in.',
+      steps: [['Take the dry wash', 'voss', ''], ['Hold the gas station', 'moreno', 'Last gas for a hundred miles, and the pumps still work. Hold it.'],
+        ['Cover the water trucks', 'laila', 'Out here water is worth more than bullets. Keep those trucks rolling.'],
+        ['Clear the canyon road', 'moreno', 'Narrow canyon. Perfect ambush country. For us or them.'],
+        ['Dig in at the mesa', 'voss', 'Dig in on the high ground. This is our base now.']],
+      win: ['voss', 'Foothold secured. Now we find that seed.'] },
+    { name: 'Bandages', who: 'okafor', why: 'The dead out here dried out in the sun. Fire goes through them like paper. Use it.',
+      steps: [['Meet the mummies', 'okafor', ''], ['Burn the bone field', 'moreno', 'Dry as kindling. Bring the flamethrowers up.'],
+        ['Hold the tomb road', 'laila', 'Somebody wrapped these ones up. Somebody knew.'],
+        ['Torch the nest', 'okafor', 'They sleep in the shade under the cliffs. Smoke them out.'],
+        ['Hold the ridge at sundown', 'voss', 'Sun is going down. They get bolder in the dark.']],
+      win: ['okafor', 'Fire works. Keep it burning.'] },
+    { name: 'Stinger', who: 'laila', why: 'The scorpions came up with the seed. Hard shells, fast legs. Find where they nest.',
+      steps: [['Track the scorpions', 'laila', ''], ['Hold the dune line', 'moreno', 'Sand is moving. Sand should not move.'],
+        ['Break their shells', 'voss', 'Light rounds bounce off. Heavy guns, Commander.'],
+        ['Hold the oasis', 'laila', 'Only water for miles, and every one of them wants it.'],
+        ['Burn out the nest', 'okafor', 'That is a nest the size of a house. Burn it.']],
+      win: ['laila', 'Nest is ash. Their shells pop real nice in the fire.'] },
+    { name: 'Pumpworks', who: 'voss', why: 'Kessler-Vane is pumping something out of the old oil field. Shut the wells down.',
+      steps: [['Reach the oil field', 'voss', ''], ['Hold the pumpjacks', 'moreno', 'These pumps are not pulling up oil. That stuff glows.'],
+        ['Cap the first well', 'okafor', 'It is the strain. They are farming it out of the ground.'],
+        ['Hold the pipeline', 'laila', 'Follow the pipe and you find whoever is buying.'],
+        ['Blow the pumping station', 'voss', 'Every well capped. Now blow the station.']],
+      win: ['moreno', 'Big fire. Big beautiful fire.'] },
+    { name: 'Circling', who: 'moreno', why: 'Vultures follow the dead out here, and the infected ones dive. Get something in the air.',
+      steps: [['Watch the sky', 'moreno', ''], ['Hold the water tower', 'laila', 'Best view for miles. Also the biggest target.'],
+        ['Shoot them down', 'voss', 'Anti-air up. They are diving on the road.'],
+        ['Hold the radio relay', 'okafor', 'They are circling the relay. Something in there calls them.'],
+        ['Clear the skies', 'moreno', 'Last flock. Bring them all down.']],
+      win: ['voss', 'Sky is clear. Good shooting, Commander.'] },
+    { name: 'Site Zero', who: 'okafor', why: 'The airbase was Kessler-Vane\'s first test site, years before Hollow Creek. The seed went home.',
+      steps: [['Reach the airbase fence', 'okafor', ''], ['Hold the runway', 'moreno', 'A whole airbase. Planes still on the runway. Nobody flew out.'],
+        ['Search the hangars', 'laila', 'Lab benches. Cages. They were doing this out here before the meteor.'],
+        ['Hold the control tower', 'voss', 'Tower has a view of the crater. Hold it.'],
+        ['See the crater', 'okafor', 'The seed has taken root. It is pulling the sand together.']],
+      win: ['okafor', 'Something big is forming in that crater. We do not have long.'] },
+    { name: 'Dust Devil', who: 'voss', why: 'Sandstorms are coming off the crater, and the dead walk inside them. Hold through the storm.',
+      steps: [['Brace for the storm', 'voss', ''], ['Hold the barracks', 'moreno', 'I cannot see my own hand. Trust the guns.'],
+        ['Keep the lights on', 'laila', 'Generators are choking on sand. Keep them running.'],
+        ['Hold the motor pool', 'voss', 'Trucks are our way out. Nothing touches them.'],
+        ['Outlast the storm', 'okafor', 'Hold on. It cannot blow forever.']],
+      win: ['moreno', 'Storm passed. I am now forty percent sand.'] },
+    { name: 'Radio Silence', who: 'laila', why: 'Vane is talking to the seed through the base radar. Take the dish and he goes deaf.',
+      steps: [['Find the radar dish', 'laila', ''], ['Hold the dish', 'moreno', 'Big dish, pointed right at the crater.'],
+        ['Cut the cables', 'okafor', 'Cut the yellow ones. No. The other yellow ones.'],
+        ['Hold off the cleaners', 'vane', 'You can break my toys, Commander. My garden keeps growing.'],
+        ['Bring the dish down', 'voss', 'Drop it.']],
+      win: ['laila', 'Dish is down. Vane is shouting into the void now.'] },
+    { name: 'Red Line', who: 'voss', why: 'The crater is waking up. Everything out here is moving toward it. Draw the line in the sand.',
+      steps: [['Draw the line', 'voss', ''], ['Hold the trench', 'moreno', 'We dug a trench in the sand. It keeps filling back in.'],
+        ['Hold the mesa top', 'laila', 'Up here I can see the whole basin. It is moving.'],
+        ['Hold the airstrip', 'voss', 'Last solid ground before the crater. Hold it.'],
+        ['Stop the elite charge', 'moreno', 'Big armored one coming in hot!']],
+      win: ['okafor', 'The crater is opening. It is coming up.'] },
+    { name: 'Sandstorm', who: 'voss', why: 'The seed has grown a body out of the desert itself. Bring down the Sand Colossus and burn the seed.',
+      steps: [['Hold the crater rim', 'voss', ''], ['Break the scorpion swarm', 'moreno', 'They are pouring out of its cracks!'],
+        ['Cover Okafor', 'okafor', 'I need to get to the seed. Keep it busy.'],
+        ['Hit the glowing cracks', 'laila', 'Aim for the cracks. That is where it is weak.'],
+        ['Bring down the Colossus', 'voss', 'Everything you have, Commander. Now.']],
+      win: ['voss', "It's down. Burn that seed."] },
+  ],
 ];
 
 // What the cast says during a fight, picked so the same sector always says the same thing.
@@ -297,6 +360,11 @@ const CHATTER = [
     hurt: [['voss', 'They are breaking through! Hold the line!'], ['laila', "They're swarming the pier!"], ['okafor', 'If they break through, the core is lost!']],
     lose: [['voss', 'Fall back to the boats. We are not done.'], ['vane', 'The hive always wins, Commander.']],
     winAny: [['okafor', 'One step closer to the heart.'], ['voss', 'Sector secured. Keep pushing.'], ['laila', 'The bayou is ours.']] },
+  { mid: [['moreno', 'It is a hundred and ten degrees and they are still walking.'], ['laila', 'Heat haze on the far road. Trust the guns, not your eyes.'], ['okafor', 'Fire, Commander. They burn like old paper.'], ['voss', 'Keep the water coming. Nobody faints on my watch.'], ['vane', 'Do you like my desert, Commander? I grew it myself.'], ['moreno', 'Sand in my boots. Sand in my gun. Sand in my everything.']],
+    last: [['voss', 'Final wave. Hold the line in the sand.'], ['laila', 'Last of them. Make it count.'], ['moreno', 'Last wave. Then shade. And water. Lots of water.']],
+    hurt: [['voss', 'They are coming over the dunes! Hold!'], ['laila', "They're through the wire!"], ['moreno', 'Losing the perimeter! Plug that gap!']],
+    lose: [['voss', 'Fall back to the mesa. We regroup.'], ['vane', 'The desert keeps what it takes, Commander.']],
+    winAny: [['voss', 'Sector secured. Drink some water.'], ['laila', 'Dust settles. We hold.'], ['moreno', 'Ha! Too hot for them, not for us.']] },
 ];
 const BOSS_LINES = {
   harvester: ['crane', 'You took my land. Now I take everything.'],
@@ -304,6 +372,7 @@ const BOSS_LINES = {
   abomination: ['vane', 'Lazarus Two. Bring me the core.'],
   behemoth: ['okafor', 'That is the hive. Hit it with everything!'],
   juggernaut: ['moreno', 'Elite incoming! That one is armored. Focus fire!'],
+  colossus: ['laila', 'It is made of the desert itself! Aim for the glowing cracks!'],
 };
 // a squadmate names each kind of zombie the first time it shows up
 const THREAT_LINES = {
@@ -321,6 +390,9 @@ const THREAT_LINES = {
   medic: ['okafor', 'Plague doctors. They heal the others. Take them out fast.'],
   bloater: ['laila', "Bloaters! Pop 'em before they reach us."],
   imp: ['okafor', 'Swamp imps. Small, fast, and everywhere.'],
+  mummy: ['okafor', 'Mummies. Dried out in the sun. Fire burns them twice as fast.'],
+  scorpion: ['laila', 'Scorpions! Shells like armor. Heavy guns crack them.'],
+  vulture: ['moreno', 'Vultures diving! Get something that shoots up.'],
 };
 
 // ---------- lookups ----------

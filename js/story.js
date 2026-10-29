@@ -290,9 +290,67 @@ return {
       { panels: [{ at: FULL, art: 'titleCard', o: { title: 'HOLD THE LINE', sub: 'TO BE CONTINUED', spot: 'green' }, fx: 'flash', snd: 'impact', cam: [1.06, 1] }] },
     ],
   },
+  // ---------------------------------------------------------------- the desert expansion
+  'w4-intro': {
+    title: 'Phase Two', kicker: 'Chapter 5', world: 4,
+    pages: [
+      { panels: [{ at: FULL, art: 'chapter', o: { world: 4, kicker: 'CHAPTER 5', title: 'PHASE TWO', place: 'RED MESA WASTELAND', spot: 'orange' }, cam: [1.08, 1] }] },
+      { music: 'tension', panels: [
+        { at: R(14, 14, 986, 300), art: 'desertBase', cam: [1.1, 1, -0.03, 0],
+          text: [{ k: 'loc', x: 30, y: 30, w: 330, t: 'Red Mesa, New Mexico. Three weeks after the bayou.' }, { k: 'cap', x: 30, y: 236, w: 300, t: 'One of the seeds came down on an old airbase.' }] },
+        { at: [[14, 312], [500, 312], [480, 548], [14, 548]], art: 'portrait', o: { who: 'okafor', mood: 'grim', glasses: '#52e07c', bg: 'lab', x: 0.7 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Okafor', x: 30, y: 330, w: 200, t: 'In this heat it grows fast. Faster than the hive ever did.', tail: [300, 420] }] },
+        { at: [[512, 312], [986, 312], [986, 548], [492, 548]], art: 'portrait', o: { who: 'laila', mood: 'smile', hat: true, bg: 'fire', x: 0.32, y: 0.52 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Laila', x: 760, y: 340, w: 200, t: 'Then we pull it up by the roots.', tail: [700, 430] }] },
+      ] },
+      { panels: [
+        { at: [[14, 14], [480, 14], [460, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.45 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Voss', x: 260, y: 40, w: 170, t: 'We take the base back. Mount up.', tail: [230, 170] }] },
+        { at: [[492, 14], [986, 14], [986, 548], [472, 548]], art: 'vaneClose', o: { spot: 'red' }, cam: [1.12, 1],
+          text: [{ k: 'radio', who: 'Silas Vane', x: 510, y: 452, w: 190, t: 'Kessler-Vane owns that desert. And all that grows in it.', tail: [760, 380] }] },
+      ] },
+    ],
+  },
+  'w4-mid': {
+    title: 'Site Zero', kicker: 'Chapter 5', world: 4,
+    pages: [{ music: 'tension', panels: [
+      { at: R(14, 14, 986, 320), art: 'horde', snd: 'groan', cam: [1, 1.12, 0, 0.05],
+        text: [{ k: 'radio', who: 'Voss', x: 30, y: 30, w: 340, t: 'They are crawling up out of the sand, Commander. Thousands.', tail: [14, 120] }, { k: 'radio', who: 'Silas Vane', x: 600, y: 200, w: 300, t: 'My little garden is blooming.', tail: [986, 280] }] },
+      { at: R(14, 332, 500, 548), art: 'portrait', o: { who: 'moreno', mood: 'smile', bg: 'fire', x: 0.32, turn: 0.25 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Moreno', x: 250, y: 350, w: 190, t: 'Sand in my boots. Sand in my gun. Sand in my coffee.', tail: [220, 430] }] },
+      { at: R(512, 332, 986, 548), art: 'portrait', o: { who: 'okafor', mood: 'grim', bg: 'lab', glasses: '#52e07c', x: 0.7 }, cam: [1.08, 1],
+        text: [{ k: 'say', who: 'Okafor', x: 540, y: 350, w: 190, t: 'The seed is pulling the sand together. Something big is forming.', tail: [790, 430] }] },
+    ] }],
+  },
+  'w4-outro': {
+    title: 'Sandstorm', kicker: 'Chapter 5', world: 4,
+    pages: [
+      { music: 'boss', panels: [
+        { at: R(14, 14, 986, 330), art: 'colossusRise', fx: 'shake', snd: 'roar', cam: [1.1, 1, 0, 0.03],
+          text: [{ k: 'radio', who: 'Voss', x: 640, y: 30, w: 300, t: "There's your something big!", tail: [986, 110] }] },
+        { at: [[14, 342], [520, 342], [500, 548], [14, 548]], art: 'portrait', o: { who: 'laila', mood: 'grim', hat: true, bg: 'lines', x: 0.4, y: 0.52, zoom: 1.15 }, cam: [1.12, 1],
+          text: [{ k: 'say', who: 'Laila', x: 330, y: 360, w: 160, t: 'Aim for the glowing cracks.', tail: [260, 450] }] },
+        { at: [[532, 342], [986, 342], [986, 548], [512, 548]], art: 'explosion', o: { spot: 'orange' }, fx: 'flash', snd: 'boom', cam: [1.15, 1.02],
+          text: [{ k: 'sfx', x: 570, y: 380, t: 'KRA-THOOOM!', size: 54, rot: -0.08, col: 'paper', grow: 1 }] },
+      ] },
+      { panels: [
+        { at: R(14, 14, 500, 548), art: 'sunrise', cam: [1, 1.08, 0, -0.02],
+          text: [{ k: 'cap', x: 30, y: 30, w: 280, t: 'The Colossus fell apart into a hill of red sand.' }] },
+        { at: R(512, 14, 986, 548), art: 'injection', snd: 'pulse', cam: [1.1, 1],
+          text: [{ k: 'cap', x: 528, y: 30, w: 300, t: 'Okafor killed the seed where it lay.' }] },
+      ] },
+      { music: 'tension', panels: [
+        { at: [[14, 14], [480, 14], [460, 548], [14, 548]], art: 'portrait', o: { who: 'voss', mood: 'calm', bg: 'tone', glow: 'amber', x: 0.45 }, cam: [1.08, 1],
+          text: [{ k: 'say', who: 'Voss', x: 260, y: 40, w: 170, t: "It's done. The seed is gone.", tail: [230, 170] }] },
+        { at: [[492, 14], [986, 14], [986, 548], [472, 548]], art: 'vaneClose', o: { spot: 'red' }, cam: [1.12, 1],
+          text: [{ k: 'radio', who: 'Silas Vane', x: 520, y: 440, w: 200, t: 'One seed, Commander. There were thousands.', tail: [760, 380] }] },
+      ] },
+      { panels: [{ at: FULL, art: 'titleCard', o: { title: 'HOLD THE LINE', sub: 'THE HUNT GOES ON', spot: 'orange' }, fx: 'flash', snd: 'impact', cam: [1.06, 1] }] },
+    ],
+  },
 };
 })();
-const STORY_ORDER = ['prologue', 'w0-intro', 'w0-mid', 'w0-outro', 'w1-intro', 'w1-mid', 'w1-outro', 'w2-intro', 'w2-mid', 'w2-outro', 'w3-intro', 'w3-mid', 'w3-outro'];
+const STORY_ORDER = ['prologue', 'w0-intro', 'w0-mid', 'w0-outro', 'w1-intro', 'w1-mid', 'w1-outro', 'w2-intro', 'w2-mid', 'w2-outro', 'w3-intro', 'w3-mid', 'w3-outro', 'w4-intro', 'w4-mid', 'w4-outro'];
 
 // ---------- the player ----------
 const Story = (() => {
@@ -722,7 +780,7 @@ const Story = (() => {
     if (!ch) { if (done) done(); return; }
     cv = cv || $('#story-cv'); ctx = cv.getContext('2d');
     const pages = ch.pages.map((pg) => ({ ...pg, art: null, panels: pg.panels.map((p) => { const q = { ...p }; q.text = (p.text || []).map((t) => ({ ...t, _p: q })); return q; }) }));
-    st = { id, ch, done, pages, pi: 0, bi: 0, turn: null, ending: 0, shake: { x: 0, y: 0 }, shakeUntil: 0, flashUntil: 0, lastType: 0, spot: ['amber', 'purple', 'ice', 'green'][ch.world] || 'red' };
+    st = { id, ch, done, pages, pi: 0, bi: 0, turn: null, ending: 0, shake: { x: 0, y: 0 }, shakeUntil: 0, flashUntil: 0, lastType: 0, spot: ['amber', 'purple', 'ice', 'green', 'orange'][ch.world] || 'red' };
     if (id === 'prologue') st.spot = 'green';
     $('#story-screen').hidden = false;
     $('#story-tag').innerHTML = `<b>${ch.kicker}</b> ${ch.title}`;

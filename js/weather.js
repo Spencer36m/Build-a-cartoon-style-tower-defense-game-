@@ -20,23 +20,28 @@ const WEATHER = (() => {
     snow:     { label: 'Snow', icon: 'flake', ch: { snow: 0.8, cloud: 0.45, dark: 0.07 }, wind: 0.25, toast: 'Snow starting to fall' },
     blizzard: { label: 'Blizzard', icon: 'flake', ch: { snow: 1.7, fog: 0.55, dark: 0.06, cloud: 0.7, drift: 1 }, wind: 1, toast: 'Blizzard warning', big: true },
     embers:   { label: 'Ash storm', icon: 'flame', ch: { embers: 1, dark: 0.06, smoke: 0.8 }, wind: 0.4, toast: 'Ash and embers falling', big: true },
+    sandstorm: { label: 'Sandstorm', icon: 'wind', ch: { dust: 1.45, haze: 1.15, dark: 0.12 }, wind: 1, toast: 'Sandstorm incoming', big: true },
+    heat:     { label: 'Heat haze', icon: 'sun', ch: { heat: 1, cloud: 0.05 }, wind: 0.1, toast: 'The air is shimmering with heat' },
     acid:     { label: 'Acid rain', icon: 'rain', ch: { rain: 0.9, acid: 1, fog: 0.25, dark: 0.16, cloud: 0.6 }, wind: 0.35, toast: 'Acid rain', big: true },
   };
-  const CHANNELS = ['rain', 'snow', 'fog', 'dust', 'haze', 'dark', 'lightning', 'cloud', 'embers', 'acid', 'flies', 'debris', 'drift', 'smoke'];
+  const CHANNELS = ['rain', 'snow', 'fog', 'dust', 'haze', 'dark', 'lightning', 'cloud', 'embers', 'acid', 'flies', 'debris', 'drift', 'smoke', 'heat'];
   // how likely each kind is in each world, and how long it lasts (seconds)
   const FORECAST = {
     farmland: { clear: 3, rain: 3, storm: 2, tornado: 1.4, dust: 1.6, fog: 1.4 },
     graveyard: { clear: 1.2, fog: 3, rain: 2.4, storm: 2, embers: 1.6 },
     tundra: { clear: 2, snow: 4, blizzard: 2.2, fog: 1.4 },
     swamp: { clear: 1.4, mist: 3, rain: 2.4, storm: 2, acid: 1.6 },
+    desert: { clear: 2.4, heat: 3, sandstorm: 2.4, dust: 1, storm: 0.5 },
   };
-  const LAST = { clear: [30, 55], rain: [40, 65], storm: [35, 55], tornado: [34, 42], dust: [35, 50], fog: [40, 65], mist: [45, 75], snow: [50, 80], blizzard: [30, 45], embers: [35, 50], acid: [35, 50] };
+  const LAST = { clear: [30, 55], rain: [40, 65], storm: [35, 55], tornado: [34, 42], dust: [35, 50], fog: [40, 65], mist: [45, 75], snow: [50, 80], blizzard: [30, 45], embers: [35, 50], acid: [35, 50], sandstorm: [32, 48], heat: [45, 70] };
   const LINES = {
     tornado: [['voss', 'Twister on the radar, coming straight across the line. Brace and keep firing.'], ['moreno', 'Is that a cow? That is a cow. Keep shooting!']],
     storm: [['moreno', 'Lightning! Heads down, fingers on the trigger.'], ['voss', 'Storm cell right on top of us. Hold the line.']],
     dust: [['moreno', 'Dust storm! Can barely see the road. Trust the guns.'], ['voss', 'Visibility is going. Towers will hold if you let them.']],
     blizzard: [['voss', 'Whiteout rolling in. They will walk right out of the snow at you.'], ['moreno', 'Blizzard! I cannot feel my trigger finger.']],
     acid: [['okafor', 'Acid rain. That runoff is what is swelling the dead out here.'], ['moreno', 'The rain is smoking. That is not normal rain.']],
+    sandstorm: [['moreno', 'Sandstorm! It is in my teeth, my eyes, my rifle...'], ['voss', 'Wall of sand coming in. They will be right on top of us before you see them.']],
+    heat: [['okafor', 'Heat is cooking the air. Do not trust your eyes on the far road.'], ['moreno', 'It is so hot the zombies are steaming.']],
     embers: [['laila', 'Ash coming down like snow. Something big is burning out there.'], ['moreno', 'It is raining fire. Of course it is.']],
   };
 
@@ -406,6 +411,19 @@ const WEATHER = (() => {
       const fl = 0.85 + Math.sin(t * 2.3) * 0.08 + Math.sin(t * 5.1) * 0.05;
       g.fillStyle = radial(g, W / 2, H / 2, W * 0.75, 'rgba(255,120,40,0)', `rgba(220,80,24,${cur.embers * 0.4 * fl})`, 0, 0); g.fillRect(0, 0, W, H);
       g.fillStyle = `rgba(120,40,16,${cur.embers * 0.12})`; g.fillRect(0, 0, W, H);
+    }
+    // desert heat: a hot white glare, and shimmering bands of air rising off the sand
+    if (cur.heat > 0.01) {
+      g.fillStyle = `rgba(255,236,190,${cur.heat * 0.12})`; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 9; i++) {
+        const y = ((i / 9) * (H + 80) - t * 14) % (H + 80);
+        const yy = (y < -40 ? y + H + 80 : y) - 40, a = cur.heat * (0.05 + 0.03 * Math.sin(t * 1.3 + i));
+        g.fillStyle = linear(g, 0, yy - 18, 0, yy + 18, [[0, 'rgba(255,248,225,0)'], [0.5, `rgba(255,248,225,${a})`], [1, 'rgba(255,248,225,0)']]);
+        g.beginPath(); g.moveTo(0, yy);
+        for (let x = 0; x <= W; x += 40) g.lineTo(x, yy + Math.sin(x * 0.02 + t * 2 + i) * 6 - 14);
+        for (let x = W; x >= 0; x -= 40) g.lineTo(x, yy + Math.sin(x * 0.02 + t * 2 + i + 1) * 6 + 14);
+        g.closePath(); g.fill();
+      }
     }
     blitHaze(c);
     if (twister) drawTwister(c);

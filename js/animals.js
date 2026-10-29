@@ -3,7 +3,7 @@
 // Wildlife: animals that live on each map and go about their business while the battle rages.
 // Farmland has cows, sheep, chickens and butterflies; the cemetery owls, ravens, a black cat and
 // rats; the tundra caribou, arctic foxes and snow hares; the bayou alligators, herons, frogs,
-// turtles and dragonflies. Flocks cross overhead now and then. They keep off the roads and the
+// turtles and dragonflies; the desert camels, fennec foxes and lizards. Flocks cross overhead now and then. They keep off the roads and the
 // towers, herds stay together, swimmers keep to the water, and everything scatters when zombies
 // come near.
 // Each animal is drawn from above in its own frame (x forward, y to its right), lit from the top
@@ -409,28 +409,33 @@ const ANIMALS = (() => {
   };
 
   // ---------- arctic fox ----------
+  // coat, shade, legs, paws, fur strokes and ear size: white for the arctic fox, sand for the fennec
+  const FOX_ARCTIC = { coat: '#ffffff', shade: '#aebccc', tail: '#b8c4d0', leg: '#dfe5ec', paw: '#9aa4ae', ear: '#e8eef4', dark: 'rgba(120,140,160,0.35)', ears: 1 };
+  const FOX_FENNEC = { coat: '#f0d4a0', shade: '#a8783e', tail: '#9a6a34', leg: '#e2c08a', paw: '#7a5a34', ear: '#f2c8a8', dark: 'rgba(120,80,30,0.35)', ears: 1.9, tip: '#3a2414' };
   SPECIES.fox = {
     hab: 'land', walk: 16, run: 62, fear: 70, turn: 4, len: 5,
     act(a) { const r = rng(); return r < 0.3 ? ['listen', R(1.5, 3)] : r < 0.42 ? ['sit', R(3, 7)] : ['walk']; },
     draw(c, a, t) {
+      const F = a.pal || FOX_ARCTIC;
       c.scale(1.15, 1.15);
       const moving = a.speed > 0.5, stride = moving ? Math.min(2.2, a.speed * 0.07) : 0, sit = a.state === 'sit';
       const pounce = a.state === 'pounce' ? Math.sin(Math.min(1, a.actT) * Math.PI) : 0;
       // the brush: a big soft white tail, curled round when sitting
       const sw = Math.sin(t * 1.8 + a.seed) * (moving ? 0.6 : 1.2);
       c.save(); c.translate(-4.2, 0); c.rotate(sit ? 2.2 : sw * 0.15);
-      c.fillStyle = lit(c, a, 5, '#ffffff', '#b8c4d0'); c.beginPath(); c.moveTo(0, -0.8); c.quadraticCurveTo(-4, -2.4, -7.5, -0.2); c.quadraticCurveTo(-4, 2.4, 0, 0.8); c.fill();
+      c.fillStyle = lit(c, a, 5, F.coat, F.tail); c.beginPath(); c.moveTo(0, -0.8); c.quadraticCurveTo(-4, -2.4, -7.5, -0.2); c.quadraticCurveTo(-4, 2.4, 0, 0.8); c.fill();
+      if (F.tip) { c.fillStyle = F.tip; ellipse(c, -6.8, -0.2, 1, 0.8, 0); c.fill(); }
       c.restore();
-      if (!sit) for (const [lx, side, ph] of [[2.8, -1, 0], [2.8, 1, Math.PI], [-2.8, -1, Math.PI], [-2.8, 1, 0]]) leg(c, lx, side * 1.3, lx + Math.sin(a.gait + ph) * stride, side * 2.3, 0.75, '#dfe5ec', '#9aa4ae');
+      if (!sit) for (const [lx, side, ph] of [[2.8, -1, 0], [2.8, 1, Math.PI], [-2.8, -1, Math.PI], [-2.8, 1, 0]]) leg(c, lx, side * 1.3, lx + Math.sin(a.gait + ph) * stride, side * 2.3, 0.75, F.leg, F.paw);
       c.save(); c.scale(1 + pounce * 0.25, 1 + pounce * 0.25);
-      c.fillStyle = lit(c, a, 4, '#ffffff', '#aebccc');
+      c.fillStyle = lit(c, a, 4, F.coat, F.shade);
       if (sit) { ellipse(c, -0.4, 0, 3, 2.3, 0); c.fill(); } else { ellipse(c, 0, 0, 4.4, 1.9, 0); c.fill(); }
-      fur(c, a.seed, 8, 3.6, 'rgba(120,140,160,0.35)', 'rgba(255,255,255,0.6)', 10);
+      fur(c, a.seed, 8, 3.6, F.dark, 'rgba(255,255,255,0.6)', 10);
       // head cocked, listening for mice under the snow, then the pounce
       const listen = a.state === 'listen' ? Math.sin(t * 2 + a.seed) * 0.35 : 0;
       c.translate(sit ? 2.4 : 4.2, 0); c.rotate(listen);
-      for (const s of [-1, 1]) { c.fillStyle = '#e8eef4'; c.beginPath(); c.moveTo(-0.6, s * 0.6); c.lineTo(-0.8, s * 1.9); c.lineTo(0.4, s * 1.1); c.fill(); }
-      c.fillStyle = lit(c, a, 2, '#ffffff', '#b0bccc'); c.beginPath(); c.moveTo(2.6, 0); c.quadraticCurveTo(0.5, -1.6, -0.6, -1); c.quadraticCurveTo(-1, 0, -0.6, 1); c.quadraticCurveTo(0.5, 1.6, 2.6, 0); c.fill();
+      for (const s of [-1, 1]) { c.fillStyle = F.ear; c.beginPath(); c.moveTo(-0.6, s * 0.6); c.lineTo(-0.8 - (F.ears - 1) * 1.2, s * 1.9 * F.ears); c.lineTo(0.4, s * 1.1); c.fill(); }
+      c.fillStyle = lit(c, a, 2, F.coat, F.shade); c.beginPath(); c.moveTo(2.6, 0); c.quadraticCurveTo(0.5, -1.6, -0.6, -1); c.quadraticCurveTo(-1, 0, -0.6, 1); c.quadraticCurveTo(0.5, 1.6, 2.6, 0); c.fill();
       c.fillStyle = '#1a1a1e'; circle(c, 2.6, 0, 0.3); c.fill();
       eye(c, 0.9, -0.6, 0.22, 1, '#2a2418'); eye(c, 0.9, 0.6, 0.22, 1, '#2a2418');
       c.restore();
@@ -467,6 +472,62 @@ const ANIMALS = (() => {
       c.fillStyle = lit(c, a, 1.8, '#ffffff', '#b4c0cc'); ellipse(c, 0.6, 0, 1.7, 1.4, 0); c.fill();
       c.fillStyle = '#d89a9a'; circle(c, 2.2 + nib, 0, 0.25); c.fill();
       eye(c, 0.8, -1, 0.3, 1, '#2a1e14'); eye(c, 0.8, 1, 0.3, 1, '#2a1e14');
+      c.restore();
+    },
+  };
+
+  // ---------- fennec fox: the arctic fox's desert cousin, sandy with huge ears ----------
+  SPECIES.fennec = { ...SPECIES.fox, init(a) { a.pal = FOX_FENNEC; } };
+
+  // ---------- dromedary camel ----------
+  SPECIES.camel = {
+    hab: 'land', walk: 9, run: 38, fear: 78, turn: 1.6, len: 12, herd: true,
+    act(a) { const r = rng(); if (r < 0.25) return ['rest', R(10, 22)]; return r < 0.55 ? ['graze', R(4, 9)] : r < 0.66 ? ['look', R(2, 4)] : ['walk']; },
+    draw(c, a, t) {
+      const rest = a.state === 'rest', run = a.state === 'run', moving = a.speed > 0.5, graze = a.state === 'graze';
+      const f = 7, r = -10, ws = 3, wb = rest ? 4.8 : 4.1, wh = 3.4;
+      if (!rest) hoofedLegs(c, a, f - 2.4, r + 3.2, ws, wh, moving ? Math.min(5, a.speed * 0.16) : 0, '#a07a4a', '#5a4430', 1.2, run);
+      c.save(); quadBody(c, f, r, ws, wb, wh);
+      c.fillStyle = lit(c, a, 10, '#d8b47a', '#7a5a34'); c.fill();
+      c.clip();
+      // the single hump, lit on top, and a darker saddle of fur over it
+      c.fillStyle = radial(c, -1.6, 0, 5.2, 'rgba(250,224,170,0.9)', 'rgba(250,224,170,0)', -0.3, -0.3); ellipse(c, -1.6, 0, 5.2, 3.6, 0); c.fill();
+      c.fillStyle = 'rgba(120,80,40,0.35)'; ellipse(c, -1.6, 0, 2.6, 1.6, 0); c.fill();
+      roundness(c, a, 12, wb * 1.2, 0.8);
+      fur(c, a.seed, 17, wb * 2, 'rgba(90,60,26,0.3)', 'rgba(255,240,210,0.25)', 22);
+      c.restore();
+      c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 0.3; quadBody(c, f, r, ws, wb, wh); c.stroke();
+      // the tail flicks; the long neck curves forward and down to a narrow head
+      c.strokeStyle = '#6a4a28'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(r, 0); c.lineTo(r - 3, Math.sin(t * 2 + a.seed) * 1.2); c.stroke();
+      const look = a.state === 'look' ? Math.sin(t * 1.1 + a.seed) * 0.6 : a.turnBias * 0.3, reach = graze ? 1.6 : rest ? -1 : 0;
+      c.save(); c.translate(f + 1.5, 0); c.rotate(look);
+      c.fillStyle = lit(c, a, 4, '#e2c08a', '#8a6638'); c.beginPath(); c.moveTo(-1, -1.8); c.quadraticCurveTo(3, -1.6, 6 + reach, -1); c.lineTo(6 + reach, 1); c.quadraticCurveTo(3, 1.6, -1, 1.8); c.fill();
+      c.translate(6 + reach, 0);
+      c.fillStyle = lit(c, a, 3, '#e6c690', '#8a6638'); c.beginPath(); c.moveTo(-0.6, -1.4); c.quadraticCurveTo(2.4, -1.5, 4, -0.7); c.quadraticCurveTo(4.6, 0, 4, 0.7); c.quadraticCurveTo(2.4, 1.5, -0.6, 1.4); c.closePath(); c.fill();
+      for (const s2 of [-1, 1]) { c.fillStyle = '#9a7442'; ellipse(c, -0.2, s2 * 1.4, 0.7, 0.4, s2 * 0.5); c.fill(); }
+      c.fillStyle = '#6a4a2a'; circle(c, 4.1, -0.35, 0.18); c.fill(); circle(c, 4.1, 0.35, 0.18); c.fill();
+      eye(c, 1.3, -1.1, 0.3); eye(c, 1.3, 1.1, 0.3);
+      c.restore();
+    },
+  };
+
+  // ---------- lizard: dashes between rocks, then freezes with its head up ----------
+  SPECIES.lizard = {
+    hab: 'land', walk: 22, run: 80, fear: 60, turn: 8, len: 3,
+    act(a) { const r = rng(); return r < 0.5 ? ['sit', R(1.5, 5)] : r < 0.6 ? ['look', R(1, 2)] : ['walk']; },
+    draw(c, a, t) {
+      const moving = a.speed > 0.5, w = moving ? Math.sin(a.gait * 1.5) * 0.35 : 0;
+      c.lineCap = 'round';
+      // the body bends from side to side as it runs, legs splayed out and stepping in diagonal pairs
+      const sp = [[1.4, -1, 0], [1.4, 1, Math.PI], [-1.4, -1, Math.PI], [-1.4, 1, 0]];
+      for (const [lx, side, ph] of sp) { const st = moving ? Math.sin(a.gait + ph) * 1.2 : 0; leg(c, lx, side * 0.6, lx + 0.8 + st, side * 2.1, 0.5, '#8a7a50'); }
+      c.strokeStyle = '#7a6a44'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-2.4, 0); c.quadraticCurveTo(-4.5, w * 4, -7, -w * 3); c.stroke();
+      c.lineWidth = 0.5; c.beginPath(); c.moveTo(-6.6, -w * 2.6); c.lineTo(-8.4, -w * 4); c.stroke();
+      c.fillStyle = lit(c, a, 2.5, '#c8b47a', '#6a5a34'); ellipse(c, 0, 0, 2.8, 1.05, w * 0.3); c.fill();
+      c.fillStyle = 'rgba(80,60,30,0.5)'; for (let i = -1; i <= 1; i++) { circle(c, i * 0.9, 0, 0.3); c.fill(); }
+      c.save(); c.translate(2.7, w * 0.8); c.rotate(a.state === 'look' ? Math.sin(t * 3 + a.seed) * 0.4 : w * 0.4);
+      c.fillStyle = lit(c, a, 1.2, '#d4c08a', '#6a5a34'); ellipse(c, 0.6, 0, 1.2, 0.8, 0); c.fill();
+      eye(c, 0.8, -0.55, 0.18); eye(c, 0.8, 0.55, 0.18);
       c.restore();
     },
   };
@@ -618,10 +679,10 @@ const ANIMALS = (() => {
   };
 
   // how far apart animals keep from one another
-  const SPACE = { cow: 21, sheep: 12, chicken: 7, caribou: 19, raven: 8, rat: 6, hare: 9, fox: 12, gator: 30, heron: 14, frog: 7, turtle: 9, cat: 10, owl: 6 };
+  const SPACE = { camel: 22, fennec: 12, lizard: 7, cow: 21, sheep: 12, chicken: 7, caribou: 19, raven: 8, rat: 6, hare: 9, fox: 12, gator: 30, heron: 14, frog: 7, turtle: 9, cat: 10, owl: 6 };
   const crowded = (x, y, kind, self) => list.some((b) => b !== self && b.kind === kind && dist2(b.x, b.y, x, y) < (SPACE[kind] || 8) ** 2);
   // shadow sizes (half length, half width) for each species
-  const SHADOW = { cow: [12, 6], sheep: [6.5, 4.8], chicken: [4.2, 2.8], cat: [5, 2], rat: [3, 1.3], raven: [3.2, 1.6], owl: [3.6, 3.2], caribou: [11, 4], fox: [5.8, 2.3], hare: [4, 2.6], gator: [15, 2.6], heron: [4, 2.2], frog: [2.2, 1.7], turtle: [3.4, 2.8] };
+  const SHADOW = { camel: [12, 5], fennec: [5.8, 2.3], lizard: [3, 1], cow: [12, 6], sheep: [6.5, 4.8], chicken: [4.2, 2.8], cat: [5, 2], rat: [3, 1.3], raven: [3.2, 1.6], owl: [3.6, 3.2], caribou: [11, 4], fox: [5.8, 2.3], hare: [4, 2.6], gator: [15, 2.6], heron: [4, 2.2], frog: [2.2, 1.7], turtle: [3.4, 2.8] };
 
   // ============================================================ populating a map
   let perches = [], hasWater = false;
@@ -671,6 +732,10 @@ const ANIMALS = (() => {
       if (rng() < 0.9) group('caribou', 4 + Math.floor(rng() * 4), 'land', 48);
       scatter('fox', 1 + Math.floor(rng() * 2), 'land');
       scatter('hare', 4 + Math.floor(rng() * 3), 'land');
+    } else if (id === 'desert') {
+      if (rng() < 0.85) group('camel', 2 + Math.floor(rng() * 3), 'land', 50);
+      scatter('fennec', 1 + Math.floor(rng() * 2), 'land');
+      scatter('lizard', 4 + Math.floor(rng() * 4), 'land');
     } else if (id === 'swamp') {
       const nG = 2 + Math.floor(rng() * 2);
       if (hasWater) scatter('gator', nG, 'water'); else scatter('gator', nG, 'land');
@@ -766,7 +831,7 @@ const ANIMALS = (() => {
     if (act === 'flyoff') { const p = pickSpot(a.x, a.y, 60, 160, 'land', towers); if (p) Object.assign(a, { state: 'fly', fx: a.x, fy: a.y, tx: p[0], ty: p[1], flyT: 0, flyDur: Math.hypot(p[0] - a.x, p[1] - a.y) / Sp.flySpeed, z0: 0, z1: 0 }); else { a.state = 'look'; a.timer = 1; } return; }
     a.state = act; a.timer = dur; a.actT = 0;
     // a fox that has been listening may pounce on a mouse under the snow
-    if (a.kind === 'fox' && act === 'listen' && rng() < 0.6) a.pounceNext = true;
+    if ((a.kind === 'fox' || a.kind === 'fennec') && act === 'listen' && rng() < 0.6) a.pounceNext = true;
   }
   function step(a, dt, enemies, towers) {
     const Sp = SPECIES[a.kind];
@@ -850,7 +915,7 @@ const ANIMALS = (() => {
     flocks = flocks.filter((f) => f.t < f.dur);
   }
   function spawnFlock() {
-    const id = M.world.id, kind = id === 'graveyard' ? 'ravens' : id === 'swamp' ? 'egrets' : 'geese';
+    const id = M.world.id, kind = id === 'graveyard' || id === 'desert' ? 'ravens' : id === 'swamp' ? 'egrets' : 'geese';
     const fromLeft = rng() < 0.5, y0 = R(H * 0.15, H * 0.85), ang = (fromLeft ? 0 : Math.PI) + R(-0.35, 0.35);
     const n = kind === 'ravens' ? 5 + Math.floor(rng() * 4) : 6 + Math.floor(rng() * 6);
     const birds = Array.from({ length: n }, (_, i) => { const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1; return { ox: -row * 14, oy: side * row * 10, ph: rng() * TAU }; });
@@ -865,7 +930,7 @@ const ANIMALS = (() => {
     // hoppers rise off the ground on each bound
     let hopZ = 0;
     if ((a.kind === 'hare' || a.kind === 'frog') && a.speed > 0.5) hopZ = Math.max(0, Math.sin(a.gait)) * (a.kind === 'frog' ? 2.5 : 2);
-    if (a.kind === 'fox' && a.state === 'pounce') hopZ = Math.sin(Math.min(1, a.actT) * Math.PI) * 6;
+    if ((a.kind === 'fox' || a.kind === 'fennec') && a.state === 'pounce') hopZ = Math.sin(Math.min(1, a.actT) * Math.PI) * 6;
     c.translate(a.x, a.y - (lift + hopZ) * 0.82);
     c.rotate(a.ang);
     SPECIES[a.kind].draw(c, a, t);

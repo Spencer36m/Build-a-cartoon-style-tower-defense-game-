@@ -181,7 +181,8 @@ const Globe = (() => {
   // move each wonder to the nearest spot of land or sea, away from the polar ice
   function placeWonders() {
     placed = true;
-    for (const w of WONDERS) {
+    // the expansion world's marker goes on land too
+    for (const w of [...WONDERS, ...WORLDS.filter((x) => x.expansion).map((x) => Object.assign(x, { want: 'land' }))]) {
       let best = null;
       for (let r = 0; r <= 45 && !best; r += 3) {
         for (let k = 0; k < Math.max(1, r * 2); k++) {

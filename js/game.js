@@ -17,7 +17,13 @@ const meta = loadMeta();
 const saveMeta = () => store.set(META_KEY, JSON.stringify(meta));
 const upg = (k) => meta.upg[k] | 0;
 const starsFor = (i) => meta.stars[LEVEL_META[i].id] | 0;
-const levelUnlocked = (i) => i === 0 || starsFor(i - 1) > 0;
+// the expansion world opens to its owners once the farmland is cleared, whatever comes before it
+const expansionOpen = (w) => PREMIUM.has(WORLDS[w].id) && starsFor(LEVELS_PER_WORLD - 1) > 0;
+const levelUnlocked = (i) => {
+  const L = LEVEL_META[i];
+  if (WORLDS[L.world].expansion) return expansionOpen(L.world) && (L.num === 1 || starsFor(i - 1) > 0);
+  return i === 0 || starsFor(i - 1) > 0;
+};
 const worldUnlocked = (w) => levelUnlocked(w * LEVELS_PER_WORLD);
 const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
 const costOf = (n) => Math.round(n * (1 - 0.04 * upg('discount')));
@@ -359,6 +365,7 @@ function victory() {
   let text;
   if (unlocked.length) text = `New tower unlocked: ${unlocked.map((t) => TOWERS[t].name).join(', ')}. You get a briefing on it at the start of your next mission.`;
   else if (!next) text = 'Every sector is secure. Replay levels to earn all the stars.';
+  else if (next.world !== S.L.world && WORLDS[next.world].expansion) text = levelUnlocked(next.index) ? `Every main sector is secure. The ${WORLDS[next.world].name} is waiting.` : `Every main sector is secure. The ${WORLDS[next.world].name} expansion is in the store.`;
   else if (next.world !== S.L.world) text = `New world unlocked: ${WORLDS[next.world].name}.`;
   else text = `You kept ${S.lives} of ${S.maxLives} lives. Next up: ${next.id}, ${missionFor(next).objective.toLowerCase()}.`;
   if (S.storyNext) text += ' A new story chapter is ready.';
@@ -398,7 +405,7 @@ function showEnd(won, title, text, stars, reward, xp) {
   st.setAttribute('aria-label', `${stars} of 3 stars`);
   for (let i = 0; i < stars; i++) setTimeout(() => Sound.play('star', null, { pitch: 1 + i * 0.25 }), 450 + i * 150);
   if (xp > 0) setTimeout(() => Sound.play('xp'), 450 + stars * 150 + 150);
-  $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1] || !!S.sandbox;
+  $('#btn-next').hidden = !won || !LEVEL_META[S.levelIndex + 1] || !levelUnlocked(S.levelIndex + 1) || !!S.sandbox;
   $('#btn-retry').textContent = won ? 'Replay' : 'Try again';
   // a character has the last word
   const q = S.endQuote, box = $('#end-quote');
@@ -524,9 +531,11 @@ function updateEnemy(e, dt) {
     e.stompCd = def.stomp.every;
     const r2 = (def.stomp.radius * TILE) ** 2;
     let hit = 0;
-    for (const t of S.towers) if (dist2(t.x, t.y, e.x, e.y) <= r2) { t.stun = def.stomp.dur; hit++; }
-    S.fx.push({ kind: 'ring', x: e.x, y: e.y, r: def.stomp.radius * TILE * 0.45, life: 0.7, max: 0.7, color: '200,235,255' });
-    if (hit) floatText('Towers frozen', e.x, e.y - e.r * 2.5, '#bfe6ff', 16);
+    // the frost giant's stomp ices towers over; the sand colossus buries them
+    const sand = !!def.stomp.sand;
+    for (const t of S.towers) if (dist2(t.x, t.y, e.x, e.y) <= r2) { t.stun = def.stomp.dur; t.stunSand = sand; hit++; }
+    S.fx.push({ kind: 'ring', x: e.x, y: e.y, r: def.stomp.radius * TILE * 0.45, life: 0.7, max: 0.7, color: sand ? '230,200,140' : '200,235,255' });
+    if (hit) floatText(sand ? 'Towers buried' : 'Towers frozen', e.x, e.y - e.r * 2.5, sand ? '#f0d8a0' : '#bfe6ff', 16);
     addShake(7); Sound.play('stomp', e.x);
   }
 }
@@ -753,6 +762,7 @@ function stunZombie(e, dur) {
 }
 function ignite(e, dps, dur, t) {
   if (e.dead || !dps) return;
+  dps *= ZOMBIES[e.type].burnMult || 1;
   e.burnDps = Math.max(e.burnT > 0 ? e.burnDps : 0, dps); e.burnT = Math.max(e.burnT, dur || 2); e.burnSrc = t;
 }
 // A hit from a tower's main weapon, with everything its upgrades add on top.
@@ -2285,6 +2295,7 @@ function storyUnlocked(id) {
 }
 function storyLockNote(id) {
   const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
+  if (WORLDS[+w].expansion && !PREMIUM.has(WORLDS[+w].id)) return `Part of the ${WORLDS[+w].name} expansion`;
   if (part === 'intro') return `Reach ${WORLDS[+w].name}`;
   return `Clear sector ${LEVEL_META[+w * LEVELS_PER_WORLD + (part === 'mid' ? 24 : LEVELS_PER_WORLD - 1)].id}`;
 }
@@ -2336,19 +2347,21 @@ function selectWorld(w) {
   Globe.select(w);
   const world = WORLDS[w], open = worldUnlocked(w);
   const stars = worldStars(w), cleared = worldCleared(w);
+  const buyIt = world.expansion && !PREMIUM.has(world.id);
+  const lockNote = open ? '' : buyIt ? 'Expansion: 50 new levels, new zombies and a new boss' : world.expansion ? `Clear ${levelName(LEVELS_PER_WORLD - 1)} to open` : `Clear ${levelName(w * LEVELS_PER_WORLD - 1)} to unlock`;
   const card = $('#world-card');
   card.innerHTML = `
-    <span class="w-index">World ${w + 1} of ${WORLDS.length}</span>
+    <span class="w-index">${world.expansion ? 'Expansion world' : `World ${w + 1} of ${WORLDS.length}`}</span>
     <h3>${world.name}</h3>
     <p>${world.blurb}</p>
     <div class="world-meter" aria-hidden="true"><span style="width:${(cleared / LEVELS_PER_WORLD) * 100}%"></span></div>
     <div class="world-stats"><span><b>${cleared}</b> / ${LEVELS_PER_WORLD} cleared</span><span><b>${stars}</b> / ${LEVELS_PER_WORLD * 3} stars</span></div>
     <div class="wave-chips"></div>
     <p class="hint zombie-tip" hidden></p>
-    ${open ? '' : `<p class="locked-note">Clear ${levelName(w * LEVELS_PER_WORLD - 1)} to unlock</p>`}
+    ${open ? '' : `<p class="locked-note">${lockNote}</p>`}
     <div class="world-nav">
       <button class="btn" type="button" id="w-prev" aria-label="Previous world">‹</button>
-      <button class="btn btn-primary" type="button" id="w-go" ${open ? '' : 'disabled'}>Deploy</button>
+      ${buyIt ? '<button class="btn btn-primary" type="button" id="w-buy">Get the expansion</button>' : `<button class="btn btn-primary" type="button" id="w-go" ${open ? '' : 'disabled'}>Deploy</button>`}
       <button class="btn" type="button" id="w-next" aria-label="Next world">›</button>
     </div>`;
   const chips = card.querySelector('.wave-chips');
@@ -2356,7 +2369,8 @@ function selectWorld(w) {
   chips.append(zombieChip(world.boss, ZOMBIES[world.boss].name));
   $('#w-prev').addEventListener('click', () => { Sound.play('click'); selectWorld((w + WORLDS.length - 1) % WORLDS.length); });
   $('#w-next').addEventListener('click', () => { Sound.play('click'); selectWorld((w + 1) % WORLDS.length); });
-  $('#w-go').addEventListener('click', () => { Sound.play('click'); storyThen(`w${w}-intro`, () => showLevels(w)); });
+  if (buyIt) $('#w-buy').addEventListener('click', () => { Sound.play('click'); showStore('premium'); });
+  else $('#w-go').addEventListener('click', () => { Sound.play('click'); storyThen(`w${w}-intro`, () => showLevels(w)); });
 }
 
 const SKULL_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7.5 7.5 0 0 0-7.5 7.5c0 2.8 1.5 4.6 2.9 5.4V18a1 1 0 0 0 1 1h1.1v-1.8h1.6V19h1.8v-1.8h1.6V19h1.1a1 1 0 0 0 1-1v-2.6c1.4-.8 2.9-2.6 2.9-5.4A7.5 7.5 0 0 0 12 2.5z"/><circle cx="9" cy="10.5" r="1.9" fill="#1a0a08"/><circle cx="15" cy="10.5" r="1.9" fill="#1a0a08"/></svg>';
@@ -2872,4 +2886,4 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { bu
 requestAnimationFrame(frame);
 
 // Small hook for automated tests and tinkering in the console.
-window.ZombieBash = { S, meta, LEVEL_META, getLevel, spawnEnemy, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, upgradeState, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, showArmory, selectLevel, usePower, callAirstrike, saveMeta, upCost, towerStats, Story, showChapters };
+window.ZombieBash = { S, meta, levelUnlocked, worldUnlocked, LEVEL_META, getLevel, spawnEnemy, TOWERS, ZOMBIES, startGame, startWave, placeTower, upgradeTower, upgradeState, update, canPlaceAt, towerUnlocked, showWorlds, showLevels, showStore, showMenu, showArmory, selectLevel, usePower, callAirstrike, saveMeta, upCost, towerStats, Story, showChapters };

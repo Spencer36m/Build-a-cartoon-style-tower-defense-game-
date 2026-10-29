@@ -2,7 +2,8 @@
 // ============================================================
 // Music: a main theme for the menus and a theme of its own for each world, every one with
 // its own instruments, tempo and feel. Farmland is a bluegrass hoedown, the cemetery a
-// skeleton waltz, the tundra an icy echo and the bayou a swamp-blues shuffle. Within a
+// skeleton waltz, the tundra an icy echo, the bayou a swamp-blues shuffle and the desert a
+// snaking oud tune over darbuka drums. Within a
 // song the arrangement thins out or fills in with the action:
 // story < calm < tension < battle. A boss gets a theme of its own, fast and frightening.
 // Everything is made from oscillators, noise and plucked-string buffers (Karplus-Strong),
@@ -12,7 +13,7 @@ const MUSIC = (() => {
   const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
   const LEVEL = { story: 0, calm: 1, tension: 2, battle: 3, boss: 4, menu: 3 };
   const CHORDS = { m: [0, 3, 7], M: [0, 4, 7], m7: [0, 3, 7, 10], 7: [0, 4, 7, 10] };
-  const WORLD_SONGS = ['farm', 'grave', 'tundra', 'swamp'];
+  const WORLD_SONGS = ['farm', 'grave', 'tundra', 'swamp', 'desert'];
 
   let ac = null, out = null, mixer = null, verb = null, noise = null, ch = {}, echo = null, waves = {}, plucks = {}, held = [];
 
@@ -478,8 +479,56 @@ const MUSIC = (() => {
     // The boss theme, in the world's own key: a galloping overdriven bass, pounding drums, a
     // menacing brass line over horror-film harmony (the chord a semitone up, the tritone),
     // shrieking string tremolo in the second half and a siren rising into each new phrase.
+    // The desert: a snaking melody in the Phrygian dominant scale, plucked on an oud and played on
+    // a breathy ney flute when it is quiet, over a drone and a darbuka playing the maqsum rhythm.
+    desert: {
+      key: 50, bpm: 106, beats: 4, spb: 4, swing: 0.06, echo: 0.75,
+      prog: [[0, 'M'], [1, 'M'], [0, 'M'], [-2, 'm'], [5, 'm'], [1, 'M'], [0, 'M'], [1, 'M']],
+      tune: [
+        [[0, 7, 4], [4, 8, 2], [6, 7, 2], [8, 5, 2], [10, 4, 2], [12, 5, 2], [14, 4, 2]],
+        [[0, 1, 6], [6, 4, 2], [8, 1, 2], [10, 0, 6]],
+        [[0, 7, 2], [2, 8, 2], [4, 10, 2], [6, 12, 4], [10, 10, 2], [12, 8, 2], [14, 7, 2]],
+        [[0, 8, 4], [4, 7, 2], [6, 5, 2], [8, 4, 8]],
+        [[0, 12, 3], [3, 13, 1], [4, 12, 2], [6, 10, 2], [8, 8, 2], [10, 7, 2], [12, 8, 2], [14, 10, 2]],
+        [[0, 7, 6], [6, 5, 2], [8, 4, 2], [10, 5, 2], [12, 7, 4]],
+        [[0, 8, 2], [2, 7, 2], [4, 5, 2], [6, 4, 2], [8, 1, 4], [12, 4, 4]],
+        [[0, 0, 8], [8, 1, 2], [10, 4, 2], [12, 5, 2], [14, 7, 2]],
+      ],
+      play(x, S) {
+        const { t, dur, s, b, lvl, root, chord, key, boss, per } = x, R = key + root;
+        // the drone: the key note and its fifth held under everything
+        if (s === 0 && b % 2 === 0) for (const m of [key - 12, key - 5]) note(ch.pad, m, t, dur * per * 1.95, lvl ? 0.035 : 0.028, { wave: wave('reed'), at: 0.6, rel: 0.6, cut: 900, verb: 0.3, held: true });
+        // bass: the root on the strong beats, rocking between octaves in a fight
+        if (s === 0 || s === 8) pluck(ch.bass, 'bass', R - 12, t, lvl ? 0.55 : 0.4, { len: dur * (lvl >= 3 ? 3 : 7) });
+        if (lvl >= 3 && (s === 6 || s === 14)) pluck(ch.bass, 'bass', R, t, 0.45, { len: dur * 1.6 });
+        if (boss && s % 2 === 0) note(ch.bass, R - 12, t, dur * 1.4, 0.06, { wave: 'sawtooth', cut: 600, q: 3 });
+        // the chord, strummed on the oud on the off-beats in a fight
+        const voicing = chord.map((iv) => R + 12 + iv);
+        if (lvl >= 3 && (s === 4 || s === 12)) strum(ch.comp, 'guitar', voicing, t, 0.16, { len: dur * 2 });
+        // the melody: the oud (tremolo-picked on long notes) in a fight, the ney when it is quiet
+        const n = tuneAt(S, b, s);
+        if (n && lvl !== 2) {
+          const m = key + 12 + n[0], len = n[1] * dur;
+          if (lvl >= 3) {
+            const picks = n[1] >= 4 ? Math.floor(n[1]) : 1;
+            for (let i = 0; i < picks; i++) pluck(ch.lead, 'harpsi', m, t + i * dur, i ? 0.13 : 0.22, { slide: i ? 0 : 0.7, slideT: 0.06, len: Math.max(dur * 1.2, 0.2), verb: 0.25 });
+          } else note(ch.lead, m + 12, t, len * 0.95, 0.06, { wave: wave('flute'), at: 0.06, rel: 0.15, vib: 0.01, vibRate: 5, vibAt: 0.25, glide: n[1] >= 3 ? m + 11 : null, glideT: 0.1, verb: 0.4, echo: 0.2 });
+          if (boss) note(ch.lead, m, t, len * 0.9, 0.04, { wave: wave('reed'), at: 0.02, rel: 0.08, vib: 0.012, glide: m - 1, glideT: 0.08 });
+        }
+        // a low ney line answers in the tense stretches
+        if (lvl === 2 && (s === 0 || s === 8)) note(ch.lead, R + 12 + (s ? 1 : 0), t, dur * 7, 0.04, { wave: wave('flute'), at: 0.3, rel: 0.3, vib: 0.012, vibRate: 4.5, verb: 0.45, held: true });
+        // darbuka: doum (deep, centre) and tek (sharp, rim) in the maqsum rhythm, with ka ghost notes
+        const doum = s === 0 || s === 8, tek = s === 2 || s === 6 || s === 12;
+        if (lvl >= 2 && doum) tom(t, 43, lvl >= 3 ? 0.32 : 0.22, 0.32);
+        if (lvl >= 2 && tek) wood(t, lvl >= 3 ? 0.16 : 0.1, 2600);
+        if (lvl >= 3 && s % 2 === 1) wood(t, 0.05, 3400);
+        if (lvl >= 3 && (s === 4 || s === 12)) { clap(t, 0.06); if (boss) tamb(t, 0.07); }
+        if (lvl >= 3 && b === 7 && s >= 12) tom(t, 47 + (s - 12) * 2, 0.18, 0.2);
+        if (lvl === 1 && s === 0) wood(t, 0.06, 2200);
+      },
+    },
     boss: {
-      keys: [45, 50, 52, 43], key: 45, bpm: 152, beats: 4, spb: 4, swing: 0, echo: 0.5, gain: 1.35,
+      keys: [45, 50, 52, 43, 50], key: 45, bpm: 152, beats: 4, spb: 4, swing: 0, echo: 0.5, gain: 1.35,
       prog: [[0, 'm'], [0, 'm'], [1, 'M'], [0, 'm'], [8, 'M'], [6, 'M'], [7, 'M'], [7, '7']],
       tune: [
         [[0, 0, 3], [3, 1, 1], [4, 0, 2], [6, 3, 2], [8, 7, 4], [12, 6, 4]],

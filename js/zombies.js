@@ -669,9 +669,29 @@ const ZART = (() => {
 
   // ---------- frost giant ----------
   function drawGiant(c, r, s, ph, seed) {
-    const s2 = { ...s, wide: 1.45, depth: 1.25, pattern: 'fur', sleeve: 'none', armThick: 1.9, handScale: 1.6, reach: 1.1, tears: 0, stains: 1, headScale: 0.9, hairStyle: 'bald', frost: true, limp: 0.8 };
+    const s2 = { ...s, wide: 1.45, depth: 1.25, pattern: s.sand ? 'bare' : 'fur', sleeve: 'none', armThick: 1.9, handScale: 1.6, reach: 1.1, tears: 0, stains: 1, headScale: 0.9, hairStyle: 'bald', frost: !s.sand, limp: 0.8 };
     drawPerson(c, r, s2, ph, seed);
     const rng = mulberry32(seed + 3);
+    if (s.sand) {
+      // a sandstone colossus: slabs of rock grown over its back and shoulders, cracks glowing like embers
+      for (let i = 0; i < 9; i++) {
+        const x = -r * 0.6 + rng() * r * 0.75, y = (rng() - 0.5) * r * 1.1, sz = r * (0.12 + rng() * 0.12);
+        c.beginPath();
+        for (let k = 0; k < 5; k++) { const a = (k / 5) * TAU + rng() * 0.5, d = sz * (0.7 + rng() * 0.5); c.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
+        c.closePath();
+        c.fillStyle = g2(c, x - sz, y - sz, x + sz, y + sz, [[0, '#e8c890'], [0.5, '#b88a52'], [1, '#6a4a2a']]); c.fill();
+        c.strokeStyle = 'rgba(60,36,16,0.6)'; c.lineWidth = 0.5; c.stroke();
+      }
+      c.lineCap = 'round';
+      for (let i = 0; i < 6; i++) {
+        let x = -r * 0.5 + rng() * r * 0.6, y = (rng() - 0.5) * r * 0.9;
+        c.beginPath(); c.moveTo(x, y);
+        for (let k = 0; k < 4; k++) { x += (rng() - 0.3) * r * 0.16; y += (rng() - 0.5) * r * 0.18; c.lineTo(x, y); }
+        c.strokeStyle = 'rgba(255,150,50,0.35)'; c.lineWidth = r * 0.06; c.stroke();
+        c.strokeStyle = '#ffd27a'; c.lineWidth = r * 0.02; c.stroke();
+      }
+      return;
+    }
     // ice spikes down the spine
     for (let i = 0; i < 6; i++) {
       const x = -r * 0.55 + i * r * 0.14, side = i % 2 ? 1 : -1;
@@ -685,6 +705,8 @@ const ZART = (() => {
   // ---------- flyers ----------
   function drawCrow(c, r, s, ph, seed) {
     const rng = mulberry32(seed);
+    // a vulture passes its own colours: brown wings, a bald pink head, a pale ruff and beak
+    const W = s.wing || ['#2a2e38', '#0d0e12', '#1a1c24'];
     const flap = Math.sin(ph * TAU);
     const spread = 0.55 + 0.45 * Math.abs(flap);
     for (const side of [-1, 1]) {
@@ -696,7 +718,7 @@ const ZART = (() => {
         const bx = r * 0.05 - k * r * 0.35, by = r * 0.15;
         c.save(); c.translate(bx, by); c.rotate(Math.PI / 2 + a);
         c.beginPath(); c.ellipse(len * 0.5, 0, len * 0.55, r * 0.13, 0, 0, TAU);
-        c.fillStyle = g2(c, 0, -r * 0.13, 0, r * 0.13, [[0, '#2a2e38'], [0.5, '#0d0e12'], [1, '#1a1c24']]); c.fill();
+        c.fillStyle = g2(c, 0, -r * 0.13, 0, r * 0.13, [[0, W[0]], [0.5, W[1]], [1, W[2]]]); c.fill();
         c.strokeStyle = 'rgba(90,110,140,0.35)'; c.lineWidth = 0.3; c.beginPath(); c.moveTo(0, 0); c.lineTo(len, 0); c.stroke();
         c.restore();
       }
@@ -704,11 +726,12 @@ const ZART = (() => {
     }
     for (let i = 0; i < 6; i++) {
       const a = Math.PI + (i - 2.5) * 0.13;
-      c.beginPath(); c.ellipse(-r * 0.45 + Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3, r * 0.32, r * 0.08, a, 0, TAU); c.fillStyle = i % 2 ? '#101116' : '#1c1e26'; c.fill();
+      c.beginPath(); c.ellipse(-r * 0.45 + Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3, r * 0.32, r * 0.08, a, 0, TAU); c.fillStyle = i % 2 ? W[1] : W[2]; c.fill();
     }
-    c.beginPath(); c.ellipse(0, 0, r * 0.55, r * 0.26, 0, 0, TAU); c.fillStyle = rg(c, 0, 0, r * 0.55, '#2c303a', '#08090c'); c.fill();
-    c.beginPath(); c.ellipse(r * 0.52, 0, r * 0.2, r * 0.17, 0, 0, TAU); c.fillStyle = '#121318'; c.fill();
-    c.beginPath(); c.moveTo(r * 0.66, -r * 0.06); c.lineTo(r * 0.98, 0); c.lineTo(r * 0.66, r * 0.06); c.closePath(); c.fillStyle = '#3a3630'; c.fill();
+    c.beginPath(); c.ellipse(0, 0, r * 0.55, r * 0.26, 0, 0, TAU); c.fillStyle = rg(c, 0, 0, r * 0.55, s.body || '#2c303a', '#08090c'); c.fill();
+    if (s.ruff) { c.beginPath(); c.ellipse(r * 0.36, 0, r * 0.16, r * 0.24, 0, 0, TAU); c.fillStyle = rg(c, r * 0.32, -r * 0.05, r * 0.26, '#f4eee2', '#b8b0a0'); c.fill(); }
+    c.beginPath(); c.ellipse(r * 0.52, 0, r * 0.2, r * 0.17, 0, 0, TAU); c.fillStyle = s.head ? rg(c, r * 0.48, -r * 0.05, r * 0.22, shade(s.head, 0.2), shade(s.head, -0.3)) : '#121318'; c.fill();
+    c.beginPath(); c.moveTo(r * 0.66, -r * 0.06); c.lineTo(r * 0.98, 0); c.lineTo(r * 0.66, r * 0.06); c.closePath(); c.fillStyle = s.beak || '#3a3630'; c.fill();
     for (const sy of [-1, 1]) { c.fillStyle = '#d23a22'; c.beginPath(); c.arc(r * 0.58, sy * r * 0.1, r * 0.035, 0, TAU); c.fill(); }
     // one wing is ragged and bloody
     c.fillStyle = rgba(P.blood, 0.7); c.beginPath(); c.ellipse(-r * 0.1, -r * 0.5, r * 0.15, r * 0.08, 0.3, 0, TAU); c.fill();
@@ -790,10 +813,90 @@ const ZART = (() => {
     graveLord: [human({ skin: SKIN[2], shirt: '#1d1828', pattern: 'robe', trim: '#a8862e', robe: true, gear: 'hood', crown: true, eyeGlow: '#ff6a3a', staff: true, wide: 1.25, sleeve: 'long', tears: 1, stains: 0, box: 4.8, glow: [{ x: 2.25, y: 0.7, r: 34, color: '150,255,110', a: 0.6 }] })],
     abomination: [{ kind: 'giant', box: 4.2, skin: '#b8c8d0', shirt: '#b8c8d0', pants: '#5a6a78', eye: '#9fe3ff', glow: [{ x: 0.5, y: 0, r: 40, color: '160,220,255', a: 0.25 }] }],
     behemoth: [{ kind: 'bloater', box: 2.9, skin: '#7c8a48', shirt: '#3a3228', huge: true, glow: [{ x: 0, y: 0, r: 60, color: '160,220,80', a: 0.18 }] }],
+    mummy: [
+      human({ skin: '#a89a76', shirt: '#cfc3a0', pants: '#bfb291', shoes: '#8a7a58', hairStyle: 'bald', sleeve: 'long', wrap: true, eye: '#ffb040', stains: 0, tears: 0, glow: [{ x: 0.5, y: 0, r: 14, color: '255,170,60', a: 0.35 }] }),
+      human({ skin: '#9a8a66', shirt: '#c8b890', pants: '#b0a07a', shoes: '#7a6a48', hairStyle: 'bald', sleeve: 'long', wrap: true, eye: '#ffb040', stains: 0, tears: 0, missingArm: 1, glow: [{ x: 0.5, y: 0, r: 14, color: '255,170,60', a: 0.35 }] }),
+    ],
+    scorpion: [{ kind: 'scorpion', box: 3.4, shell: '#c8a050' }, { kind: 'scorpion', box: 3.4, shell: '#a86a3a' }],
+    vulture: [{ kind: 'crow', box: 4.6, wing: ['#6a5238', '#2e2216', '#4a3826'], body: '#4a3826', head: '#c88a78', beak: '#e0d2a8', ruff: true }],
+    colossus: [{ kind: 'giant', sand: true, box: 4.2, skin: '#c9a46a', shirt: '#c9a46a', pants: '#7a5a3a', eye: '#ffb040', glow: [{ x: 0.5, y: 0, r: 46, color: '255,170,60', a: 0.3 }] }],
   };
+
+  // ---------- desert ----------
+  // a mummy is a person wrapped from head to foot: bandage strips are laid over the drawn body
+  function wrapBandages(c, r, s, seed) {
+    const rng = mulberry32(seed + 11), R = r * s.box * 0.5;
+    c.save(); c.globalCompositeOperation = 'source-atop'; c.lineCap = 'butt';
+    for (let i = -14; i <= 14; i++) {
+      const y = i * r * 0.11, a = (rng() - 0.5) * 0.3 + (i % 2 ? 0.18 : -0.15);
+      c.save(); c.translate(0, y); c.rotate(a);
+      const col = ['#d8ccaa', '#c8b890', '#e2d8bc', '#b8a87e'][Math.floor(rng() * 4)];
+      c.strokeStyle = col; c.globalAlpha = 0.7; c.lineWidth = r * (0.08 + rng() * 0.04);
+      c.beginPath(); c.moveTo(-R, 0); c.lineTo(R, 0); c.stroke();
+      c.globalAlpha = 0.5; c.strokeStyle = 'rgba(70,52,30,0.7)'; c.lineWidth = r * 0.012;
+      c.beginPath(); c.moveTo(-R, r * 0.045); c.lineTo(R, r * 0.045); c.stroke();
+      c.restore();
+    }
+    // old stains and a few torn ends showing the dried skin beneath
+    c.globalAlpha = 1;
+    for (let i = 0; i < 9; i++) { blob(c, (rng() - 0.5) * r * 1.4, (rng() - 0.5) * r * 1.4, r * (0.06 + rng() * 0.12), rng, 8, 0.5); c.fillStyle = rng() < 0.5 ? 'rgba(110,80,40,0.35)' : 'rgba(90,30,20,0.3)'; c.fill(); }
+    c.restore();
+  }
+  function drawScorpion(c, r, s, ph, seed) {
+    const rng = mulberry32(seed);
+    const shell = s.shell || '#c8a050', dark = shade(shell, -0.5), lite = shade(shell, 0.35);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // eight legs, scuttling in two alternating sets
+    for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+      const st = Math.sin((ph + (i % 2 ? 0.5 : 0) + (side > 0 ? 0.25 : 0)) * TAU) * 0.25;
+      const bx = r * (0.18 - i * 0.2), a = side * (Math.PI / 2 + (i - 1.5) * 0.35 + st);
+      const kx = bx + Math.cos(a) * r * 0.55, ky = Math.sin(a) * r * 0.55;
+      const fx = kx + Math.cos(a + side * 0.6) * r * 0.45, fy = ky + Math.sin(a + side * 0.6) * r * 0.45 * 0.9;
+      c.strokeStyle = dark; c.lineWidth = r * 0.11; c.beginPath(); c.moveTo(bx, 0); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+      c.strokeStyle = shell; c.lineWidth = r * 0.06; c.beginPath(); c.moveTo(bx, 0); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+    }
+    // pincers reaching forward, snapping
+    const snap = Math.max(0, Math.sin(ph * TAU * 2)) * 0.25;
+    for (const side of [-1, 1]) {
+      const ex = r * 0.75, ey = side * r * 0.42, cx = r * 1.15, cy = side * r * 0.5;
+      limb(c, r * 0.4, side * r * 0.15, ex, ey, r * 0.13, r * 0.12, shell);
+      limb(c, ex, ey, cx, cy, r * 0.12, r * 0.16, shell);
+      c.save(); c.translate(cx, cy);
+      c.beginPath(); c.ellipse(r * 0.08, 0, r * 0.24, r * 0.15, 0, 0, TAU); c.fillStyle = rg(c, 0, -r * 0.05, r * 0.25, lite, dark); c.fill();
+      for (const k of [-1, 1]) { c.save(); c.rotate(k * (0.25 + snap)); c.beginPath(); c.ellipse(r * 0.38, k * r * 0.05, r * 0.16, r * 0.05, 0, 0, TAU); c.fillStyle = dark; c.fill(); c.restore(); }
+      c.restore();
+    }
+    // body: a head shield and seven plates
+    for (let i = 6; i >= 0; i--) {
+      const x = r * (0.05 - i * 0.12), w = r * (0.34 - Math.abs(i - 2) * 0.03);
+      c.beginPath(); c.ellipse(x, 0, r * 0.12, w, 0, 0, TAU); c.fillStyle = rg(c, x, -w * 0.4, w * 1.1, lite, dark); c.fill();
+      c.strokeStyle = 'rgba(40,24,8,0.5)'; c.lineWidth = r * 0.02; c.stroke();
+    }
+    c.beginPath(); c.ellipse(r * 0.3, 0, r * 0.24, r * 0.3, 0, 0, TAU); c.fillStyle = rg(c, r * 0.26, -r * 0.1, r * 0.32, lite, dark); c.fill();
+    // the infection: sickly green blotches, and glowing eyes
+    for (let i = 0; i < 5; i++) { blob(c, r * (0.2 - rng() * 0.8), (rng() - 0.5) * r * 0.4, r * (0.05 + rng() * 0.06), rng, 7, 0.4); c.fillStyle = 'rgba(120,170,60,0.55)'; c.fill(); }
+    for (const sy of [-1, 1]) { c.beginPath(); c.arc(r * 0.42, sy * r * 0.07, r * 0.04, 0, TAU); c.fillStyle = '#b8ff60'; c.fill(); }
+    // the tail runs out behind, then arches up and forward over the back (seen from above it
+    // folds back along the body, each raised segment a little bigger), swaying, stinger poised
+    const sway = Math.sin(ph * TAU) * 0.06;
+    const T = [[-0.78, 0], [-1.0, 0.01], [-1.18, 0.04], [-1.22, 0.09], [-1.08, 0.13], [-0.86, 0.13], [-0.62, 0.09]];
+    let [x, y] = [T[0][0] * r, T[0][1] * r];
+    for (let i = 1; i < T.length; i++) {
+      const nx = T[i][0] * r, ny = (T[i][1] + sway * i) * r, a = Math.atan2(ny - y, nx - x), seg = Math.hypot(nx - x, ny - y), w = r * (0.1 + (i > 3 ? (i - 3) * 0.012 : 0));
+      if (i > 3) { c.beginPath(); c.ellipse((x + nx) / 2 + r * 0.06, (y + ny) / 2 + r * 0.08, seg * 0.6, w, a, 0, TAU); c.fillStyle = 'rgba(30,16,4,0.3)'; c.fill(); }
+      c.beginPath(); c.ellipse((x + nx) / 2, (y + ny) / 2, seg * 0.62, w, a, 0, TAU);
+      c.fillStyle = rg(c, (x + nx) / 2, (y + ny) / 2 - w * 0.4, w * 1.4, lite, dark); c.fill();
+      c.strokeStyle = 'rgba(40,24,8,0.5)'; c.lineWidth = r * 0.02; c.stroke();
+      x = nx; y = ny;
+    }
+    c.beginPath(); c.arc(x, y, r * 0.11, 0, TAU); c.fillStyle = rg(c, x - r * 0.03, y - r * 0.03, r * 0.12, '#e8ff9a', '#6a9a20'); c.fill();
+    c.beginPath(); c.moveTo(x + r * 0.06, y - r * 0.05); c.quadraticCurveTo(x + r * 0.26, y, x + r * 0.12, y + r * 0.1); c.lineTo(x + r * 0.06, y + r * 0.04); c.closePath();
+    c.fillStyle = '#2a1a0a'; c.fill();
+  }
 
   function paint(c, type, look, r, ph, seed) {
     switch (look.kind) {
+      case 'scorpion': return drawScorpion(c, r, look, ph, seed);
       case 'person': return drawPerson(c, r, look, ph, seed);
       case 'skeleton': return drawSkeleton(c, r, look, ph, seed);
       case 'wraith': return drawWraith(c, r, look, ph, seed);
@@ -854,7 +957,8 @@ const ZART = (() => {
       const c = cv.getContext('2d');
       c.setTransform(RES, 0, 0, RES, px / 2, px / 2);
       c.lineJoin = 'round';
-      OUTFIT = outfit; paint(c, type, look, r, f / FRAMES, seed); OUTFIT = null;
+      OUTFIT = look.wrap ? null : outfit; paint(c, type, look, r, f / FRAMES, seed); OUTFIT = null;
+      if (look.wrap) wrapBandages(c, r, look, seed);
       frames.push(cv);
       // soft silhouette for the ground shadow
       const sh = document.createElement('canvas'); sh.width = sh.height = px;

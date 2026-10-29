@@ -1,7 +1,7 @@
 'use strict';
 // ============================================================
 // Procedural levels: 50 per world, each with its own road layout, water and look.
-// Generation is seeded by the level number, so every player gets the same 200 levels.
+// Generation is seeded by the level number, so every player gets the same levels.
 // ============================================================
 const TOTAL_LEVELS = WORLDS.length * LEVELS_PER_WORLD;
 const DX = [1, 0, -1, 0], DY = [0, 1, 0, -1]; // right, down, left, up
@@ -15,17 +15,22 @@ const PLACE_NAMES = [
    ['Pass', 'Station', 'Basin', 'Ridge', 'Outpost', 'Drift', 'Camp', 'Fjord', 'Flats', 'Crossing']],
   [['Gator', 'Sulfur', 'Rot', 'Cypress', 'Brackish', 'Mire', 'Toxic', 'Murk', 'Sunken', 'Bayou'],
    ['Landing', 'Marsh', 'Inlet', 'Slough', 'Delta', 'Bend', 'Pier', 'Channel', 'Hollow', 'Fen']],
+  [['Red Mesa', 'Sandstone', 'Dry Wells', 'Bonefield', 'Scorpion', 'Sun Dog', 'Rust', 'Oilfield', 'Mirage', 'Dead Horse'],
+   ['Canyon', 'Dunes', 'Airbase', 'Wash', 'Pumpworks', 'Gulch', 'Depot', 'Butte', 'Flats', 'Outpost']],
 ];
 
 function levelMeta(index) {
   const world = Math.floor(index / LEVELS_PER_WORLD);
   const num = (index % LEVELS_PER_WORLD) + 1;
-  const diff = world * 1.5 + (num - 1) * 0.04;
+  // the desert expansion can be played once the farmland is cleared, so it starts about as hard
+  // as the middle of the cemetery and climbs faster than the other worlds
+  const tier = WORLDS[world].expansion ? 2 : world;
+  const diff = WORLDS[world].expansion ? 2.2 + (num - 1) * 0.07 : world * 1.5 + (num - 1) * 0.04;
   const rng = mulberry32(index * 7919 + 17);
   const names = PLACE_NAMES[world];
   const name = `${names[0][Math.floor(rng() * 10)]} ${names[1][Math.floor(rng() * 10)]}`;
   return {
-    index, world, num, id: `${world + 1}-${num}`, name,
+    index, world, tier, num, id: `${world + 1}-${num}`, name,
     waves: num === LEVELS_PER_WORLD ? 20 : 10 + Math.floor((num - 1) / 5),
     diff, gold: Math.round(260 + diff * 55),
     boss: num === LEVELS_PER_WORLD ? WORLDS[world].boss : num % 10 === 0 ? 'juggernaut' : null,
@@ -192,8 +197,10 @@ function makeWater(rng, kind) {
 // Mobs already met in earlier worlds come back; the current world's mobs are introduced on a schedule.
 function levelPool(meta, rng) {
   const avail = [];
+  const skip = WORLDS[meta.world].skipOld || [];
   WORLDS.forEach((w, wi) => {
     for (const [type, at] of w.mobs) {
+      if (wi < meta.world && skip.includes(type)) continue;
       if (wi < meta.world || (wi === meta.world && meta.num >= at)) avail.push({ type, home: wi === meta.world, at });
     }
   });
@@ -219,7 +226,7 @@ function getLevel(index) {
   const meta = LEVEL_META[index];
   const world = WORLDS[meta.world];
   const t = index / TOTAL_LEVELS;
-  const minLen = Math.round(lerp(48, 30, Math.min(1, (meta.num - 1) / 49 * 0.6 + meta.world * 0.12)));
+  const minLen = Math.round(lerp(48, 30, Math.min(1, (meta.num - 1) / 49 * 0.6 + meta.tier * 0.12)));
   const maxLen = minLen + 14;
   let attempt = 0, main = null, entry = null, rng;
   while (!main) {
@@ -231,7 +238,7 @@ function getLevel(index) {
   }
   const paths = [toWaypoints(entry.off, main)];
   const pathTiles = [main];
-  if (meta.num >= 6 && rng() < 0.3 + meta.world * 0.08) {
+  if (meta.num >= 6 && rng() < 0.3 + meta.tier * 0.08) {
     for (let k = 0; k < 6; k++) {
       const side = [1, 2, 0, 3][Math.floor(rng() * 4)];
       const sec = trySecondPath(rng, main, side);
@@ -247,7 +254,8 @@ function getLevel(index) {
   for (const tl of pathTiles) for (const [x, y] of tl) onPath[y * COLS + x] = 1;
 
   let water = new Uint8Array(COLS * ROWS);
-  const wetWorld = meta.world === 3 ? 0.75 : 0.5;
+  // the bayou is mostly water; the desert has only the odd oasis
+  const wetWorld = world.id === 'swamp' ? 0.75 : world.id === 'desert' ? 0.22 : 0.5;
   if (meta.num >= 4 && rng() < wetWorld) water = makeWater(rng, rng() < 0.55 ? 'lake' : 'river');
   const [ex, ey] = main[main.length - 1];
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
@@ -296,7 +304,7 @@ function makeWave(L, n) {
     count = Math.max(from === n ? 2 : 1, count);
     groups.push({ type, count, gap: GAP[type] * Math.max(0.55, 1 - e * 0.015), delay: groups.length ? 1 : 0 });
   }
-  if (n % 5 === 0 && n < L.waves) groups.push({ type: L.world >= 3 ? 'imp' : 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
+  if (n % 5 === 0 && n < L.waves) groups.push({ type: L.world === 3 ? 'imp' : L.world === 4 ? 'scorpion' : 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
   if (L.boss && n === L.waves) {
     const count = L.boss === 'juggernaut' ? 1 + Math.floor(L.num / 25) : 1;
     groups.push({ type: L.boss, count, gap: 3, delay: 2 });
