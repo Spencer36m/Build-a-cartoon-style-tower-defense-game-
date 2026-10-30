@@ -181,13 +181,27 @@ const Globe = (() => {
   // move each wonder to the nearest spot of land or sea, away from the polar ice
   function placeWonders() {
     placed = true;
-    // the newer worlds' markers go on land too
-    for (const w of [...WONDERS, ...WORLDS.filter((x) => x.expansion || x.snapLand).map((x) => Object.assign(x, { want: 'land' }))]) {
+    for (const w of WONDERS) {
       let best = null;
       for (let r = 0; r <= 45 && !best; r += 3) {
         for (let k = 0; k < Math.max(1, r * 2); k++) {
           const q = (k / Math.max(1, r * 2)) * TAU, la = clamp(w.lat + Math.sin(q) * r, -66, 66), lo = w.lon + Math.cos(q) * r;
           if (isWater(texIndex(la, lo)) === (w.want === 'sea')) { best = [la, lo]; break; }
+        }
+      }
+      if (best) { w.lat = best[0]; w.lon = best[1]; }
+    }
+    // every world's marker sits on solid ground: a few degrees inland, clear of the wonders
+    const land = (la, lo) => !isWater(texIndex(la, lo));
+    const inland = (la, lo) => land(la, lo) && [[4, 0], [-4, 0], [0, 5], [0, -5], [3, 4], [-3, -4], [3, -4], [-3, 4]].every(([a, b]) => land(la + a, lo + b));
+    const clear = (la, lo) => WONDERS.every((v) => Math.hypot(v.lat - la, (v.lon - lo) * Math.cos(la * Math.PI / 180)) > 9);
+    for (const w of WORLDS) {
+      if (inland(w.lat, w.lon) && clear(w.lat, w.lon)) continue;
+      let best = null;
+      for (let r = 2; r <= 50 && !best; r += 2) {
+        for (let k = 0; k < r * 3 && !best; k++) {
+          const q = (k / (r * 3)) * TAU, la = clamp(w.lat + Math.sin(q) * r, -70, 72), lo = w.lon + Math.cos(q) * r;
+          if (inland(la, lo) && clear(la, lo)) best = [la, lo];
         }
       }
       if (best) { w.lat = best[0]; w.lon = best[1]; }
