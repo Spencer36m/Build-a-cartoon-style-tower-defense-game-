@@ -336,7 +336,15 @@ const Globe = (() => {
       c.save();
       c.globalAlpha = clamp((p.z - 0.08) * 4, 0, 1);
       c.translate(o.x, o.y); c.rotate(tilt); c.scale(1, 0.82 + 0.18 * p.z);
+      // a wonder with an expedition has a faint amber ring at its foot until its boss is beaten,
+      // then a gold trophy floats over it
+      const beat = Globe.trophy && Globe.trophy(o.w.id);
+      if (!beat && Globe.beacon && Globe.beacon(o.w.id)) {
+        const k = 0.5 + Math.sin(t * 2.4 + o.w.lat) * 0.25;
+        c.strokeStyle = `rgba(240,180,70,${k})`; c.lineWidth = 1.2; c.beginPath(); c.ellipse(0, 0, size * 0.55, size * 0.2, 0, 0, TAU); c.stroke();
+      }
       WART.draw(c, o.w.kind, size, t, light);
+      if (beat) trophy(c, 0, -size * 1.15 + Math.sin(t * 2 + o.w.lon) * size * 0.05, size * 0.42);
       c.restore();
       wonderHits.push({ w: o.w, x: o.x, y: o.y - size * 0.3, r: size * 0.42 });
     }
@@ -366,6 +374,17 @@ const Globe = (() => {
     c.font = `700 13px ${FONT_DISPLAY}`; c.fillStyle = '#ece6d6'; c.fillText(title, bx + 10, by + 7);
     c.font = `400 11px ${FONT_BODY}`; c.fillStyle = '#cfcbc1';
     lines.forEach((ln, i) => c.fillText(ln, bx + 10, by + 24 + i * 14));
+    c.restore();
+  }
+  function trophy(c, x, y, s) {
+    c.save(); c.translate(x, y);
+    c.fillStyle = 'rgba(255,210,90,0.25)'; c.beginPath(); c.arc(0, 0, s * 1.4, 0, TAU); c.fill();
+    c.fillStyle = '#7a5410'; c.fillRect(-s * 0.45, s * 0.55, s * 0.9, s * 0.22);
+    c.fillStyle = '#c8901e'; c.fillRect(-s * 0.12, s * 0.2, s * 0.24, s * 0.4);
+    const g = c.createLinearGradient(-s * 0.6, 0, s * 0.6, 0); g.addColorStop(0, '#fff0a0'); g.addColorStop(0.5, '#f0b830'); g.addColorStop(1, '#a8700e');
+    c.fillStyle = g; c.beginPath(); c.moveTo(-s * 0.6, -s * 0.7); c.lineTo(s * 0.6, -s * 0.7); c.quadraticCurveTo(s * 0.55, s * 0.25, 0, s * 0.28); c.quadraticCurveTo(-s * 0.55, s * 0.25, -s * 0.6, -s * 0.7); c.fill();
+    c.strokeStyle = '#f0b830'; c.lineWidth = s * 0.14;
+    for (const sd of [-1, 1]) { c.beginPath(); c.arc(sd * s * 0.62, -s * 0.38, s * 0.24, -Math.PI / 2, Math.PI / 2, sd < 0); c.stroke(); }
     c.restore();
   }
   function hitWonder(x, y) {
@@ -477,6 +496,17 @@ const Globe = (() => {
   return {
     isOpen: null,
     onFind: null,
+    onWonder: null,
+    trophy: null,
+    beacon: null,
+    isFound: (id) => found.has(id),
+    // turn the globe to a wonder and show its card on it
+    focusWonder(id) {
+      const w = WONDERS.find((q) => q.id === id);
+      if (!w) return;
+      target = (w.lon * Math.PI) / 180;
+      if (found.has(id)) inspect = { w, until: performance.now() + 4000 };
+    },
     wonders: () => ({ found: found.size, total: WONDERS.length }),
     prepare,
     init(cv, pick) {
@@ -505,6 +535,7 @@ const Globe = (() => {
             inspect = { w, until: performance.now() + 6000 };
             markFound(w);
             if (typeof Sound !== 'undefined') Sound.play(WONDER_SOUNDS[w.kind] || 'click');
+            if (Globe.onWonder) Globe.onWonder(w);
           }
         }
       });

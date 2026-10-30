@@ -46,7 +46,7 @@ const WEATHER = (() => {
     embers: [['laila', 'Ash coming down like snow. Something big is burning out there.'], ['moreno', 'It is raining fire. Of course it is.']],
   };
 
-  let M = null, L = null, hooks = {}, world = 'farmland';
+  let M = null, L = null, hooks = {}, world = 'farmland', fcast = null;
   let plan = [], ep = 0, epT = 0, time = 0;
   const cur = {}, tgt = {};
   let wind = 0.2, windTgt = 0.2, windA = 0, wet = 0, flash = 0, bolt = null, nextStrike = 5, twister = null, toast = null, soundT = 0;
@@ -94,7 +94,7 @@ const WEATHER = (() => {
 
   // ---------- the forecast ----------
   function makePlan(seed, first) {
-    const rng = mulberry32(seed), w = FORECAST[world], keys = Object.keys(w);
+    const rng = mulberry32(seed), w = fcast || FORECAST[world], keys = Object.keys(w);
     const pick = (prev) => {
       let tot = 0; for (const k of keys) if (k !== prev) tot += w[k];
       let r = rng() * tot;
@@ -117,6 +117,7 @@ const WEATHER = (() => {
   // fixed: a kind of weather to hold for the whole game instead of running the forecast (sandbox)
   function start(m, l, h, fixed) {
     M = m; L = l; hooks = h || {}; world = M.world.id;
+    fcast = typeof EXPED !== 'undefined' && L.exp ? EXPED.forecast(L.exp) : null;
     plan = fixed && KINDS[fixed] ? [[fixed, 1e9]] : makePlan(L.look.seed + 4041, L.look.weather);
     ep = 0; epT = 0; time = 0; wet = 0; flash = 0; bolt = null; twister = null; toast = null; nextStrike = 4;
     windA = (mulberry32(L.look.seed + 7)() - 0.5) * 1.2 + (L.look.seed % 2 ? 0 : Math.PI);
@@ -141,9 +142,9 @@ const WEATHER = (() => {
   function forecast(l) {
     // the briefing shows what the sky has in store for the first few minutes
     const w = WORLDS[l.world].id;
-    const save = world; world = w;
+    const save = world, sf = fcast; world = w; fcast = null;
     const p = makePlan(l.look.seed + 4041, l.look.weather);
-    world = save;
+    world = save; fcast = sf;
     const seen = [];
     let tsum = 0;
     for (const [k, d] of p) { if (tsum > 240) break; tsum += d; const lab = KINDS[k].label.toLowerCase(); if (k !== 'clear' && !seen.includes(lab)) seen.push(lab); }

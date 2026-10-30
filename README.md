@@ -71,7 +71,28 @@ Zombies from earlier worlds keep coming back in later ones.
 
 **Red Mesa Wasteland** is a paid expansion (see Premium below): an extra world of 30 levels that opens to its owners once Hollow Creek Farmland (1-30) is cleared. It starts about as hard as the middle of the cemetery and climbs from there. The maps are red sand with long dunes and wind ripples, sun-cracked clay, cacti, sagebrush, cow skulls, sandstone buttes, rusted wrecks, oil pumpjacks, oil drums, the odd oasis with date palms, and abandoned concrete blockhouses from an old airbase. Its forecast brings heat haze (shimmering air and glare) and sandstorms. Camels, fennec foxes and lizards live there, a hawk cries overhead, and its music is an oud and ney tune over darbuka drums. Mummies are tough but burn twice as hard, Dune Scorpions are fast and armoured, Vultures dive across the corners, and the Sand Colossus pours scorpions out of its cracks and buries nearby towers in sand with its stomp.
 
-The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
+The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Five of them hold a Wonder Expedition (below). Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
+
+### Wonder Expeditions
+
+Five of the wonders hold an expedition: **Mount Cinder**, **the Deep One**, **the Red Dragon**, **Dino Valley** and **the Visitors**. Each one is a single hand-made battle at that wonder. The zombies there belong to the place, a boss guards it, and the map has its own twist:
+
+| Expedition | Boss | Zombies | Twist | Power you earn |
+| --- | --- | --- | --- | --- |
+| Mount Cinder | The Cinder King | Ash Walkers, Magma Crawlers (burst into Embers) | Lava flows burn any zombie that wades through, and every fourth wave an eruption floods more ground | Eruption: lava rains on a spot for six seconds |
+| The Deep One | The Kraken | Drowned Sailors, Crab Shellbacks | A drowned coast, mostly water and long bridges; tentacles drag zombies under and swat boats | Kraken's Grasp: drags the six strongest zombies under |
+| The Red Dragon | The Bone Wyrm | Bone Kobolds, Dragon Cultists (fireproof) | The Red Dragon fights on your side, flying over to burn the horde | Dragon's Breath: the dragon torches a lane |
+| Dino Valley | Rex Mortis | Zombie Compies, Zombie Ankylos | Living dinosaurs graze by the road and trample any zombie near them | Stampede: a herd charges back down the road |
+| Visitors | The Abductor | Greys (teleport), Zombie Cows (charge) | Crop circles, and scout saucers that beam towers away for a few seconds | Tractor Beam: lifts the strongest zombie off the map |
+
+They are built to be hard and hard to get into:
+
+- **Two locks.** Find the wonder on the globe, then open it with a **Wonder Key**. You earn one key for every 15 campaign stars.
+- **Harder than the campaign.** Every expedition fights like the end of the Fallen City, whenever you go in: 20 waves, only 10 lives, less starting cash, and store perks for cash and lives don't apply.
+- **No supplies.** Airstrikes, Cryo Bombs, Supply Drops and Field Repairs can't be used. You bring your towers, Armory upgrades and any wonder powers you have already won.
+- **Two-phase bosses.** Every boss enrages at half health: faster, with a stronger attack, and it calls in a wave of its own zombies.
+- **Scarce powers.** A power is earned only by winning. You hold one charge, and every five campaign wins each power gains a charge (two at most). A three-star win makes it stronger. Powers work in any battle.
+- **A trophy.** A beaten boss leaves a gold trophy over its wonder on the globe. Retrying is free: the key stays spent and the expedition stays open.
 
 ### Sandbox
 
@@ -256,6 +277,8 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/globe.js`: the floating globe on the world map, with its wonders, meteors and moon
 - `js/menufx.js`: the animated main menu backdrop
 - `js/wonders.js`: the painted landmarks on the globe
+- `js/expeditions.js`: the wonder expeditions: their maps and twists, Wonder Keys, the bosses' attacks and second phases, and the wonder powers
+- `js/bossart.js`: the expedition bosses' sprites
 - `js/manga.js`, `js/scenes.js`: the manga art kit (screentones, speed lines, portraits) and every cutscene panel
 - `js/story.js`: the story script and the cutscene player
 - `js/missions.js`, `js/comms.js`: the 40 operations, the cast's radio lines, and the comms card that shows them in a mission

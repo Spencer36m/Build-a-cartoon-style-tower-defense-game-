@@ -501,6 +501,22 @@ kbd {
 .world-nav { display: flex; gap: 8px; align-items: center; }
 .world-nav .btn-primary { flex: 1; }
 .locked-note { color: var(--red); font-family: var(--font-display); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+/* wonder expeditions */
+.exp-boss, .exp-power { display: flex; gap: 10px; align-items: flex-start; margin: 0; }
+.exp-boss > span:last-child, .exp-power > span:last-child { display: flex; flex-direction: column; gap: 2px; color: #cfcbc1; font-size: 0.92rem; line-height: 1.35; min-width: 0; }
+.exp-boss b, .exp-power b { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); font-size: 1rem; }
+.exp-boss-art { flex: none; width: 54px; height: 54px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line-strong); display: grid; place-items: center; }
+.exp-power-icon { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--amber); background: rgba(80, 56, 20, 0.5); }
+.exp-power-icon svg { width: 22px; height: 22px; fill: var(--amber); }
+.exp-power b { color: var(--amber); }
+.exp-keys { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-size: 0.85rem; }
+.exp-keys b { color: var(--amber); font-size: 1.05rem; }
+.exp-stars { display: inline-flex; gap: 2px; }
+.exp-stars svg { width: 18px; height: 18px; fill: #333b41; }
+.exp-stars svg.on { fill: var(--amber); }
+.exp-back { align-self: flex-start; }
+.power.wonder { border-color: rgba(227, 168, 62, 0.55); background: linear-gradient(180deg, rgba(70, 46, 16, 0.9), rgba(30, 22, 12, 0.9)); }
+.power.wonder svg { fill: var(--amber); stroke: none; }
 
 /* ---------- Level grid ---------- */
 .levels-screen { background: #0a0c0f; }

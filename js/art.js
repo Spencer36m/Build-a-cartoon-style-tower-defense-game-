@@ -1735,7 +1735,8 @@ function drawTowerRaw(c, tw, t, lights, opts = {}) {
   if (part && part !== 'over') return;
   if (L.n === 5) { c.save(); c.translate(x, y); upgradeSparks(c, L, t, x, lights, y); c.restore(); }
   if (!opts.icon) { c.save(); c.translate(x, y); tierMarks(c, tiers, 16, 16); c.restore(); }
-  if (tw.stun > 0 && tw.stunSand) {
+  if (tw.stun > 0 && tw.stunKind && EXPED.drawTowerStun(c, tw, x, y)) { /* drawn by the expedition that caused it */ }
+  else if (tw.stun > 0 && tw.stunSand) {
     // half buried under a heap of sand
     c.save(); c.translate(x, y);
     const rng = mulberry32((x * 7 + y) | 0);

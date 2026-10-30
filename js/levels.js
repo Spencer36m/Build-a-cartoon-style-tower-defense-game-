@@ -358,7 +358,7 @@ function makeWave(L, n) {
     count = Math.max(from === n ? 2 : 1, count);
     groups.push({ type, count, gap: GAP[type] * Math.max(0.55, 1 - e * 0.015), delay: groups.length ? 1 : 0 });
   }
-  if (n % 5 === 0 && n < L.waves) groups.push({ type: { swamp: 'imp', desert: 'scorpion', city: 'suit' }[WORLDS[L.world].id] || 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
+  if (n % 5 === 0 && n < L.waves) groups.push({ type: L.rush || { swamp: 'imp', desert: 'scorpion', city: 'suit' }[WORLDS[L.world].id] || 'runner', count: Math.round(4 + e * 0.5), gap: 0.22, delay: 1 });
   if (L.boss && n === L.waves) {
     const count = L.boss === 'juggernaut' ? 1 + Math.floor(L.num / 25) : 1;
     groups.push({ type: L.boss, count, gap: 3, delay: 2 });

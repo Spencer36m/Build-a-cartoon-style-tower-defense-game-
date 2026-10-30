@@ -442,6 +442,11 @@ const BOSS_LINES = {
   juggernaut: ['moreno', 'Elite incoming! That one is armored. Focus fire!'],
   colossus: ['laila', 'It is made of the desert itself! Aim for the glowing cracks!'],
   chairman: ['okafor', 'That is Vane! He is healing them. Take him down!'],
+  cinderKing: ['okafor', 'The Cinder King! Crack those plates and the core is exposed!'],
+  kraken: ['laila', 'It is coming out of the water! Keep the towers back from the shore!'],
+  boneWyrm: ['voss', 'The Bone Wyrm. Keep your towers out of its breath.'],
+  rexMortis: ['moreno', 'That is a T. rex. A zombie T. rex. Shoot it!'],
+  abductor: ['moreno', 'The mothership! Do not let it take our towers!'],
 };
 // a squadmate names each kind of zombie the first time it shows up
 const THREAT_LINES = {
@@ -465,6 +470,16 @@ const THREAT_LINES = {
   suit: ['moreno', 'Office workers! Still in their suits. Fast, and lots of them.'],
   swat: ['laila', 'SWAT gear! Light rounds will bounce. Snipers and Tesla.'],
   drone: ['okafor', 'Those are Vane drones! Something that shoots up, now.'],
+  ashwalker: ['okafor', 'Ash Walkers. Already burned. Fire will not touch them.'],
+  magma: ['laila', 'Magma crawlers! They burst when they die. Watch the sparks.'],
+  sailor: ['moreno', 'Drowned sailors. They swim faster than they walk.'],
+  crab: ['laila', 'Crabs! Shells like armor plate. Heavy guns.'],
+  kobold: ['moreno', 'Little lizard skeletons! Fast ones!'],
+  cultist: ['voss', 'Dragon cultists. Fireproof robes, so do not count on flamers.'],
+  compy: ['laila', 'Tiny dinosaurs! Lots of them!'],
+  ankylo: ['moreno', 'Armored dino! Keep towers clear of that tail.'],
+  grey: ['okafor', 'Greys. They blink forward. Cover the whole road.'],
+  cow: ['moreno', 'Is that a cow? That is an angry cow.'],
 };
 
 // ---------- lookups ----------
