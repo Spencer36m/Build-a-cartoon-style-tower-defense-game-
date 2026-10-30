@@ -256,7 +256,6 @@ const PREMIUM = (() => {
   });
   const swatch = (cls) => { const d = document.createElement('div'); d.className = `cz-swatch ${cls}`; return d; };
   const GLYPH = {
-    coins: '<svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 10v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4M5 14v4c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-4"/></svg>',
     doubler: '<svg viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/><path d="M15 9v6M13 11l2-2 2 2"/></svg>',
     xpboost: '<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.4l-5.2 2.7 1-5.8L3.5 9.2l5.9-.8z"/><path d="M12 8v5M10 10l2-2 2 2"/></svg>',
     quarter: '<svg viewBox="0 0 24 24"><path d="M3 8l9-4 9 4v9l-9 4-9-4z"/><path d="M3 8l9 4 9-4M12 12v9"/></svg>',
@@ -265,6 +264,13 @@ const PREMIUM = (() => {
     music: '<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>',
     bundle: '<svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="12" rx="1"/><path d="M3 13h18M12 9v12M12 9c-2-4-6-5-6-2s4 2 6 2c2 0 6 1 6-2s-4-2-6 2"/></svg>',
     restore: '<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/></svg>',
+  };
+  // a pile of gold coins, bigger for bigger packs
+  const coinStack = (n) => {
+    const g = document.createElement('div'); g.className = 'glyph';
+    const k = n >= 15000 ? 6 : n >= 6000 ? 4 : 2, spots = [[9, 18], [9, 12], [9, 6], [2, 16], [16, 16], [9, 0]];
+    g.innerHTML = `<span class="coin-stack">${spots.slice(0, k).map(([x, y]) => `<i class="coin" style="left:${x}px;top:${y}px"></i>`).join('')}</span>`;
+    return g;
   };
   const glyph = (key) => { const g = document.createElement('div'); g.className = 'glyph'; g.innerHTML = GLYPH[key]; return g; };
 
@@ -299,7 +305,7 @@ const PREMIUM = (() => {
     section(grid, 'Expansion');
     card(grid, 'desert', desertArt(64), after, { wide: true, meta: 'New world' });
     section(grid, 'Coins');
-    for (const id of ['coins1', 'coins2', 'coins3']) card(grid, id, glyph('coins'), after, { meta: `${PRODUCTS[id].coins.toLocaleString('en-US')} coins` });
+    for (const id of ['coins1', 'coins2', 'coins3']) card(grid, id, coinStack(PRODUCTS[id].coins), after, { meta: `${PRODUCTS[id].coins.toLocaleString('en-US')} coins` });
     section(grid, 'Boosts', 'Bought once, they work in every level for good.');
     for (const id of ['doubler', 'xpboost', 'quarter', 'hyper']) card(grid, id, glyph(id), after);
     section(grid, 'Cosmetics', 'Looks only: they never change how strong anything is. Pick what you wear in Customize.');

@@ -423,7 +423,30 @@ function showEnd(won, title, text, stars, reward, xp) {
   $('#end-reward').hidden = !!S.sandbox;
   $('#end-title').textContent = title;
   $('#end-text').textContent = text;
-  $('#end-reward').textContent = `+${reward} coins${PREMIUM.coinMult() > 1 && reward > 0 ? ' (doubled)' : ''} · +${xp} tower XP`;
+  // the payout: a big coin flips, the count runs up and coins burst out of it
+  const rw = $('#end-reward');
+  rw.innerHTML = `<span class="end-coins"><i class="coin big"></i><b class="count">+0</b></span> coins${PREMIUM.coinMult() > 1 && reward > 0 ? ' (doubled)' : ''} · +${xp} tower XP`;
+  rw.setAttribute('aria-label', `${reward} coins and ${xp} tower XP`);
+  if (reward > 0 && !S.sandbox) {
+    const box = rw.querySelector('.end-coins'), cnt = rw.querySelector('.count'), delay = 350 + stars * 150;
+    setTimeout(() => {
+      for (let i = 0; i < Math.min(14, 4 + Math.round(reward / 25)); i++) {
+        const f = document.createElement('i'); f.className = 'coin fly';
+        const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, d = 30 + Math.random() * 50;
+        f.style.cssText = `--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d}px;--rot:${(Math.random() - 0.5) * 540}deg;animation-delay:${i * 35}ms`;
+        box.append(f); setTimeout(() => f.remove(), 1400 + i * 35);
+      }
+      const t0 = performance.now(), dur = Math.min(1100, 400 + reward * 3);
+      let ticks = 0;
+      const tick = (now) => {
+        const k = Math.min(1, (now - t0) / dur);
+        cnt.textContent = `+${Math.round(reward * (1 - (1 - k) ** 2))}`;
+        if (Math.floor(k * 8) > ticks) { ticks++; Sound.play('coin', null, { pitch: 1 + ticks * 0.05 }); }
+        if (k < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, delay);
+  } else rw.querySelector('.count').textContent = `+${reward}`;
   $('.dialog-end').classList.toggle('lost', !won);
   const st = $('#end-stars');
   st.hidden = !won || !!S.sandbox;
@@ -2279,7 +2302,19 @@ function renderPowerbar() {
 // ============================================================
 const SCREENS = ['#menu-screen', '#world-screen', '#levels-screen', '#store-screen', '#armory-screen', '#chapters-screen', '#end-screen', '#sandbox-screen', '#customize-screen'];
 function hideScreens() { for (const s of SCREENS) $(s).hidden = true; Globe.stop(); MenuFX.stop(); LevelFX.stop(); Sound.play('open'); }
-function coinText() { return `${meta.coins} coins`; }
+// a coin counter: it counts up (or down) from what it last showed and bumps when it changes
+function showCoins(el) {
+  const to = meta.coins, from = el.dataset.n != null ? +el.dataset.n : to;
+  el.dataset.n = to;
+  el.setAttribute('aria-label', `${to} coins`);
+  const fmt = (n) => `${Math.round(n).toLocaleString('en-US')} coins`;
+  cancelAnimationFrame(el._raf);
+  if (from === to || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { el.textContent = fmt(to); return; }
+  el.classList.remove('bump', 'spend'); void el.offsetWidth; el.classList.add(to > from ? 'bump' : 'spend');
+  const t0 = performance.now(), dur = Math.min(900, 300 + Math.abs(to - from) * 2);
+  const tick = (now) => { const k = Math.min(1, (now - t0) / dur); el.textContent = fmt(from + (to - from) * (1 - (1 - k) ** 3)); if (k < 1) el._raf = requestAnimationFrame(tick); };
+  el._raf = requestAnimationFrame(tick);
+}
 function leaveGame() { COACH.stop(); if (S.state === 'playing') { checkpoint(); saveMeta(); } S.state = 'menu'; S.sandbox = null; setPaused(false); Sound.stopAmbience(); Comms.clear(); }
 
 function showMenu() {
@@ -2288,7 +2323,7 @@ function showMenu() {
   $('#menu-screen').hidden = false;
   PREMIUM.applyLooks();
   MenuFX.start();
-  $('#menu-coins').textContent = coinText();
+  showCoins($('#menu-coins'));
   const ready = TOWER_KEYS.reduce((n, k) => n + (towerUnlocked(k) ? armoryReady(k) : 0), 0);
   $('#armory-badge').hidden = !ready;
   $('#armory-badge').textContent = ready;
@@ -2350,7 +2385,7 @@ function showWorlds(w = S.worldSel) {
   leaveGame();
   hideScreens();
   $('#world-screen').hidden = false;
-  $('#world-coins').textContent = coinText();
+  showCoins($('#world-coins'));
   if (!globeReady) {
     Globe.isOpen = worldUnlocked;
     Globe.onFind = () => { renderGlobeHint(); Sound.play('xp'); };
@@ -2406,7 +2441,7 @@ function showLevels(w, focus) {
   hideScreens();
   $('#levels-screen').hidden = false;
   LevelFX.start(w);
-  $('#levels-coins').textContent = coinText();
+  showCoins($('#levels-coins'));
   $('#levels-title').textContent = `World ${w + 1} · ${WORLDS[w].name}`;
   S.worldSel = w;
   const grid = $('#level-grid');
@@ -2526,7 +2561,7 @@ function selectLevel(i) {
   op.innerHTML = `<span class="ld-op-name">Operation ${m.op.name} <i>${m.step + 1} / 5</i></span><span class="ld-op-goal">${m.objective}</span><div class="ld-op-quote"><canvas width="160" height="160" aria-hidden="true"></canvas><p><b>${(CAST[spk] || CAST.voss).name}</b>${m.line}</p></div>`;
   op.querySelector('canvas').getContext('2d').drawImage(Comms.portrait(spk), 0, 0);
   box.append(op);
-  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to ${rewardBase(L) + 45} coins.`}</p>`);
+  box.insertAdjacentHTML('beforeend', `<p class="hint zombie-tip" hidden></p><p class="hint">${st ? `Best: ${st} of 3 stars. Replays pay a little.` : `First clear pays up to <i class="coin"></i>${rewardBase(L) + 45}.`}</p>`);
   const go = document.createElement('button'); go.type = 'button'; go.className = 'btn btn-primary ld-go'; go.textContent = st ? 'Replay mission' : 'Start mission';
   go.addEventListener('click', () => { Sound.init(); startGame(i); });
   box.append(go);
@@ -2545,7 +2580,7 @@ function showStore(tab = storeTab) {
   hideScreens();
   storeTab = tab;
   $('#store-screen').hidden = false;
-  $('#store-coins').textContent = coinText();
+  showCoins($('#store-coins'));
   for (const b of document.querySelectorAll('#store-tabs .tab')) b.setAttribute('aria-selected', String(b.dataset.tab === tab));
   const notes = {
     towers: 'Towers unlock for free as you clear levels. Buy one here to use it early.',
@@ -2563,7 +2598,7 @@ function showStore(tab = storeTab) {
     const body = document.createElement('div'); body.className = 'body';
     body.innerHTML = `<span class="meta">${meta2}</span><h3>${title}</h3><p>${desc}</p>${extra}`;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-primary btn-small';
-    b.textContent = btnText; b.disabled = !can;
+    b.innerHTML = btnText; b.disabled = !can;
     b.addEventListener('click', () => { onBuy(); Sound.play('buy'); saveMeta(); showStore(tab); });
     body.append(b); el.append(body);
     return el;
@@ -2575,7 +2610,7 @@ function showStore(tab = storeTab) {
       if (!d.unlock) continue;
       const open = towerUnlocked(type);
       grid.append(card(towerIcon(type, [0, 0, 0], 64), d.name, `${d.role} · $${d.cost} in battle`, d.desc,
-        open ? 'Unlocked' : `Buy · ${d.price} coins`, !open && meta.coins >= d.price,
+        open ? 'Unlocked' : `Buy · <i class="coin"></i>${d.price}`, !open && meta.coins >= d.price,
         () => { meta.coins -= d.price; meta.owned[type] = true; },
         open ? '' : `<p class="hint">Free after clearing ${levelName(d.unlock - 1)}</p>`));
     }
@@ -2584,13 +2619,13 @@ function showStore(tab = storeTab) {
       const rank = upg(key), price = u.prices[rank];
       const pips = `<div class="pips">${u.prices.map((_, i) => `<i class="${i < rank ? 'on' : ''}"></i>`).join('')}</div>`;
       grid.append(card(glyph(STORE_GLYPHS[key]), u.name, `Rank ${rank} of ${u.prices.length}`, u.desc,
-        price == null ? 'Maxed' : `Upgrade · ${price} coins`, price != null && meta.coins >= price,
+        price == null ? 'Maxed' : `Upgrade · <i class="coin"></i>${price}`, price != null && meta.coins >= price,
         () => { meta.coins -= price; meta.upg[key] = rank + 1; }, pips));
     }
   } else {
     for (const [key, s] of Object.entries(SUPPLIES)) {
       const g = glyph(POWER_ICONS[key]);
-      grid.append(card(g, s.name, `Owned: ${meta.items[key] | 0}`, s.desc, `Buy · ${s.price} coins`, meta.coins >= s.price,
+      grid.append(card(g, s.name, `Owned: ${meta.items[key] | 0}`, s.desc, `Buy · <i class="coin"></i>${s.price}`, meta.coins >= s.price,
         () => { meta.coins -= s.price; meta.items[key] = (meta.items[key] | 0) + 1; }));
     }
   }

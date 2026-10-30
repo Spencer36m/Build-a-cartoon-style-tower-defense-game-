@@ -367,8 +367,13 @@ kbd {
 @keyframes sheen { 0%, 60% { left: -60%; } 85%, 100% { left: 130%; } }
 .badge { animation: bob 1.6s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-3px); } }
-.coin-chip::before { animation: coin-spin 3s ease-in-out infinite; }
-@keyframes coin-spin { 0%, 70%, 100% { transform: scaleX(1); } 80% { transform: scaleX(0.1); } 90% { transform: scaleX(1); } }
+/* coins: a minted gold coin that flips over every few seconds and catches the light */
+.coin-chip::before { animation: coin-flip 4s cubic-bezier(0.45, 0, 0.3, 1) infinite; }
+@keyframes coin-flip {
+  0%, 72% { transform: perspective(60px) rotateY(0); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6)); }
+  86% { transform: perspective(60px) rotateY(180deg) scale(1.12); filter: drop-shadow(0 0 5px rgba(255, 210, 90, 0.9)) brightness(1.25); }
+  100% { transform: perspective(60px) rotateY(360deg); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.6)); }
+}
 
 /* ---------- Pause screen animations ---------- */
 #pause-screen { animation: fade-in 0.25s ease both; -webkit-backdrop-filter: blur(3px) grayscale(0.6); backdrop-filter: blur(3px) grayscale(0.6); }
@@ -406,12 +411,43 @@ kbd {
 .menu-buttons { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 .continue-box { display: flex; }
 .coin-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; letter-spacing: 0.05em; font-variant-numeric: tabular-nums;
-  background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(227, 168, 62, 0.45); color: var(--amber);
-  padding: 3px 12px; border-radius: 3px; white-space: nowrap;
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; letter-spacing: 0.05em; font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, rgba(60, 40, 8, 0.75), rgba(14, 10, 4, 0.85));
+  border: 1px solid rgba(240, 190, 80, 0.6); color: #ffd56a; text-shadow: 0 1px 0 #3a2404, 0 0 10px rgba(255, 190, 60, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 160, 0.25), 0 0 12px rgba(240, 170, 50, 0.15);
+  padding: 3px 12px 3px 6px; border-radius: 14px; white-space: nowrap;
 }
-.coin-chip::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffe39a, #c68a22); box-shadow: 0 0 0 1px #6d4a12; }
+.coin-chip::before { content: ""; flex: none; width: 22px; height: 22px; background: url("icons/coin.svg") center / contain no-repeat; }
+/* a glint sweeps across the chip now and then */
+.coin-chip::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255, 240, 190, 0.35), transparent);
+  transform: skewX(-20deg); animation: coin-glint 4s ease-in-out infinite; pointer-events: none;
+}
+@keyframes coin-glint { 0%, 70% { left: -40%; } 90%, 100% { left: 130%; } }
+.coin-chip.bump { animation: coin-bump 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes coin-bump { 30% { transform: scale(1.14); box-shadow: 0 0 22px rgba(255, 200, 70, 0.6); } }
+.coin-chip.spend { animation: coin-spend 0.35s ease; }
+@keyframes coin-spend { 30% { transform: translateX(-3px); color: #fff0c0; } 60% { transform: translateX(3px); } }
+/* a coin inline with text: prices, rewards */
+.coin { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -0.18em; margin: 0 0.12em; background: url("icons/coin.svg") center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5)); }
+.btn .coin { margin-right: 0.2em; }
+.coin-stack { position: relative; display: block; width: 44px; height: 44px; }
+.coin-stack .coin { position: absolute; width: 26px; height: 26px; margin: 0; }
+/* the victory payout: a big coin, the count running up, and coins bursting out of it */
+.end-coins { position: relative; display: inline-flex; align-items: center; gap: 6px; color: #ffd56a; text-shadow: 0 1px 0 #3a2404, 0 0 14px rgba(255, 190, 60, 0.45); }
+.end-coins .coin.big { width: 1.6em; height: 1.6em; animation: coin-flip 1.4s cubic-bezier(0.45, 0, 0.3, 1) 0.4s 2; }
+.end-coins .count { font-variant-numeric: tabular-nums; min-width: 2.5ch; text-align: left; }
+.coin.fly { position: absolute; left: 0.3em; top: 0.3em; width: 0.9em; height: 0.9em; margin: 0; opacity: 0; pointer-events: none; animation: coin-burst 0.9s cubic-bezier(0.2, 0.7, 0.4, 1) forwards; }
+@keyframes coin-burst {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.4) rotate(0); }
+  15% { opacity: 1; }
+  60% { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot)); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 1.2), calc(var(--dy) + 30px)) scale(0.8) rotate(var(--rot)); }
+}
+@media (prefers-reduced-motion: reduce) { .coin-chip::before, .coin-chip::after, .end-coins .coin.big, .coin.fly { animation: none; } .coin.fly { display: none; } }
 .install-box { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: center; font-size: 0.92rem; max-width: 60ch; color: var(--muted); }
 .keys { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.9; }
 
