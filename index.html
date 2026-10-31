@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zombie Bash</title>
+<meta name="description" content="A zombie tower defense game. Hold the line across 190 levels in five worlds with soldiers, aircraft and boats.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1114">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Zombie Bash">
+<link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="hud">
+    <div class="sector-tag" id="sector-tag"><span class="st-id" id="st-id">1-1</span><span class="st-name" id="st-name">Sector</span></div>
+    <div class="stats">
+      <div class="stat stat-lives" title="Lives">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.9 8 10 4.6-1.1 8-5 8-10v-6z"/></svg>
+        <span id="lives">20</span>
+      </div>
+      <div class="stat stat-cash" title="Cash"><span class="cur" aria-hidden="true">$</span><span id="cash">0</span></div>
+      <div class="stat stat-wave" title="Wave"><span class="lbl">Wave</span><span id="wave">0/10</span></div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary" id="btn-wave" type="button">Start wave</button>
+      <button class="btn btn-small" id="btn-auto" type="button" aria-pressed="false" title="Start waves automatically (A)">Auto</button>
+      <button class="btn btn-small" id="btn-speed" type="button" title="Game speed (F)">1×</button>
+      <button class="btn btn-small" id="btn-pause" type="button" title="Pause (P)">Pause</button>
+      <button class="btn btn-small" id="btn-sound" type="button" aria-pressed="true" title="Sound (M)">Sound</button>
+      <button class="btn btn-small" id="btn-full" type="button" title="Full screen" hidden>Full screen</button>
+    </div>
+  </header>
+
+  <div class="rotate-hint" id="rotate-hint">
+    <span>Turn your phone sideways for a bigger battlefield.</span>
+    <button class="btn btn-small" id="btn-hint-close" type="button">Got it</button>
+  </div>
+
+  <main class="layout">
+    <div class="stage" id="stage">
+      <canvas id="game" aria-label="Battlefield"></canvas>
+      <div class="powerbar" id="powerbar"></div>
+      <div class="overlay" id="pause-screen" hidden>
+        <div class="dialog">
+          <h2>Paused</h2>
+          <div class="dialog-actions">
+            <button class="btn btn-primary" id="btn-resume" type="button">Resume</button>
+            <button class="btn" id="btn-restart" type="button">Restart level</button>
+            <button class="btn" id="btn-to-levels" type="button">Level select</button>
+            <button class="btn" id="btn-to-menu" type="button">Main menu</button>
+            <button class="btn btn-music" type="button" aria-pressed="true">Music: On</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <section class="card">
+        <h2 class="card-title">Arsenal</h2>
+        <div class="shop" id="shop"></div>
+      </section>
+      <section class="card info" id="info"></section>
+      <section class="card" id="next-wave"></section>
+    </aside>
+  </main>
+</div>
+
+<div class="screen menu-screen" id="menu-screen">
+  <canvas class="menu-fx" id="menu-fx" aria-hidden="true"></canvas>
+  <div class="menu">
+    <div class="brand">
+      <p class="brand-kicker">Tower defense</p>
+      <h1><span class="t-zombie">Zombie</span> <span class="t-bash">Bash</span></h1>
+      <p class="brand-sub">Five worlds. 190 levels. Hold the line.</p>
+    </div>
+    <div class="menu-chips"><div class="coin-chip" id="menu-coins"></div><span class="supporter-badge" id="supporter-badge" hidden>Supporter</span><button class="test-chip dev-chip" id="dev-chip" type="button" hidden>Developer</button></div>
+    <div class="menu-buttons">
+      <div class="continue-box" id="continue-box" hidden></div>
+      <button class="btn btn-primary btn-lg" id="btn-campaign" type="button">Campaign</button>
+      <button class="btn btn-lg" id="btn-story" type="button">Story</button>
+      <button class="btn btn-lg" id="btn-sandbox" type="button">Sandbox</button>
+      <button class="btn btn-lg" id="btn-armory" type="button">Armory <span class="badge" id="armory-badge" hidden></span></button>
+      <div class="menu-row">
+        <button class="btn btn-lg" id="btn-store" type="button">Store</button>
+        <button class="btn btn-lg" id="btn-customize" type="button">Customize</button>
+      </div>
+      <button class="btn btn-small btn-music" type="button" aria-pressed="true">Music: On</button>
+    </div>
+    <div class="install-box" id="install-box" hidden></div>
+    <p class="keys"><kbd>1</kbd>–<kbd>0</kbd>, <kbd>Q</kbd> pick tower · <kbd>Space</kbd> next wave · <kbd>,</kbd> <kbd>.</kbd> <kbd>/</kbd> upgrade paths · <kbd>S</kbd> sell · <kbd>T</kbd> targeting · <kbd>F</kbd> speed · <kbd>Esc</kbd> cancel</p>
+  </div>
+</div>
+
+<div class="screen world-screen" id="world-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-world-back" type="button">Menu</button>
+    <h2 class="screen-title">Choose a world</h2>
+    <div class="coin-chip" id="world-coins"></div>
+  </div>
+  <div class="world-body">
+    <div class="globe-wrap">
+      <canvas id="globe" aria-label="Globe showing the worlds. Drag to spin, tap a marker to choose."></canvas>
+      <div class="globe-shadow" aria-hidden="true"></div>
+      <p class="globe-hint" id="globe-hint"></p>
+    </div>
+    <div class="world-card" id="world-card"></div>
+  </div>
+</div>
+
+<div class="screen levels-screen" id="levels-screen" hidden>
+  <canvas class="level-fx" id="level-fx" aria-hidden="true"></canvas>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-levels-back" type="button">Globe</button>
+    <h2 class="screen-title" id="levels-title">World</h2>
+    <div class="coin-chip" id="levels-coins"></div>
+  </div>
+  <div class="levels-body">
+    <div class="level-map" id="level-map">
+      <canvas class="level-road" id="level-road" aria-hidden="true"></canvas>
+      <div class="level-grid" id="level-grid"></div>
+      <p class="level-toast" id="level-toast" hidden></p>
+    </div>
+    <div class="level-detail" id="level-detail"></div>
+  </div>
+</div>
+
+<div class="screen store-screen" id="store-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-store-back" type="button">Back</button>
+    <h2 class="screen-title">Store</h2>
+    <div class="coin-chip" id="store-coins"></div>
+  </div>
+  <div class="tabs" id="store-tabs" role="tablist" aria-label="Store sections">
+    <button class="tab" type="button" role="tab" data-tab="towers">Towers</button>
+    <button class="tab" type="button" role="tab" data-tab="perks">Perks</button>
+    <button class="tab" type="button" role="tab" data-tab="supplies">Supplies</button>
+    <button class="tab tab-premium" type="button" role="tab" data-tab="premium">Premium</button>
+  </div>
+  <p class="store-note" id="store-note"></p>
+  <div class="store-grid" id="store-grid"></div>
+</div>
+
+<div class="screen customize-screen" id="customize-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-customize-back" type="button">Back</button>
+    <h2 class="screen-title">Customize</h2>
+    <span class="test-chip" id="cz-test">Test mode</span>
+  </div>
+  <p class="store-note">Cosmetics only change how things look, never how strong they are. Tap one you own to wear it, or one you don't to buy it.</p>
+  <div class="cz-body" id="cz-body"></div>
+</div>
+
+<div class="screen armory-screen" id="armory-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-armory-back" type="button">Back</button>
+    <h2 class="screen-title">Armory</h2>
+    <div class="xp-chip" id="armory-xp"></div>
+  </div>
+  <div class="armory-towers" id="armory-towers" role="tablist" aria-label="Towers"></div>
+  <div class="armory-body">
+    <div class="armory-side" id="armory-side"></div>
+    <div class="armory-main">
+      <div class="armory-paths" id="armory-paths"></div>
+      <div class="armory-detail" id="armory-detail"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen sandbox-screen" id="sandbox-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-sandbox-back" type="button">Menu</button>
+    <h2 class="screen-title">Sandbox</h2>
+    <button class="btn btn-primary sb-play" id="btn-sandbox-play" type="button">Play</button>
+  </div>
+  <p class="store-note">Pick a map, set the rules and choose which zombies come. Nothing here counts towards the campaign.</p>
+  <div class="sandbox-body" id="sandbox-body"></div>
+  <button class="btn btn-primary btn-lg sb-play-bottom" id="btn-sandbox-play2" type="button">Play sandbox</button>
+</div>
+
+<div class="screen chapters-screen" id="chapters-screen" hidden>
+  <div class="screen-top">
+    <button class="btn btn-back" id="btn-chapters-back" type="button">Menu</button>
+    <h2 class="screen-title">Story</h2>
+    <div class="coin-chip story-count" id="chapters-count"></div>
+  </div>
+  <div class="chapters-grid" id="chapters-grid"></div>
+</div>
+
+<div class="screen" id="dev-screen" hidden>
+  <div class="dialog dialog-dev">
+    <p class="end-kicker">For testing</p>
+    <h2>Developer</h2>
+    <p>Developer mode opens every level, world, tower, upgrade, story chapter and wonder expedition, and wonder powers never run out. Your real stars and progress stay as they are, so you can switch it off again.</p>
+    <div class="dev-actions" id="dev-actions"></div>
+    <p class="dev-note" id="dev-note" hidden></p>
+    <div class="dialog-actions"><button class="btn btn-primary" id="dev-close" type="button">Done</button></div>
+  </div>
+</div>
+
+<div class="screen" id="end-screen" hidden>
+  <div class="dialog dialog-end">
+    <p class="end-kicker" id="end-kicker">Sector 1-1</p>
+    <h2 id="end-title">Sector secured</h2>
+    <div class="end-stars" id="end-stars" role="img"></div>
+    <p class="end-reward" id="end-reward"></p>
+    <p id="end-text"></p>
+    <div class="end-quote" id="end-quote" hidden><canvas width="160" height="160" aria-hidden="true"></canvas><p><b></b><span></span></p></div>
+    <div class="dialog-actions">
+      <button class="btn btn-primary" id="btn-next" type="button" hidden>Next level</button>
+      <button class="btn" id="btn-retry" type="button">Try again</button>
+      <button class="btn" id="btn-menu" type="button">Level select</button>
+    </div>
+  </div>
+</div>
+
+<div class="story-screen" id="story-screen" hidden>
+  <canvas id="story-cv" aria-label="Story cutscene. Tap or press Space to continue."></canvas>
+  <div class="story-top">
+    <span class="story-tag" id="story-tag"></span>
+    <button class="btn btn-small" id="story-skip" type="button">Skip</button>
+  </div>
+  <p class="sr-only" id="story-sr" aria-live="polite"></p>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/art.js"></script>
+<script src="js/buildings.js"></script>
+<script src="js/terrain.js"></script>
+<script src="js/zombies.js"></script>
+<script src="js/bossart.js"></script>
+<script src="js/wonders.js"></script>
+<script src="js/globe.js"></script>
+<script src="js/menufx.js"></script>
+<script src="js/manga.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/story.js"></script>
+<script src="js/missions.js"></script>
+<script src="js/comms.js"></script>
+<script src="js/sandbox.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/music.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/coach.js"></script>
+<script src="js/premium.js"></script>
+<script src="js/expeditions.js"></script>
+<script src="js/game.js"></script>
+<script src="js/devmode.js"></script>
+<script>
+  // Offline support and "Add to Home Screen" (needs https or localhost).
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>

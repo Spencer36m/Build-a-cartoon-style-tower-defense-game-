@@ -1,0 +1,10 @@
+node_modules/
+www/
+ios/App/App/public/
+ios/App/Pods/
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+.DS_Store
+s3/
+s4/
+shots/
