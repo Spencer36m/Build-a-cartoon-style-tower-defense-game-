@@ -299,7 +299,13 @@ kbd {
   background: linear-gradient(180deg, #11161a, #0b0e11);
   overflow-y: auto;
 }
-#end-screen { align-items: center; justify-content: center; background: rgba(6, 8, 10, 0.72); }
+#end-screen, #dev-screen { align-items: center; justify-content: center; background: rgba(6, 8, 10, 0.72); }
+#dev-screen { z-index: 40; }
+.dialog-dev { width: min(440px, 100%); }
+.dev-actions { display: flex; flex-direction: column; gap: 8px; margin: 0 auto 12px; max-width: 320px; }
+.dev-toggle { justify-content: center; }
+.dev-note { color: var(--amber) !important; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.dev-chip { cursor: pointer; }
 .dialog {
   background: linear-gradient(180deg, #222a30, #161b1f);
   border: 1px solid var(--line-strong);
@@ -505,7 +511,8 @@ kbd {
 .exp-boss, .exp-power { display: flex; gap: 10px; align-items: flex-start; margin: 0; }
 .exp-boss > span:last-child, .exp-power > span:last-child { display: flex; flex-direction: column; gap: 2px; color: #cfcbc1; font-size: 0.92rem; line-height: 1.35; min-width: 0; }
 .exp-boss b, .exp-power b { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); font-size: 1rem; }
-.exp-boss-art { flex: none; width: 54px; height: 54px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line-strong); display: grid; place-items: center; }
+.exp-boss-art canvas { width: 54px; height: 54px; display: block; }
+.exp-boss-art { flex: none; overflow: hidden; width: 54px; height: 54px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line-strong); display: grid; place-items: center; }
 .exp-power-icon { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--amber); background: rgba(80, 56, 20, 0.5); }
 .exp-power-icon svg { width: 22px; height: 22px; fill: var(--amber); }
 .exp-power b { color: var(--amber); }

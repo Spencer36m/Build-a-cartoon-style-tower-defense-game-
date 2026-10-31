@@ -18,21 +18,24 @@ const saveMeta = () => store.set(META_KEY, JSON.stringify(meta));
 const upg = (k) => meta.upg[k] | 0;
 const starsFor = (i) => meta.stars[LEVEL_META[i].id] | 0;
 // the expansion world opens to its owners once the farmland is cleared, whatever comes before it
-const expansionOpen = (w) => PREMIUM.has(WORLDS[w].id) && starsFor(worldEnd(0)) > 0;
+// developer mode (see devmode.js) opens every lock in the game without touching real progress
+const devMode = () => !!meta.dev;
+const expansionOpen = (w) => devMode() || (PREMIUM.has(WORLDS[w].id) && starsFor(worldEnd(0)) > 0);
 // the first sector of a main world opens when the main world before it is cleared
 const levelUnlocked = (i) => {
+  if (devMode()) return true;
   const L = LEVEL_META[i];
   if (WORLDS[L.world].expansion) return expansionOpen(L.world) && (L.num === 1 || starsFor(i - 1) > 0);
   if (i === 0) return true;
   return starsFor(L.num === 1 ? unlockFrom(L.world) : i - 1) > 0;
 };
 const worldUnlocked = (w) => levelUnlocked(WORLD_START[w]);
-const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
+const towerUnlocked = (type) => { const d = TOWERS[type]; return !!S.sandbox || devMode() || !d.unlock || !!meta.owned[type] || starsFor(d.unlock - 1) > 0; };
 const costOf = (n) => Math.round(n * (1 - 0.04 * upg('discount')));
 const maxLives = () => BASE_LIVES + 3 * upg('walls');
 const xpOf = (type) => Math.floor(meta.xp[type] || 0);
 // Highest tier of a path that can be bought in battle; tiers past FREE_TIER are unlocked with XP in the Armory.
-const tierCap = (type, p) => (S.sandbox ? 5 : Math.max(FREE_TIER, (meta.armory[type] || [])[p] | 0));
+const tierCap = (type, p) => (S.sandbox || devMode() ? 5 : Math.max(FREE_TIER, (meta.armory[type] || [])[p] | 0));
 const AIRCRAFT = { heli: true, jet: true };
 const MAP_WIDE = 50;
 const INF_CASH = 1e7; // a sandbox with infinite cash keeps the purse topped up at this // ranges this big reach the whole map
@@ -2360,7 +2363,7 @@ function renderPowerbar() {
     b.className = 'power wonder' + (S.power === 'w:' + id ? ' armed' : '');
     b.disabled = n <= 0 || S.state !== 'playing';
     b.title = `${P.name}: ${P.desc}${n <= 0 ? ` Gains a charge after ${EXPED.winsToCharge()} more campaign win${EXPED.winsToCharge() === 1 ? '' : 's'}.` : ''}`;
-    b.innerHTML = `${EXPED.ICONS[id]}<span>${P.short}</span><span class="count">${n}</span>`;
+    b.innerHTML = `${EXPED.ICONS[id]}<span>${P.short}</span><span class="count">${devMode() ? '∞' : n}</span>`;
     b.addEventListener('click', () => usePower('w:' + id));
     bar.append(b);
   }
@@ -2408,6 +2411,7 @@ function showMenu() {
     box.append(b);
   }
   renderInstall();
+  if (typeof DEV !== 'undefined') DEV.badge();
 }
 
 // ---------- story chapters ----------
@@ -2419,7 +2423,7 @@ function storyThen(id, then) {
   Story.play(id, then);
 }
 function storyUnlocked(id) {
-  if (id === 'prologue') return true;
+  if (id === 'prologue' || devMode()) return true;
   const [, w, part] = id.match(/^w(\d)-(\w+)$/) || [];
   if (part === 'intro') return worldUnlocked(+w);
   return starsFor(part === 'mid' ? WORLD_START[+w] + midLevel(+w) - 1 : worldEnd(+w)) > 0;
@@ -2478,7 +2482,7 @@ function renderGlobeHint() {
 function showExpedition(id) { showWorlds(); selectExpedition(id); }
 function selectExpedition(id) {
   const X = EXPED.LIST[id], P = X.power, boss = ZOMBIES[X.boss];
-  const found = Globe.isFound(id), open = EXPED.isOpen(id), won = EXPED.wonStars(id), keys = EXPED.keysLeft();
+  const found = Globe.isFound(id) || devMode(), open = EXPED.isOpen(id), won = EXPED.wonStars(id), keys = EXPED.keysLeft();
   Globe.focusWonder(id);
   const i = EXPED.ORDER.indexOf(id), n = EXPED.ORDER.length;
   const stars = won ? [1, 2, 3].map((k) => STAR_SVG.replace('<svg', `<svg class="${k <= won ? 'on' : ''}"`)).join('') : '';

@@ -79,9 +79,9 @@ const SANDBOX = (() => {
 
   // zombies from an expansion the player has not bought stay out of the picker
   // and a wonder's zombies stay out until its expedition has been won
-  const zLocked = (t) => (ZOMBIES[t].exp && !EXPED.wonStars(ZOMBIES[t].exp)) || WORLDS.some((w) => w.expansion && !PREMIUM.has(w.id) && (w.boss === t || w.mobs.some(([m]) => m === t)));
+  const zLocked = (t) => !meta.dev && ((ZOMBIES[t].exp && !EXPED.wonStars(ZOMBIES[t].exp)) || WORLDS.some((w) => w.expansion && !PREMIUM.has(w.id) && (w.boss === t || w.mobs.some(([m]) => m === t))));
   // worlds the player can build a sandbox in: the expansion only once it is bought
-  const worldsOpen = () => WORLDS.map((w, i) => i).filter((i) => !WORLDS[i].expansion || PREMIUM.has(WORLDS[i].id));
+  const worldsOpen = () => WORLDS.map((w, i) => i).filter((i) => meta.dev || !WORLDS[i].expansion || PREMIUM.has(WORLDS[i].id));
   function render() {
     const root = document.querySelector('#sandbox-body');
     root.innerHTML = '';

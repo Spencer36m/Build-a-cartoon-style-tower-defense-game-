@@ -93,7 +93,8 @@ const EXPED = (() => {
   // ---------- progress ----------
   const st = () => { if (!meta.exp) meta.exp = { open: [], won: {}, charge: {}, tick: 0 }; return meta.exp; };
   const has = (id) => !!LIST[id];
-  const isOpen = (id) => st().open.includes(id);
+  const dev = () => !!meta.dev;
+  const isOpen = (id) => dev() || st().open.includes(id);
   const wonStars = (id) => st().won[id] | 0;
   function campaignStars() { let n = 0; for (const k of Object.keys(meta.stars)) n += meta.stars[k] | 0; return n; }
   const keysEarned = () => Math.floor(campaignStars() / STARS_PER_KEY);
@@ -438,8 +439,8 @@ const EXPED = (() => {
 
   // ---------- wonder powers ----------
   const strength = (id) => (wonStars(id) >= 3 ? 1.5 : 1);
-  const charges = (id) => st().charge[id] | 0;
-  const owned = () => ORDER.filter((id) => wonStars(id) > 0);
+  const charges = (id) => (dev() ? 9 : st().charge[id] | 0);
+  const owned = () => ORDER.filter((id) => dev() || wonStars(id) > 0);
   function cast(id) {
     if (S.state !== 'playing' || S.paused || charges(id) <= 0) { Sound.play('error'); return false; }
     const P = LIST[id].power;
@@ -454,7 +455,7 @@ const EXPED = (() => {
     fire(id, x, y);
     spend(id);
   }
-  function spend(id) { st().charge[id] = Math.max(0, charges(id) - 1); saveMeta(); }
+  function spend(id) { if (dev()) return; st().charge[id] = Math.max(0, charges(id) - 1); saveMeta(); }
   // a power works in any battle, campaign or expedition; R is set up on the fly if needed
   function need() { if (!R) R = { id: null, t: 0, lava: null, bubbles: [], tentacles: [], flights: [], dinos: [], scouts: [], zones: [], herds: [], beams: [], next: 1e9 }; }
   function fire(id, x, y) {

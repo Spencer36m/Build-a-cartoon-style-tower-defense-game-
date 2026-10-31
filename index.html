@@ -80,7 +80,7 @@
       <h1><span class="t-zombie">Zombie</span> <span class="t-bash">Bash</span></h1>
       <p class="brand-sub">Five worlds. 190 levels. Hold the line.</p>
     </div>
-    <div class="menu-chips"><div class="coin-chip" id="menu-coins"></div><span class="supporter-badge" id="supporter-badge" hidden>Supporter</span></div>
+    <div class="menu-chips"><div class="coin-chip" id="menu-coins"></div><span class="supporter-badge" id="supporter-badge" hidden>Supporter</span><button class="test-chip dev-chip" id="dev-chip" type="button" hidden>Developer</button></div>
     <div class="menu-buttons">
       <div class="continue-box" id="continue-box" hidden></div>
       <button class="btn btn-primary btn-lg" id="btn-campaign" type="button">Campaign</button>
@@ -193,6 +193,17 @@
   <div class="chapters-grid" id="chapters-grid"></div>
 </div>
 
+<div class="screen" id="dev-screen" hidden>
+  <div class="dialog dialog-dev">
+    <p class="end-kicker">For testing</p>
+    <h2>Developer</h2>
+    <p>Developer mode opens every level, world, tower, upgrade, story chapter and wonder expedition, and wonder powers never run out. Your real stars and progress stay as they are, so you can switch it off again.</p>
+    <div class="dev-actions" id="dev-actions"></div>
+    <p class="dev-note" id="dev-note" hidden></p>
+    <div class="dialog-actions"><button class="btn btn-primary" id="dev-close" type="button">Done</button></div>
+  </div>
+</div>
+
 <div class="screen" id="end-screen" hidden>
   <div class="dialog dialog-end">
     <p class="end-kicker" id="end-kicker">Sector 1-1</p>
@@ -242,6 +253,7 @@
 <script src="js/premium.js"></script>
 <script src="js/expeditions.js"></script>
 <script src="js/game.js"></script>
+<script src="js/devmode.js"></script>
 <script>
   // Offline support and "Add to Home Screen" (needs https or localhost).
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {

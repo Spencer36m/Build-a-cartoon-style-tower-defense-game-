@@ -1,7 +1,7 @@
 // Zombie Bash service worker: caches the game so it starts instantly and plays offline.
 // Files are served from cache first and refreshed in the background, so an update
 // shows up the next time the game is opened.
-const CACHE = 'zbash-v42';
+const CACHE = 'zbash-v43';
 const ASSETS = [
   './',
   'index.html',
@@ -30,6 +30,7 @@ const ASSETS = [
   'js/premium.js',
   'js/expeditions.js',
   'js/game.js',
+  'js/devmode.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

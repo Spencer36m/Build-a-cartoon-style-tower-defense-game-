@@ -179,22 +179,37 @@ const Globe = (() => {
     return (y * TW + x) * 3;
   };
   // move each wonder to the nearest spot of land or sea, away from the polar ice
+  // the angle between two spots on the planet, in degrees
+  const angle = (la1, lo1, la2, lo2) => {
+    const r = Math.PI / 180, c = Math.sin(la1 * r) * Math.sin(la2 * r) + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.cos((lo1 - lo2) * r);
+    return Math.acos(clamp(c, -1, 1)) / r;
+  };
+  // how much room a wonder needs round it: the ghost ship sails to and fro, so it gets more
+  const room = (w) => (w.kind === 'ship' ? 38 : 27);
   function placeWonders() {
     placed = true;
+    const done = [];
+    // each wonder goes to the nearest spot of the right ground (land or sea) that keeps it clear
+    // of the ones already placed, so no two landmarks ever stand on top of each other
     for (const w of WONDERS) {
+      const fits = (la, lo, gap) => isWater(texIndex(la, lo)) === (w.want === 'sea') && done.every((v) => angle(la, lo, v.lat, v.lon) > Math.max(room(v), room(w)) * gap);
       let best = null;
-      for (let r = 0; r <= 45 && !best; r += 3) {
-        for (let k = 0; k < Math.max(1, r * 2); k++) {
-          const q = (k / Math.max(1, r * 2)) * TAU, la = clamp(w.lat + Math.sin(q) * r, -66, 66), lo = w.lon + Math.cos(q) * r;
-          if (isWater(texIndex(la, lo)) === (w.want === 'sea')) { best = [la, lo]; break; }
+      for (const gap of [1, 0.85, 0.7]) {
+        for (let r = 0; r <= 70 && !best; r += 3) {
+          for (let k = 0; k < Math.max(1, r * 2); k++) {
+            const q = (k / Math.max(1, r * 2)) * TAU, la = clamp(w.lat + Math.sin(q) * r, -64, 64), lo = w.lon + Math.cos(q) * r / Math.max(0.35, Math.cos(w.lat * Math.PI / 180));
+            if (fits(la, lo, gap)) { best = [la, lo]; break; }
+          }
         }
+        if (best) break;
       }
       if (best) { w.lat = best[0]; w.lon = best[1]; }
+      done.push(w);
     }
     // every world's marker sits on solid ground: a few degrees inland, clear of the wonders
     const land = (la, lo) => !isWater(texIndex(la, lo));
     const inland = (la, lo) => land(la, lo) && [[4, 0], [-4, 0], [0, 5], [0, -5], [3, 4], [-3, -4], [3, -4], [-3, 4]].every(([a, b]) => land(la + a, lo + b));
-    const clear = (la, lo) => WONDERS.every((v) => Math.hypot(v.lat - la, (v.lon - lo) * Math.cos(la * Math.PI / 180)) > 9);
+    const clear = (la, lo) => WONDERS.every((v) => angle(la, lo, v.lat, v.lon) > (v.kind === 'ship' ? 20 : 15));
     for (const w of WORLDS) {
       if (inland(w.lat, w.lon) && clear(w.lat, w.lon)) continue;
       let best = null;
@@ -500,6 +515,8 @@ const Globe = (() => {
     trophy: null,
     beacon: null,
     isFound: (id) => found.has(id),
+    findAll() { for (const w of WONDERS) found.add(w.id); store.set(FOUND_KEY, JSON.stringify([...found])); },
+    spots: () => (placed ? WONDERS.map((w) => ({ id: w.id, lat: w.lat, lon: w.lon, kind: w.kind })) : null),
     // turn the globe to a wonder and show its card on it
     focusWonder(id) {
       const w = WONDERS.find((q) => q.id === id);
