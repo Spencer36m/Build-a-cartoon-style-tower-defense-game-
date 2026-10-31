@@ -394,7 +394,7 @@ const WEIGHT = { walker: 1, runner: 0.6, cone: 0.4, digger: 0.3, carrion: 0.25, 
   necro: 0.1, bats: 0.3, brute: 0.12, frosty: 0.35, medic: 0.09, bloater: 0.18, imp: 0.5, mummy: 0.4, scorpion: 0.45, vulture: 0.25, suit: 0.6, swat: 0.22, drone: 0.2,
   magma: 0.45, ember: 0.3, ashwalker: 0.5, sailor: 0.6, crab: 0.38, kobold: 0.7, cultist: 0.35, compy: 0.55, ankylo: 0.1, cow: 0.1, grey: 0.4,
   shardback: 0.16, shard: 0.3, emberimp: 0.3, husk: 0.35, smokehound: 0.3, treant: 0.12, sprite: 0.3, raptor: 0.45, rider: 0.15, ptero: 0.2, cliffcrawler: 0.4,
-  crystalhusk: 0.35, seed: 0.28, seedling: 0.3, golem: 0.12, wisp: 0.22, voidwraith: 0.32, shadowhound: 0.25, thrall: 0.2, druid: 0.1, ghostpirate: 0.45, deckhand: 0.6,
+  crystalhusk: 0.35, seed: 0.28, seedling: 0.3, golem: 0.12, wisp: 0.22, voidwraith: 0.32, shadowhound: 0.2, thrall: 0.2, druid: 0.1, ghostpirate: 0.45, deckhand: 0.6,
   dryad: 0.38, puffer: 0.16, para: 0.3, gull: 0.2, suncultist: 0.3, scarabs: 0.45, werewolf: 0.3, moth: 0.3, subject: 0.45, hazmat: 0.25 };
 const GAP = { walker: 0.8, runner: 0.45, cone: 0.95, digger: 1.1, carrion: 0.6, skeleton: 0.5, bucket: 1.3, ghost: 0.8,
   necro: 3, bats: 0.3, brute: 2.6, frosty: 0.9, medic: 3, bloater: 1.8, imp: 0.35, mummy: 1.1, scorpion: 0.5, vulture: 0.6, suit: 0.45, swat: 1.4, drone: 0.55,

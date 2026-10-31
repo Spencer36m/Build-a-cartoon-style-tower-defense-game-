@@ -153,7 +153,7 @@ const EXPED = (() => {
     starfall: {
       id: 'starfall', name: 'Starfall Crater', boss: 'starborn', host: 4, seed: 9673, paths: 1, water: 'none',
       blurb: 'Where the green meteor struck. Its crystal grows over more ground every wave, and zombies standing on it heal.',
-      mobs: [['crystalhusk', 1], ['seed', 4]], old: [['walker', 1], ['runner', 2], ['frosty', 7]], rush: 'seed',
+      mobs: [['crystalhusk', 1], ['seed', 4]], old: [['walker', 1], ['runner', 2], ['frosty', 7]], rush: 'runner',
       power: { name: 'Meteor Strike', short: 'Meteor', kind: 'meteor', target: true, desc: 'One huge impact on a spot you tap, a moment after you call it.' },
       times: ['night', 'dusk'], forecast: { clear: 2.4, dust: 1.4, embers: 1.2 },
       pal: { lo: '#2a2e26', mid: '#3e4436', hi: '#5a604a', patchA: '#2a3a24', patchB: '#1e221c', dirt: '#4a4a3a', tuft: ['#3a4a2a', '#4a5a34', '#2a3a20'] },
@@ -181,7 +181,7 @@ const EXPED = (() => {
     rift: {
       id: 'rift', name: 'The Rift', boss: 'unmade', host: 1, seed: 9697, paths: 1, water: 'none',
       blurb: 'A tear in the sky. Portals open along the road and zombies jump from one to the next, skipping whole stretches of it.',
-      mobs: [['voidwraith', 1], ['shadowhound', 6]], old: [['walker', 1], ['ghost', 2], ['necro', 8]], rush: 'shadowhound',
+      mobs: [['voidwraith', 1], ['shadowhound', 6]], old: [['walker', 1], ['ghost', 2], ['necro', 8]], rush: 'skeleton',
       power: { name: 'Rift Pull', short: 'Pull', kind: 'pull', target: true, desc: 'Every zombie round a spot you tap is pulled back toward the start of the road.' },
       times: ['night'], forecast: { clear: 1.4, fog: 3, storm: 1.4 },
       pal: { lo: '#1a1424', mid: '#2a2236', hi: '#3e344e', patchA: '#3a1a4a', patchB: '#120e1a', dirt: '#3a3046', tuft: ['#2a2238', '#3a2e4a', '#4a3a5a'] },
