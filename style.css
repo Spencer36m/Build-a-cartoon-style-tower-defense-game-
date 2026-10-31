@@ -524,6 +524,8 @@ kbd {
 .exp-back { align-self: flex-start; }
 .power.wonder { border-color: rgba(227, 168, 62, 0.55); background: linear-gradient(180deg, rgba(70, 46, 16, 0.9), rgba(30, 22, 12, 0.9)); }
 .power.wonder svg { fill: var(--amber); stroke: none; }
+.wonder-tray { position: absolute; left: 0; bottom: 56px; display: grid; grid-template-columns: repeat(5, 54px); gap: 6px; padding: 6px; background: rgba(10, 13, 16, 0.92); border: 1px solid var(--line-strong); clip-path: var(--cut-sm); z-index: 3; }
+@media (max-width: 700px) { .wonder-tray { grid-template-columns: repeat(4, 54px); } }
 
 /* ---------- Level grid ---------- */
 .levels-screen { background: #0a0c0f; }

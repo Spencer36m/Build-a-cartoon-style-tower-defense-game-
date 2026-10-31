@@ -71,27 +71,43 @@ Zombies from earlier worlds keep coming back in later ones.
 
 **Red Mesa Wasteland** is a paid expansion (see Premium below): an extra world of 30 levels that opens to its owners once Hollow Creek Farmland (1-30) is cleared. It starts about as hard as the middle of the cemetery and climbs from there. The maps are red sand with long dunes and wind ripples, sun-cracked clay, cacti, sagebrush, cow skulls, sandstone buttes, rusted wrecks, oil pumpjacks, oil drums, the odd oasis with date palms, and abandoned concrete blockhouses from an old airbase. Its forecast brings heat haze (shimmering air and glare) and sandstorms. Camels, fennec foxes and lizards live there, a hawk cries overhead, and its music is an oud and ney tune over darbuka drums. Mummies are tough but burn twice as hard, Dune Scorpions are fast and armoured, Vultures dive across the corners, and the Sand Colossus pours scorpions out of its cracks and buries nearby towers in sand with its stomp.
 
-The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Five of them hold a Wonder Expedition (below). Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
+The globe is alive: 20 **wonders** are scattered across the planet, including erupting volcanoes, wildfires, a valley of dinosaurs, raptor packs, pterosaurs, a red dragon, a kraken, a ghost ship, floating crystals, a portal in the sky, a stone circle of glowing runes, a floating island, the Elder Tree, a sun temple, a UFO and Ground Zero itself. Spin the globe and tap one to read its story; the game remembers how many you have found. Each one holds a Wonder Expedition (below). Meteors streak past and some strike the planet, leaving burning craters, while a comet, an orbiting moon and the northern lights pass by.
 
 ### Wonder Expeditions
 
-Five of the wonders hold an expedition: **Mount Cinder**, **the Deep One**, **the Red Dragon**, **Dino Valley** and **the Visitors**. Each one is a single hand-made battle at that wonder. The zombies there belong to the place, a boss guards it, and the map has its own twist:
+Every one of the 20 wonders holds an expedition: a single hand-made battle at that wonder. The zombies there belong to the place, a boss guards it, and the map has its own twist:
 
 | Expedition | Boss | Zombies | Twist | Power you earn |
 | --- | --- | --- | --- | --- |
-| Mount Cinder | The Cinder King | Ash Walkers, Magma Crawlers (burst into Embers) | Lava flows burn any zombie that wades through, and every fourth wave an eruption floods more ground | Eruption: lava rains on a spot for six seconds |
-| The Deep One | The Kraken | Drowned Sailors, Crab Shellbacks | A drowned coast, mostly water and long bridges; tentacles drag zombies under and swat boats | Kraken's Grasp: drags the six strongest zombies under |
-| The Red Dragon | The Bone Wyrm | Bone Kobolds, Dragon Cultists (fireproof) | The Red Dragon fights on your side, flying over to burn the horde | Dragon's Breath: the dragon torches a lane |
-| Dino Valley | Rex Mortis | Zombie Compies, Zombie Ankylos | Living dinosaurs graze by the road and trample any zombie near them | Stampede: a herd charges back down the road |
-| Visitors | The Abductor | Greys (teleport), Zombie Cows (charge) | Crop circles, and scout saucers that beam towers away for a few seconds | Tractor Beam: lifts the strongest zombie off the map |
+| Mount Cinder | The Cinder King | Ash Walkers, Magma Crawlers (burst into Embers) | Lava burns any zombie that wades through, and every fourth wave an eruption floods more ground | Eruption: lava rains on a spot |
+| The Ashen Peaks | The Ash Wyrm (dives under the road) | Ember Imps, Obsidian Shardbacks (shatter into Shards) | Two roads from twin lava craters; ash falls every fourth wave and shortens every tower's range | Ash Cloud: zombies in it slow and take extra damage |
+| The Burning Wastes | The Wildfire Wendigo (heals in fire) | Burning Husks (light the grass), Smoke Hounds (hide in smoke) | Fire spreads across the dry grass, burning zombies and slowing towers caught in it | Firestorm: a ring of fire round a spot |
+| Emberwood | The Smoldering Oak | Charred Treants, Ember Sprites (flyers) | Drifting smoke hides zombies until they come near a tower | Smoke Screen: zombies in it walk back |
+| Dino Valley | Rex Mortis | Zombie Compies, Zombie Ankylos | Living dinosaurs trample any zombie near them | Stampede: a herd charges back down the road |
+| Raptor Plains | The Pack Alpha | Zombie Raptors, Raptor Riders | Tall grass hides zombies on whole stretches of road | Raptor Pack: wild raptors hunt the horde |
+| The Pterosaur Cliffs | The Quetzal Wraith (snatches towers) | Zombie Pterodactyls, Cliff Crawlers (cut corners on foot) | Sea cliffs where most of the horde flies; wild pterosaurs pick off flyers | Dive Bomb: pterosaurs strike a lane |
+| Starfall Crater | The Starborn (crystal shield) | Seed Spawn (split in two), Crystal Husks | Star-crystal spreads every wave, and zombies on it heal | Meteor Strike: one huge impact |
+| The Crystal Spires | The Prism Colossus (beam shuts towers down) | Prism Wisps, Shard Golems | Towers beside a floating crystal fire faster | Crystal Field: everything slows |
+| The Rift | The Unmade (blinks forward) | Void Wraiths, Shadow Hounds (fade into shadow) | Portals on the road let zombies skip ahead | Rift Pull: drags zombies back toward the start |
+| Visitors | The Abductor | Greys (teleport), Zombie Cows (charge) | Crop circles, and scout saucers that beam towers away | Tractor Beam: lifts the strongest zombie off the map |
+| Circle of Runes | The Stone Warden | Rune Thralls, Druid Shamblers (healers) | Runestones make the towers beside them hit harder, and give passing zombies stone skin | Rune Ward: the next five zombies in cost no lives |
+| The Sun Temple | The Sun Priest | Scarab Swarms, Sun Cultists | The temple beam sweeps the map, burning zombies and towers alike | Sunbeam: light runs back along the road |
+| The Elder Tree | The Blight | Blighted Dryads, Spore Puffers (spores knock out towers) | Defend the Elder Tree: its roots slow zombies near it, but blight spreads and slows towers | Elder Roots: every zombie held in place |
+| The Moonwell | The Lunar Alpha | Werewolf Zombies, Moon Moths | Every fifth wave is a full moon: zombies heal and speed up | Moonwell: ten lives back |
+| The Deep One | The Kraken | Drowned Sailors, Crab Shellbacks | A drowned coast with long bridges; tentacles drag zombies under | Kraken's Grasp: drags the six strongest under |
+| The Ghost Ship | Captain Blackwake | Skeleton Deckhands, Ghost Pirates (fade out) | Thick sea fog; ghosts fade out where no tower can hit them | Broadside: cannonballs down a lane |
+| Skyhold | The Storm Harbinger (lightning) | Paratroopers (drop in partway), Storm Gulls | A floating island in open sky; zombies parachute onto the road | Thunderstrike: lightning hits the five strongest |
+| The Red Dragon | The Bone Wyrm | Bone Kobolds, Dragon Cultists (fireproof) | The Red Dragon fights on your side, burning the horde | Dragon's Breath: the dragon torches a lane |
+| Ground Zero | Subject Zero | Bay Four Subjects, Hazmat Zombies | Thirty waves in the lab ruins; Subject Zero returns every ten | Lazarus Pulse: the cure hits every zombie |
 
 They are built to be hard and hard to get into:
 
 - **Two locks.** Find the wonder on the globe, then open it with a **Wonder Key**. You earn one key for every 15 campaign stars.
+- **Developer mode.** For testing, tap the Zombie Bash title on the main menu five times (or open the game with `?dev`). It opens every level, world, tower, upgrade, story chapter and expedition and makes wonder powers unlimited, without touching real progress, and can add coins, max the Armory, find every wonder and grant premium items in test mode.
 - **Harder than the campaign.** Every expedition fights like the end of the Fallen City, whenever you go in: 20 waves, only 10 lives, less starting cash, and store perks for cash and lives don't apply.
 - **No supplies.** Airstrikes, Cryo Bombs, Supply Drops and Field Repairs can't be used. You bring your towers, Armory upgrades and any wonder powers you have already won.
 - **Two-phase bosses.** Every boss enrages at half health: faster, with a stronger attack, and it calls in a wave of its own zombies.
-- **Scarce powers.** A power is earned only by winning. You hold one charge, and every five campaign wins each power gains a charge (two at most). A three-star win makes it stronger. Powers work in any battle.
+- **Scarce powers.** A power is earned only by winning. You hold one charge, and every five campaign wins each power gains a charge (two at most). A three-star win makes it stronger. Powers work in any battle; with more than two, they fold into a Wonders tray in the power bar.
 - **A trophy.** A beaten boss leaves a gold trophy over its wonder on the globe. Retrying is free: the key stays spent and the expedition stays open.
 
 ### Sandbox
@@ -279,6 +295,7 @@ Each world's intro plays when you first deploy there, and new chapters play afte
 - `js/wonders.js`: the painted landmarks on the globe
 - `js/expeditions.js`: the wonder expeditions: their maps and twists, Wonder Keys, the bosses' attacks and second phases, and the wonder powers
 - `js/bossart.js`: the expedition bosses' sprites
+- `js/devmode.js`: developer mode and its panel
 - `js/manga.js`, `js/scenes.js`: the manga art kit (screentones, speed lines, portraits) and every cutscene panel
 - `js/story.js`: the story script and the cutscene player
 - `js/missions.js`, `js/comms.js`: the 40 operations, the cast's radio lines, and the comms card that shows them in a mission

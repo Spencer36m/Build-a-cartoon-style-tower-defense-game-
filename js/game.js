@@ -534,8 +534,12 @@ function spawnEnemy(type, wave, route, d = 0) {
     variant: Math.floor(Math.random() * ZART.variants(type)), size: rand(0.94, 1.06),
     sumCd: def.summon ? def.summon.every * 0.6 : 0, healCd: def.heal ? def.heal.every : 0, stompCd: def.stomp ? def.stomp.every * 0.5 : 0,
     dashCd: def.dash ? def.dash.every * 0.7 : 0, dashT: 0, hopCd: def.hop ? def.hop.every : 0,
+    diveCd: def.dive ? def.dive.every : 0, diveT: 0, phaseCd: def.phase ? def.phase.every * Math.random() : 0, phaseT: 0, phased: false, hidden: false, shieldT: 0,
   };
+  // a paratrooper lands somewhere along the road, not at its start
+  if (def.drop && !d) { z.d = route.total * rand(0.15, 0.45); z.dropT = 1.4; }
   placeOnPath(z);
+  EXPED.onSpawn(z);
   S.enemies.push(z);
   if (def.boss) Sound.play('roar', W * 0.15);
   else if (def.fly && Math.random() < 0.25) Sound.play(type === 'bats' ? 'bat' : 'crow', W * 0.1);
@@ -561,7 +565,8 @@ function placeOnPath(e) {
 }
 
 const onField = (e) => e.x > 2 && e.y > 2 && e.x < W - 2 && e.y < H - 2;
-const targetable = (e, air, detect) => !e.dead && onField(e) && (!e.burrowed || e.revealed || detect) && (!e.fly || air);
+// a zombie fading out (phase) or lost in smoke or tall grass (hidden) can't be shot at
+const targetable = (e, air, detect) => !e.dead && onField(e) && !e.phased && !e.hidden && (!e.burrowed || e.revealed || detect) && (!e.fly || air);
 
 function updateEnemy(e, dt) {
   const def = ZOMBIES[e.type];
@@ -575,6 +580,19 @@ function updateEnemy(e, dt) {
     if (Math.random() < dt * 14) S.fx.push({ kind: 'fire', x: e.x + rand(-5, 5), y: e.y + rand(-5, 5), vx: rand(-8, 8), vy: rand(-30, -14), r: rand(3, 6), life: 0.35, max: 0.35 });
     if (e.dead) return;
   }
+  if (e.dropT > 0) e.dropT -= dt;
+  if (e.shieldT > 0) e.shieldT -= dt;
+  if (def.regen && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * def.regen * dt);
+  // a ghost fades out of reach for a moment every few seconds
+  if (def.phase) {
+    if (e.phaseT > 0) { e.phaseT -= dt; if (e.phaseT <= 0) e.phased = false; }
+    else if ((e.phaseCd -= dt) <= 0) { e.phaseCd = def.phase.every; e.phaseT = def.phase.dur; e.phased = true; }
+  }
+  // a burrowing boss dives under the road for a moment, safe from everything but sonar
+  if (def.dive) {
+    if (e.diveT > 0) { e.diveT -= dt; if (e.diveT <= 0) { e.burrowed = false; addShake(4); Sound.play('dig', e.x); for (let i = 0; i < 12; i++) { const a = rand(0, TAU); S.fx.push({ kind: 'debris', x: e.x, y: e.y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, r: rand(2, 4), color: '#5a4a44', life: 0.6, max: 0.6 }); } } }
+    else if ((e.diveCd -= dt) <= 0) { e.diveCd = def.dive.every; e.diveT = def.dive.dur; e.burrowed = true; Sound.play('dig', e.x); }
+  }
   if (e.stunT > 0) { e.stunT -= dt; e.cur = 0; return; }
   const slow = def.noSlow ? 0 : Math.max(e.slowF, e.fslow);
   // a charge, or a sailor swimming a channel, speeds a zombie up for a moment
@@ -582,13 +600,14 @@ function updateEnemy(e, dt) {
     if (e.dashT > 0) e.dashT -= dt;
     else if ((e.dashCd -= dt) <= 0) { e.dashCd = def.dash.every; e.dashT = def.dash.dur; Sound.play('brute', e.x); for (let i = 0; i < 6; i++) S.fx.push({ kind: 'smoke', x: e.x - e.dirx * e.r, y: e.y - e.diry * e.r, vx: -e.dirx * 40 + rand(-15, 15), vy: -e.diry * 40 + rand(-15, 15), r: rand(4, 7), grow: 12, life: 0.6, max: 0.6, color: '150,130,100' }); }
   }
-  let boost = e.dashT > 0 ? def.dash.mult : 1;
+  let boost = (e.dashT > 0 ? def.dash.mult : 1) * (e.boost || 1) * (e.diveT > 0 ? 1.6 : 1);
   if (def.swim && S.L.water[Math.floor(e.y / TILE) * COLS + Math.floor(e.x / TILE)]) boost *= def.swim;
   e.cur = e.speed * (1 - slow) * (e.burrowed ? 1.2 : 1) * boost;
   e.d += e.cur * dt;
   if (e.d >= e.route.total) {
     e.dead = true;
-    const lost = def.lives || 1;
+    // a Rune Ward soaks up the next few that get in
+    const lost = EXPED.wardLeak() ? 0 : def.lives || 1;
     if (!(S.sandbox && S.sandbox.infLives)) S.lives = Math.max(0, S.lives - lost);
     S.houseHit = 0.5; S.leakFlash = 0.4;
     addShake(lost > 2 ? 9 : 3);
@@ -645,6 +664,7 @@ function updateEnemy(e, dt) {
 
 function damage(e, amount, tower, pierce = 0, quiet = false) {
   if (e.dead) return;
+  if (e.shieldT > 0) { if (!quiet) e.flash = 0.06; return; }
   if (e.brittleT > 0) amount *= 1 + e.brittle;
   if (e.armor > 0 && !quiet && Math.random() < 0.25) Sound.play('armor', e.x);
   const dmg = Math.max(amount * 0.2, amount - e.armor * (1 - Math.min(1, pierce)));
@@ -680,6 +700,11 @@ function kill(e, tower) {
   const deathSound = def.boss ? 'roar' : { skeleton: 'bones', ghost: 'wail', bloater: 'pop', carrion: 'crow', bats: 'bat', brute: 'brute' }[e.type];
   Sound.play('splat', e.x);
   if (deathSound) Sound.play(deathSound, e.x);
+  if (def.spores) {
+    // a spore puffer's burst knocks out the towers right beside it
+    for (const t of S.towers) if (dist2(t.x, t.y, e.x, e.y) < (TILE * 1.5) ** 2) { t.stun = 1.2; t.stunKind = 'spores'; }
+    for (let i = 0; i < 10; i++) S.fx.push({ kind: 'smoke', x: e.x, y: e.y, vx: rand(-40, 40), vy: rand(-40, 40), r: rand(6, 10), grow: 18, life: 1, max: 1, color: '190,140,230' });
+  }
   if (def.splits) for (let i = 0; i < def.splits.n; i++) spawnEnemy(def.splits.type, e.wave, e.route, Math.max(0, e.d - 4 - i * 12));
   if (def.boss) {
     explosion(e.x, e.y, e.r * 2.4, true);
@@ -759,6 +784,14 @@ function refreshTowers() {
     for (const k of BUFF_DMG) if (st[k]) st[k] *= dmg;
     if (st.range < MAP_WIDE) st.range += reach;
     if (detect) st.detect = true;
+    // an expedition's ground can help or hinder: runestones, crystals, falling ash, burning grass
+    const ex = EXPED.towerMod(t);
+    if (ex) {
+      if (ex.range && st.range < MAP_WIDE) st.range *= ex.range;
+      if (ex.dmg) for (const k of BUFF_DMG) if (st[k]) st[k] *= ex.dmg;
+      if (ex.rate) for (const k of BUFF_RATE) if (st[k]) st[k] *= ex.rate;
+      t.buffed = t.buffed || ex.dmg > 1 || ex.rate < 1;
+    }
     t.buffed = rate < 1 || dmg > 1 || reach > 0 || (detect && !t.raw.detect);
     t.cold = cold && CREWED.has(t.type) && !warmAt(t.x, t.y, heaters);
     t.st = st;
@@ -1632,7 +1665,8 @@ function update(dt) {
     sp.time += dt;
     while (sp.queue.length && sp.queue[0].t <= sp.time) {
       const type = sp.queue.shift().type, n = sp.n++;
-      const routes = ZOMBIES[type].fly ? S.M.flights : S.M.paths;
+      // flyers, and climbers on foot, cut the road's corners
+      const routes = ZOMBIES[type].fly || ZOMBIES[type].climb ? S.M.flights : S.M.paths;
       spawnEnemy(type, sp.wave, routes[n % routes.length]);
     }
     if (!sp.queue.length) sp.done = true;
@@ -2357,15 +2391,33 @@ function renderPowerbar() {
     bar.append(b);
   }
   if (S.sandbox) return;
-  for (const id of EXPED.owned()) {
+  const owned = EXPED.owned();
+  const button = (id) => {
     const P = EXPED.LIST[id].power, n = EXPED.charges(id), b = document.createElement('button');
     b.type = 'button';
     b.className = 'power wonder' + (S.power === 'w:' + id ? ' armed' : '');
     b.disabled = n <= 0 || S.state !== 'playing';
     b.title = `${P.name}: ${P.desc}${n <= 0 ? ` Gains a charge after ${EXPED.winsToCharge()} more campaign win${EXPED.winsToCharge() === 1 ? '' : 's'}.` : ''}`;
     b.innerHTML = `${EXPED.ICONS[id]}<span>${P.short}</span><span class="count">${devMode() ? '∞' : n}</span>`;
-    b.addEventListener('click', () => usePower('w:' + id));
-    bar.append(b);
+    b.addEventListener('click', () => { S.wonderTray = false; usePower('w:' + id); renderPowerbar(); });
+    return b;
+  };
+  // two powers sit in the bar; more fold into a tray behind one Wonders button
+  if (owned.length <= 2) { for (const id of owned) bar.append(button(id)); return; }
+  const ready = owned.reduce((n, id) => n + EXPED.charges(id), 0), armed = S.power && S.power.startsWith('w:');
+  const w = document.createElement('button');
+  w.type = 'button'; w.className = 'power wonder' + (S.wonderTray || armed ? ' armed' : '');
+  w.disabled = S.state !== 'playing';
+  w.title = 'Wonder powers';
+  w.setAttribute('aria-expanded', String(!!S.wonderTray));
+  w.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2l2.6 6.6L21 9l-5 4.4L17.5 21 12 17l-5.5 4 1.5-7.6L3 9l6.4-.4z"/></svg><span>Wonders</span><span class="count">${devMode() ? '∞' : ready}</span>`;
+  w.addEventListener('click', () => { S.wonderTray = !S.wonderTray; Sound.play('click'); renderPowerbar(); });
+  bar.append(w);
+  if (S.wonderTray) {
+    const tray = document.createElement('div');
+    tray.className = 'wonder-tray';
+    for (const id of owned) tray.append(button(id));
+    bar.append(tray);
   }
 }
 
